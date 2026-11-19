@@ -163,7 +163,7 @@
       "properties": {
         "start": { "$ref": "#/$defs/tick" },
         "duration": { "$ref": "#/$defs/positiveTick" },
-        "pitch": { "type": "integer", "minimum": 0, "maximum": 127, "description": "MIDI note. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...)." },
+        "pitch": { "type": "integer", "minimum": 0, "maximum": 127, "description": "Sounding MIDI note, so a guitar note with a capo is the shape pitch plus the capo fret. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...)." },
         "velocity": { "type": "integer", "minimum": 1, "maximum": 127, "default": 90 }
       }
     },

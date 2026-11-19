@@ -352,12 +352,7 @@
         {
           "start": 0,
           "duration": 480,
-          "pitch": 43
-        },
-        {
-          "start": 0,
-          "duration": 480,
-          "pitch": 47
+          "pitch": 46
         },
         {
           "start": 0,
@@ -367,7 +362,12 @@
         {
           "start": 0,
           "duration": 480,
-          "pitch": 55
+          "pitch": 53
+        },
+        {
+          "start": 0,
+          "duration": 480,
+          "pitch": 58
         }
       ]
     },
