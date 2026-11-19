@@ -65,9 +65,14 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-#c { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#c { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.css3d { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.demo { display: flex; flex-wrap: wrap; gap: 6px; }
+.demo button { font: 500 13px/1 var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; cursor: pointer; }
+.demo button:hover { border-color: var(--accent); }
+.demo button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 #c:active { cursor: grabbing; }
-#markers { position: absolute; inset: 0; pointer-events: none; }
+#markers { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .marker {
   position: absolute;
   width: 22px; height: 22px;
@@ -83,7 +88,7 @@ body {
 .marker.back { opacity: .28; }
 .marker.hot { transform: scale(1.45); background: var(--warm); }
 .views {
-  position: absolute; left: 16px; top: 16px;
+  position: absolute; left: 16px; top: 16px; z-index: 3;
   display: flex; flex-wrap: wrap; gap: 6px;
 }
 .views button, .seg label {
@@ -100,7 +105,7 @@ body {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 .hint {
-  position: absolute; left: 16px; bottom: 12px; margin: 0;
+  position: absolute; left: 16px; bottom: 12px; margin: 0; z-index: 3;
   color: var(--muted); font-size: 12px;
 }
 .panel {
@@ -156,7 +161,7 @@ h2 {
 .legend .m { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink); }
 .legend .m b { font-weight: 600; color: var(--accent); margin-right: 2px; }
 .legend li.in .n { background: var(--warm); }
-.tabs { position: absolute; right: 16px; top: 16px; display: flex; gap: 6px; }
+.tabs { position: absolute; right: 16px; top: 16px; z-index: 3; display: flex; gap: 6px; }
 .tabs a { font: 600 13px/1 var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; text-decoration: none; }
 .tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .wiring { display: none; height: 100%; overflow: auto; background: var(--bg); }
@@ -194,6 +199,7 @@ body.show-wiring .wiring { display: block; }
     <canvas id="c"></canvas>
     <div id="markers" aria-hidden="true" style="display:none"></div>
     <div class="views" role="group" aria-label="视角">
+      <button type="button" data-view="screen">屏幕特写</button>
       <button type="button" data-view="operate">操作</button>
       <button type="button" data-view="front">正面</button>
       <button type="button" data-view="top">俯视控件</button>
@@ -201,36 +207,30 @@ body.show-wiring .wiring { display: block; }
       <button type="button" data-view="side">侧面接口</button>
     </div>
     <nav class="tabs" aria-label="页面"><a href="#model" aria-current="page">3D 模型</a><a href="#wiring">电路图</a></nav>
-    <p class="hint">拖动控件来操作；拖动空白处旋转，滚轮或双指缩放</p>
+    <p class="hint" id="hint">直接点 iPad 屏幕和箱上的控件；拖动空白处旋转，滚轮或双指缩放</p>
   </section>
   <aside class="panel">
     <header>
       <h1>FretCase</h1>
-      <p class="sub">打开就能写歌的复古皮箱。模型按采购清单里的零件尺寸搭建；箱上的控件能按、能拖，屏幕和声音跟着变。</p>
+      <p class="sub">打开就能写歌的复古皮箱。模型按采购清单里的零件尺寸搭建；iPad 屏幕里跑的是软件本身，箱上的控件能按、能拖，和真机一样把消息发给软件。</p>
     </header>
     <section>
       <h2>怎么玩</h2>
       <ol class="howto">
-        <li>按<b>播放</b>，听一首 16 小节的歌。灯环一颗灯是一小节。</li>
-        <li>拖<b>唱盘</b>转一圈，在歌里前后移动 4 小节。</li>
-        <li>按<b>换一个</b>，只换唱盘所在的那一段；按<b>撤销</b>退回。</li>
-        <li>上下拖<b>旋钮</b>：明暗、简繁、疏密、速度。</li>
-        <li>前后拖<b>推子</b>调每一轨的音量；点<b>彩色方键</b>选中，长按静音。</li>
-        <li>按住<b>红键</b>录一段，松开就出三首候选；短按是拍照。</li>
-        <li>点<b>屏幕</b>进入下一步；在“做卡”那一屏点一下，卡片从右侧出卡口出来。</li>
+        <li>点左上角<b>屏幕特写</b>，直接在 iPad 上点：屏幕里跑的是 FretCase 软件本身（演示模式，不联网）。</li>
+        <li><b>采集</b>：在屏幕上选拍照、哼一段、录声音或写一句，再按箱上的<b>红键</b>。拍照按一下；哼一段和录声音按一下开始、再按一下结束，也可以按住不放。镜头里是三张样片，录音是模拟的。</li>
+        <li>点<b>做成歌</b>，挑一首；之后<b>唱盘、旋钮、推子、播放、撤销、换一个、彩色方键</b>都像真机一样把消息发给软件，灯环和键灯由软件点亮。</li>
+        <li>屏幕顶上的 ①②③④ 可以跳回走过的那一步。</li>
+        <li>在“做卡”点<b>印出来</b>，卡片从右侧出卡口出来；<b>点一下卡片</b>，它就插到卡片架上。</li>
       </ol>
     </section>
     <section>
-      <h2>屏幕（软件真实截图）</h2>
-      <div class="seg" role="radiogroup" aria-label="屏幕">
-        <input type="radio" name="screen" id="v-capture" value="capture" checked><label for="v-capture">采集</label>
-        <input type="radio" name="screen" id="v-pick" value="pick"><label for="v-pick">选一首</label>
-        <input type="radio" name="screen" id="v-shape" value="shape"><label for="v-shape">打磨</label>
-        <input type="radio" name="screen" id="v-tracks" value="tracks"><label for="v-tracks">音轨</label>
-        <input type="radio" name="screen" id="v-lyrics" value="lyrics"><label for="v-lyrics">歌词</label>
-        <input type="radio" name="screen" id="v-card" value="card"><label for="v-card">做卡</label>
+      <h2>演示</h2>
+      <div class="demo">
+        <button type="button" id="demo-screen" class="primary">屏幕特写</button>
+        <button type="button" id="demo-restart">重新开始</button>
       </div>
-      <p class="note">截图来自离线测试：歌词要联网由模型来写，离线时每句先用“啦”占位。</p>
+      <p class="note" id="demo-note">第一次播放前若没有声音，在屏幕上随便点一下（浏览器要求先在页面里点过才出声）。</p>
     </section>
     <section>
       <h2>箱盖开合</h2>
@@ -286,7 +286,7 @@ body.show-wiring .wiring { display: block; }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
 <script>
 (function () {
   'use strict';
@@ -566,25 +566,20 @@ body.show-wiring .wiring { display: block; }
   var CX = 74, CZ = 104, PLINTH_H = 16;
   base.add(box(118, PLINTH_H, 16, mTrim, CX, PY + PLINTH_H / 2, CZ + 2));
   base.add(box(112, 0.6, 3, mDark, CX, PY + PLINTH_H + 0.3, CZ));
-  var cardCv = document.createElement('canvas'); cardCv.width = CARD_W * 10; cardCv.height = CARD_H * 10;
-  var cardTex = tex(cardCv);
-  function drawCardFace(img) {
-    var c = cardCv.getContext('2d');
-    c.fillStyle = '#f6f3ec'; c.fillRect(0, 0, cardCv.width, cardCv.height);
-    // picture area 99 x 62 mm, 6 mm from the top; the print image is cropped at its top
-    if (img) { c.drawImage(img, 0, 840 - 789, 1260, 789, 45, 60, 990, 620); }
-    else { c.fillStyle = '#d9cfbf'; c.fillRect(45, 60, 990, 620); }
-    cardTex.needsUpdate = true;
-  }
-  drawCardFace(null);
+  // printed cards land here (placeOnRack); the stand starts empty
   var rack = new T.Group();
   rack.position.set(CX, PY + PLINTH_H, CZ);
   base.add(rack);
-  for (var ci = 3; ci >= 0; ci--) {
-    rack.add(box(CARD_W, CARD_H, CARD_T, std(ci ? 0xebe6dc : 0xf6f3ec, 0.7), 0, CARD_H / 2, -ci * 1.9));
+  var rackCards = [];
+  for (var ci = 0; ci < 4; ci++) {
+    var rc = box(CARD_W, CARD_H, CARD_T, std(ci ? 0xebe6dc : 0xf6f3ec, 0.7), 0, CARD_H / 2, -ci * 1.9);
+    rc.visible = false;
+    rack.add(rc);
+    rackCards.push(rc);
   }
-  var face = new T.Mesh(new T.PlaneGeometry(CARD_W, CARD_H), new T.MeshBasicMaterial({ map: cardTex }));
+  var face = new T.Mesh(new T.PlaneGeometry(CARD_W, CARD_H), new T.MeshBasicMaterial({ color: 0xf6f3ec }));
   face.position.set(0, CARD_H / 2, CARD_T / 2 + 0.05);
+  face.visible = false;
   rack.add(face);
   // window over the power bank's own display
   base.add(box(28, 1, 15, mMetal, -2, PY + 0.5, 100));
@@ -595,9 +590,18 @@ body.show-wiring .wiring { display: block; }
   function onWall(m) { m.rotation.z = Math.PI / 2; base.add(m); return m; }
   base.add(box(2.2, 9, 120, mMetal, W / 2 + 1.1, 20, -38));
   base.add(box(2.4, 2.6, 112, mDark, W / 2 + 1.2, 20, -38));
-  var ejectCard = box(CARD_H, 1.2, CARD_W, std(0xf6f3ec, 0.7), W / 2 - 4 - CARD_H / 2, 20, -38);
+  var EJECT_IN = W / 2 - 4 - CARD_H / 2, EJECT_OUT = EJECT_IN + 62;
+  var ejectCard = new T.Group();
+  ejectCard.position.set(EJECT_IN, 20, -38);
   ejectCard.visible = false;
   base.add(ejectCard);
+  ejectCard.add(box(CARD_H, CARD_T, CARD_W, std(0xf6f3ec, 0.7), 0, 0, 0));
+  var ejectFace = new T.Mesh(new T.PlaneGeometry(CARD_W, CARD_H), new T.MeshBasicMaterial({ color: 0xffffff }));
+  // lying face up, the long side along the slot, the top of the picture towards the inside of the case
+  ejectFace.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+  ejectFace.position.y = CARD_T / 2 + 0.05;
+  ejectCard.add(ejectFace);
+  hit(ejectCard, { type: 'card' });
   onWall(cyl(9, 2.4, mMetal, W / 2 + 1.2, 40, 46, 40));
   onWall(cyl(6.3, 2.8, std(0xd9d4c8, 0.3, 0.6), W / 2 + 1.4, 40, 46, 32));
   var btnRing = new T.Mesh(new T.RingGeometry(6.5, 8.2, 40), std(0xffffff, 0.3, 0, { emissive: new T.Color(0xfff4dc), emissiveIntensity: 0.9 }));
@@ -730,22 +734,21 @@ body.show-wiring .wiring { display: block; }
   var camAnchor = new T.Object3D();
   lid.add(camAnchor);
 
+  var scr = null;
   function buildScreen() {
     var sc = IPAD;
     clearGroup(screenGroup); clearGroup(camGroup);
     var body = slab(sc.w, sc.h, 11, sc.t, mGlass);
     body.position.set(0, RIM - 1.4, D / 2);
     screenGroup.add(body);
-    var cv = document.createElement('canvas');
-    cv.width = 1024; cv.height = Math.round(1024 * sc.dh / sc.dw);
-    var dtex = tex(cv);
-    var disp = new T.Mesh(new T.PlaneGeometry(sc.dw, sc.dh), new T.MeshBasicMaterial({ map: dtex }));
+    // the display is a hole in the WebGL picture: the app's page shows through it from the CSS3D layer below
+    var hole = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, blending: T.NoBlending });
+    var disp = new T.Mesh(new T.PlaneGeometry(sc.dw, sc.dh), hole);
     disp.rotation.x = Math.PI / 2;
     disp.position.set(0, RIM - 1.48, D / 2);
     disp.userData.ctrl = { type: 'screen' };
     screenGroup.add(disp);
-    scr = { cv: cv, tex: dtex, mesh: disp };
-    drawScreen(cv);
+    scr = { mesh: disp, hole: hole };
     // front camera above the display; the rear lens sits in a corner of the body
     var cx = sc.w / 2 - 14, cz = D / 2 + sc.h / 2 - 14;
     screenGroup.add(cyl(1.6, 0.4, mDark, 0, RIM - 1.5, D / 2 + sc.h / 2 - 5, 16));
@@ -758,7 +761,7 @@ body.show-wiring .wiring { display: block; }
     camGroup.add(box(30, 2.2, 28, mShellDark, cx - 40, HL + 1.1, cz));
     camAnchor.position.set(cx, HL + 2, cz);
     root.traverse(function (n) { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-    silkPlane.castShadow = false; woodPlane.castShadow = false; face.castShadow = false;
+    silkPlane.castShadow = false; woodPlane.castShadow = false; face.castShadow = false; disp.castShadow = false; disp.receiveShadow = false;
   }
 
   // ---- numbered markers ----
@@ -772,10 +775,10 @@ body.show-wiring .wiring { display: block; }
   camAnchor.userData.n = new T.Vector3(0, 1, 0);
   // buy / print name the rows of the purchase sheet and of its 3D-print sheet
   var PARTS = [
-    { t: '屏幕：iPad 11 寸', d: '装在箱盖里，显示软件的六屏；前置镜头扫卡片上的二维码', buy: 'iPad 11 寸（已有就不买）、Belkin 音频 + 充电转接头', print: 'iPad 箱盖框', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0), view: 'front' },
+    { t: '屏幕：iPad 11 寸', d: '装在箱盖里，显示软件的六屏；前置镜头扫卡片上的二维码', buy: 'iPad 11 寸（已有就不买）、Belkin 音频 + 充电转接头', print: 'iPad 箱盖框', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0), view: 'screen' },
     { t: '后置镜头开孔与滑盖', d: '在箱盖背面一角，开孔向外扩；滑盖合上就拍不了', print: '后置镜头开孔环和滑盖', a: camAnchor, view: 'back' },
     { t: '唱盘与灯环', d: '转动唱盘在歌里前后移动；16 颗灯一圈是整首歌', buy: '旋转编码器 ×1（可再买一个无格的比手感）、转盘轴承、WS2812B 灯珠 ×16', print: '唱盘和轴心连接件、灯环座和柔光圈', a: anchor(base, PX + 30, PY + 9, PZ - 30, 0, 1, 0), view: 'top' },
-    { t: '采集、播放、撤销、换一个', d: '红键按住哼唱或录音，短按拍照；不满意就换一个，后悔了就撤销', buy: '机械轴 ×4、NeoKey 轴座小板 ×4', print: '圆形功能键帽 ×4、键轴定位板', a: anchor(base, -84, PY + 10, 78, 0, 1, 0), view: 'top' },
+    { t: '采集、播放、撤销、换一个', d: '红键按屏幕上选的方式采集：拍照按一下，哼唱和录音按一下开始、再按一下结束（也可以按住）；不满意就换一个，后悔了就撤销', buy: '机械轴 ×4、NeoKey 轴座小板 ×4', print: '圆形功能键帽 ×4、键轴定位板', a: anchor(base, -84, PY + 10, 78, 0, 1, 0), view: 'top' },
     { t: '四个旋钮', d: '明暗、简繁、疏密、速度', buy: '旋转编码器 ×4', print: '旋钮帽 ×4', a: anchor(base, 74, PY + 19, -70, 0, 1, 0), view: 'top' },
     { t: '六路小调音台', d: '每条音轨一个彩色方键和一个推子：方键选中或静音，推子调这一轨的音量', buy: '直滑电位器 ×6、机械轴 ×6、NeoKey 轴座小板 ×6、半透明键帽', print: '推子帽 ×6、键轴定位板', a: anchor(base, 74, PY + 12, -8, 0, 1, 0), view: 'top' },
     { t: '卡片架', d: '印好的宽幅相纸斜插在这里，最前面一张是当前这首歌；合箱前向后放平', buy: 'Instax Wide 相纸', print: '卡片架和卡片仓', a: anchor(base, CX + 40, PY + PLINTH_H + 70, CZ - 20, 0, 0, 1), view: 'front' },
@@ -835,7 +838,7 @@ body.show-wiring .wiring { display: block; }
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fly = null;
   function flyTo(name) {
-    var v = VIEWS[name];
+    var v = name === 'screen' ? screenView() : VIEWS[name];
     var to = { p: new T.Vector3().fromArray(v.p), t: new T.Vector3().fromArray(v.t) };
     if (reduce) { camera.position.copy(to.p); controls.target.copy(to.t); return; }
     fly = { p0: camera.position.clone(), t0: controls.target.clone(), p1: to.p, t1: to.t, k: 0 };
@@ -853,9 +856,6 @@ body.show-wiring .wiring { display: block; }
     lidTarget = +lidInput.value; lidOut.textContent = lidTarget + '°';
     if (reduce) { lidNow = lidTarget; }
   });
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="screen"]'), function (r) {
-    r.addEventListener('change', function () { if (r.checked) { showView(r.value); } });
-  });
   var tgLabels = document.getElementById('tg-labels'), tgInside = document.getElementById('tg-inside');
   markerBox.style.display = tgLabels.checked ? '' : 'none';
   tgLabels.addEventListener('change', function () { markerBox.style.display = tgLabels.checked ? '' : 'none'; });
@@ -867,239 +867,83 @@ body.show-wiring .wiring { display: block; }
   tgInside.addEventListener('change', function () { setInside(tgInside.checked); });
 
   // =====================================================================
-  // ---- prototype: song, sound, panel interaction ----
+  // ---- the app on the iPad, and the panel around it ----
+  // The iPad shows the real app (device/, made by build-device.sh: the app in its demo mode) in an iframe that
+  // CSS3DRenderer lays on the display; the display mesh is a hole in the WebGL picture, so the page shows through
+  // it. sim/shim.js joins the app's panel socket to this page: presses, turns and fader moves go to the app as
+  // panel messages (shared/schema/panel-events.schema.json), and the app's ring.set and key.light light the
+  // case. The app also hands over each card it prints, which comes out of the print outlet.
   // =====================================================================
-  var KNOB_NAMES = { brightness: '明暗', complexity: '简繁', density: '疏密', tempo: '速度' };
-  var LANE_NAMES = ['简单', '适中', '丰富'];
-  var LEVEL_NAMES = ['稀疏', '适中', '密集'];
-  var SECTION_DEF = [{ label: '开头', start: 0 }, { label: '主歌', start: 4 }, { label: '副歌', start: 8 }, { label: '结尾', start: 12 }];
-  var BARS = 16, STEPS = 16;
-  var NOTE_PC = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
-  var MAJOR_MAP = { I: ['D', ''], ii: ['E', 'm'], iii: ['F#', 'm'], IV: ['G', ''], iv: ['G', 'm'], V: ['A', ''], vi: ['B', 'm'] };
-  var MINOR_MAP = { i: ['B', 'm'], III: ['D', ''], iv: ['E', 'm'], v: ['F#', 'm'], V: ['F#', ''], VI: ['G', ''], VII: ['A', ''] };
-  var TAKES_MAJOR = [
-    [['I', 'I', 'vi', 'vi'], ['I', 'IV', 'I', 'V'], ['vi', 'IV', 'I', 'V']],
-    [['IV', 'IV', 'V', 'V'], ['ii', 'V', 'I', 'vi'], ['IV', 'V', 'iii', 'vi']],
-    [['I', 'iii', 'IV', 'V'], ['I', 'V', 'vi', 'IV'], ['IV', 'V', 'I', 'I']],
-    [['ii', 'IV', 'V', 'I'], ['IV', 'iv', 'I', 'I'], ['vi', 'IV', 'V', 'I']]
-  ];
-  var TAKES_MINOR = [
-    [['i', 'i', 'VI', 'VI'], ['i', 'VI', 'III', 'VII'], ['i', 'iv', 'VI', 'V']],
-    [['VI', 'VII', 'i', 'i'], ['iv', 'VII', 'III', 'VI'], ['VI', 'III', 'VII', 'i']],
-    [['VI', 'VII', 'III', 'i'], ['i', 'VII', 'VI', 'VII'], ['iv', 'v', 'VI', 'VII']],
-    [['iv', 'VI', 'V', 'i'], ['VI', 'VII', 'i', 'i'], ['iv', 'V', 'i', 'i']]
-  ];
-  var QUAL = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], add9: [0, 4, 7, 14] };
-  // melody per bar: [step, length in 16ths, midi]; D major, fits both D major and B minor harmony
-  var MELODY = [
-    [[0, 4, 74], [4, 4, 76], [8, 8, 78]], [[0, 4, 76], [4, 4, 74], [8, 8, 71]], [[0, 4, 71], [4, 4, 74], [8, 4, 73], [12, 4, 71]], [[0, 12, 69], [12, 4, 71]],
-    [[0, 4, 74], [4, 4, 71], [8, 8, 67]], [[0, 4, 69], [4, 4, 71], [8, 8, 74]], [[0, 6, 73], [6, 2, 71], [8, 8, 69]], [[0, 12, 76], [12, 4, 74]],
-    [[0, 4, 78], [4, 4, 79], [8, 8, 81]], [[0, 4, 81], [4, 4, 78], [8, 8, 76]], [[0, 4, 79], [4, 4, 78], [8, 4, 76], [12, 4, 74]], [[0, 8, 76], [8, 8, 73]],
-    [[0, 4, 76], [4, 4, 78], [8, 8, 79]], [[0, 4, 78], [4, 4, 76], [8, 8, 74]], [[0, 6, 76], [6, 2, 73], [8, 8, 69]], [[0, 16, 74]]
-  ];
-  var LYRICS = '海风吹过傍晚 浪花轻轻回答 远方的灯亮了 我把歌留下'.replace(/ /g, '');
+  var APP_W = 1180, APP_H = 820;   // iPad 11-inch (A16) in landscape, in CSS px
+  var DEVICE_URL = 'device/index.html?mock=1&lyrics=online&panel=sim://panel';
+  var hintEl = document.getElementById('hint'), noteEl = document.getElementById('demo-note');
+  var HINT0 = hintEl.textContent;
+  function setHint(text) { hintEl.textContent = text || HINT0; }
 
-  var S = {
-    knobs: { brightness: 0.62, complexity: 0.4, density: 0.3, tempo: 84 },
-    takes: [0, 0, 0, 0],
-    vol: [0.8, 0.8, 0.75, 0.7, 0.5, 0.55],
-    muted: [false, false, false, false, false, false],
-    selected: 2,
-    playing: false,
-    step: 0,
-    posBar: 0,
-    view: 'capture',
-    recording: false, recStart: 0,
-    toast: null,
-    flash: 0,
-    printed: 0
-  };
-  var history = [];
-  var song = [];
-
-  function level(v) { return v < 0.34 ? 0 : v < 0.67 ? 1 : 2; }
-  function isDark() { return S.knobs.brightness < 0.34; }
-  function sectionOf(bar) { var s = 0; SECTION_DEF.forEach(function (d, i) { if (bar >= d.start) { s = i; } }); return s; }
-
-  function chordFor(roman, dark, cx) {
-    var base = (dark ? MINOR_MAP : MAJOR_MAP)[roman];
-    var root = base[0], q = base[1];
-    var dominant = roman === 'V';
-    if (cx === 1) { if (dominant) { q = '7'; } else if (q === 'm' && roman !== 'i') { q = 'm7'; } }
-    if (cx === 2) {
-      if (dominant) { q = '7'; } else if (q === 'm') { q = 'm7'; } else if (roman === 'IV' || roman === 'VI') { q = 'add9'; } else { q = 'maj7'; }
-    }
-    var rootPc = NOTE_PC[root];
-    return { sym: root + q, roman: roman, rootPc: rootPc, pcs: QUAL[q].map(function (iv) { return (rootPc + iv) % 12; }), ivs: QUAL[q] };
+  var cssScene = new T.Scene();
+  var cssRenderer = T.CSS3DRenderer ? new T.CSS3DRenderer() : null;
+  var frameEl = null, cssObj = null, runs = 0;
+  var device = { ready: false, failed: false, open: false };
+  var fitM = new T.Matrix4().makeScale(IPAD.dw / APP_W, IPAD.dh / APP_H, 1);
+  if (cssRenderer) {
+    cssRenderer.domElement.className = 'css3d';
+    stage.insertBefore(cssRenderer.domElement, canvas);
+    frameEl = document.createElement('iframe');
+    frameEl.title = 'FretCase 软件（演示模式）';
+    frameEl.setAttribute('allow', 'autoplay');
+    frameEl.style.cssText = 'width:' + APP_W + 'px;height:' + APP_H + 'px;border:0;background:#16120e;backface-visibility:hidden';
+    cssObj = new T.CSS3DObject(frameEl);
+    cssObj.matrixAutoUpdate = false;
+    cssScene.add(cssObj);
+  }
+  function toDevice(m) {
+    if (!frameEl || !frameEl.contentWindow) { return; }
+    m.fretcaseSim = 1;
+    frameEl.contentWindow.postMessage(m, '*');
   }
 
-  function guitarVoicing(ch) {
-    var bass = 40 + ((ch.rootPc - 4 + 12) % 12);
-    var notes = [bass];
-    var tones = ch.ivs.map(function (iv) { return ch.rootPc + iv; });
-    var p = 52;
-    for (var k = 0; notes.length < 5 && k < 24; k++) {
-      var cand = p + k;
-      if (tones.some(function (t) { return (cand - t) % 12 === 0; }) && cand > notes[notes.length - 1] + 2) { notes.push(cand); }
-    }
-    return notes;
+  // when the app does not come up (device/ not built, or the browser refuses the inner page), a screenshot
+  var fallbackTimer = null;
+  function showFallback() {
+    if (device.ready || device.failed) { return; }
+    device.failed = true;
+    if (cssRenderer) { cssRenderer.domElement.style.display = 'none'; }
+    var im = new Image();
+    im.onload = function () {
+      var cv = document.createElement('canvas');
+      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      cv.getContext('2d').drawImage(im, 0, 0);
+      scr.mesh.material = new T.MeshBasicMaterial({ map: tex(cv) });
+    };
+    im.src = 'screens/capture.jpg';
+    noteEl.textContent = '屏幕里的软件没有加载出来，先显示一张截图；箱上的控件照样发出面板消息。';
   }
-
-  function computeSong() {
-    var dark = isDark(), cx = level(S.knobs.complexity), dl = level(S.knobs.density);
-    var table = dark ? TAKES_MINOR : TAKES_MAJOR;
-    song = [];
-    for (var b = 0; b < BARS; b++) {
-      var sec = sectionOf(b);
-      var roman = table[sec][S.takes[sec]][b - SECTION_DEF[sec].start];
-      var ch = chordFor(roman, dark, cx);
-      var ev = { vocal: [], melody: [], guitar: [], bass: [], drums: [] };
-      MELODY[b].forEach(function (n, i) {
-        ev.melody.push({ s: n[0], len: n[1], m: n[2], v: 0.8 });
-        ev.vocal.push({ s: n[0], len: n[1], m: n[2], v: 0.7 });
-      });
-      var vo = guitarVoicing(ch);
-      if (dl === 0) {
-        [0, 8].forEach(function (s) { ev.guitar.push({ s: s, len: 8, chord: vo, dir: 1, v: 0.7 }); });
-      } else if (dl === 1) {
-        var order = [0, 2, 3, 4, 1, 3, 2, 4];
-        for (var k = 0; k < 8; k++) { ev.guitar.push({ s: k * 2, len: 2, m: vo[order[k] % vo.length], v: k === 0 ? 0.8 : 0.6 }); }
-      } else {
-        [[0, 1, 0.8], [4, 1, 0.6], [6, -1, 0.5], [10, -1, 0.5], [12, 1, 0.65], [14, -1, 0.45]].forEach(function (x) {
-          ev.guitar.push({ s: x[0], len: 2, chord: vo, dir: x[1], v: x[2] });
-        });
-      }
-      var root = 36 + ((ch.rootPc - 0 + 12) % 12), fifth = root + 7;
-      if (root > 45) { root -= 12; fifth -= 12; }
-      if (dl === 0) { ev.bass.push({ s: 0, len: 15, m: root, v: 0.8 }); }
-      else if (dl === 1) { ev.bass.push({ s: 0, len: 7, m: root, v: 0.85 }); ev.bass.push({ s: 8, len: 7, m: fifth, v: 0.7 }); }
-      else { [[0, root], [6, root], [8, fifth], [12, root + 12], [14, fifth]].forEach(function (x, i) { ev.bass.push({ s: x[0], len: 2, m: x[1], v: i ? 0.65 : 0.85 }); }); }
-      if (dl === 0) { ev.drums.push({ s: 0, d: 'k', v: 0.7 }); ev.drums.push({ s: 8, d: 's', v: 0.35 }); }
-      else if (dl === 1) {
-        [0, 8].forEach(function (s) { ev.drums.push({ s: s, d: 'k', v: 0.8 }); });
-        [4, 12].forEach(function (s) { ev.drums.push({ s: s, d: 's', v: 0.55 }); });
-        for (var h = 0; h < 16; h += 2) { ev.drums.push({ s: h, d: 'h', v: h % 4 ? 0.3 : 0.45 }); }
-      } else {
-        [0, 6, 8, 11].forEach(function (s) { ev.drums.push({ s: s, d: 'k', v: 0.8 }); });
-        [4, 12].forEach(function (s) { ev.drums.push({ s: s, d: 's', v: 0.65 }); });
-        for (var h2 = 0; h2 < 16; h2++) { ev.drums.push({ s: h2, d: 'h', v: h2 % 4 === 0 ? 0.45 : h2 % 2 ? 0.2 : 0.3 }); }
-      }
-      song.push({ chord: ch, sec: sec, ev: ev });
-    }
+  function loadDevice() {
+    device.ready = false; device.failed = false; device.open = false;
+    clearTimeout(fallbackTimer);
+    if (!frameEl) { showFallback(); return; }
+    if (cssRenderer) { cssRenderer.domElement.style.display = ''; }
+    scr.mesh.material = scr.hole;
+    frameEl.src = DEVICE_URL + (runs++ ? '&run=' + runs : '');
+    fallbackTimer = setTimeout(showFallback, 15000);
   }
-
-  // ---- sound ----
-  var A = null;
-  function midiHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
-  function buildAudio() {
-    var Tn = window.Tone;
-    if (!Tn) { return null; }
-    var a = { T: Tn };
-    a.limiter = new Tn.Limiter(-2).toDestination();
-    a.tone = new Tn.Filter(8000, 'lowpass').connect(a.limiter);
-    a.bus = new Tn.Gain(0.9).connect(a.tone);
-    a.gains = TRACK_IDS.map(function (id, i) { return new Tn.Gain(S.muted[i] ? 0 : S.vol[i]).connect(a.bus); });
-    a.vibrato = new Tn.Vibrato(5, 0.12).connect(a.gains[0]);
-    a.vocal = new Tn.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.06, decay: 0.2, sustain: 0.7, release: 0.35 }, volume: -10 }).connect(a.vibrato);
-    a.melody = new Tn.PolySynth(Tn.FMSynth, { harmonicity: 3, modulationIndex: 8, envelope: { attack: 0.005, decay: 0.7, sustain: 0.15, release: 0.8 }, modulationEnvelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.5 }, volume: -14 }).connect(a.gains[1]);
-    a.guitarTone = new Tn.Filter(2600, 'lowpass').connect(a.gains[2]);
-    a.guitar = new Tn.PolySynth(Tn.Synth, { oscillator: { type: 'triangle8' }, envelope: { attack: 0.002, decay: 0.9, sustain: 0.04, release: 0.6 }, volume: -15 }).connect(a.guitarTone);
-    a.guitar.maxPolyphony = 24;
-    a.bass = new Tn.MonoSynth({ oscillator: { type: 'triangle' }, filter: { Q: 1, type: 'lowpass' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.3 }, filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.4, baseFrequency: 180, octaves: 2.2 }, volume: -6 }).connect(a.gains[3]);
-    a.kick = new Tn.MembraneSynth({ pitchDecay: 0.03, octaves: 6, envelope: { attack: 0.001, decay: 0.35, sustain: 0 }, volume: -6 }).connect(a.gains[4]);
-    a.snareHp = new Tn.Filter(1800, 'highpass').connect(a.gains[4]);
-    a.snare = new Tn.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.16, sustain: 0 }, volume: -12 }).connect(a.snareHp);
-    a.hatHp = new Tn.Filter(7000, 'highpass').connect(a.gains[4]);
-    a.hat = new Tn.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.04, sustain: 0 }, volume: -20 }).connect(a.hatHp);
-    a.waveGain = new Tn.Gain(0.4).connect(a.gains[5]);
-    a.waveLfo = new Tn.LFO(0.11, 0.12, 0.85).connect(a.waveGain.gain);
-    a.waveFilter = new Tn.Filter(650, 'lowpass').connect(a.waveGain);
-    a.noise = new Tn.Noise('pink').connect(a.waveFilter);
-    a.noise.volume.value = -8;
-    Tn.Transport.bpm.value = S.knobs.tempo;
-    Tn.Transport.scheduleRepeat(tick, '16n');
-    applyTone();
-    return a;
-  }
-  function ensureAudio() {
-    if (A || !window.Tone) { return; }
-    try { window.Tone.start(); A = buildAudio(); } catch (e) { A = null; }
-  }
-  function applyTone() { if (A) { A.tone.frequency.rampTo(1600 + S.knobs.brightness * 9000, 0.2); } }
-  function applyGain(i) { if (A) { A.gains[i].gain.rampTo(S.muted[i] ? 0 : S.vol[i], 0.08); } }
-
-  function strum(chord, dir, time, len, vel) {
-    var T16 = A.T.Time('16n').toSeconds();
-    var order = dir > 0 ? chord : chord.slice().reverse();
-    order.forEach(function (m, k) {
-      A.guitar.triggerAttackRelease(midiHz(m), len * T16 * 0.9, time + k * 0.012 * (dir > 0 ? 1 : 0.7), vel * (dir > 0 ? 1 : 0.8));
+  if (frameEl) {
+    frameEl.addEventListener('load', function () {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(showFallback, 2500);
     });
-  }
-  // monophonic voices refuse a start at or before their previous start; nudge such notes by 1 ms
-  function mono(voice, time) {
-    var t = Math.max(time, (voice.__last || 0) + 0.001);
-    voice.__last = t;
-    return t;
-  }
-  function playBar(bar, s, time, only) {
-    var b = song[bar], T16 = A.T.Time('16n').toSeconds();
-    if (!only || only === 'melody') { b.ev.melody.forEach(function (n) { if (n.s === s) { A.melody.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.95, time, n.v); } }); }
-    if (!only) {
-      b.ev.vocal.forEach(function (n) { if (n.s === s) { A.vocal.triggerAttackRelease(midiHz(n.m - 12), n.len * T16 * 0.9, mono(A.vocal, time), n.v); } });
-      b.ev.bass.forEach(function (n) { if (n.s === s) { A.bass.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.9, mono(A.bass, time), n.v); } });
-      b.ev.drums.forEach(function (n) {
-        if (n.s !== s) { return; }
-        if (n.d === 'k') { A.kick.triggerAttackRelease('C1', T16 * 0.9, mono(A.kick, time), n.v); }
-        else if (n.d === 's') { A.snare.triggerAttackRelease('16n', mono(A.snare, time), n.v); }
-        else { A.hat.triggerAttackRelease('32n', mono(A.hat, time), n.v); }
-      });
-    }
-    if (!only || only === 'guitar') {
-      b.ev.guitar.forEach(function (n) {
-        if (n.s !== s) { return; }
-        if (n.chord) { strum(n.chord, n.dir, time, n.len, n.v); }
-        else { A.guitar.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.9, time, n.v); }
-      });
-    }
-  }
-  function tick(time) {
-    var step = S.step, bar = Math.floor(step / STEPS) % BARS, s = step % STEPS;
-    try { playBar(bar, s, time); } catch (e) { /* one bad note must not stop the loop */ }
-    S.step = (step + 1) % (BARS * STEPS);
-    window.Tone.Draw.schedule(function () { S.posBar = step / STEPS; }, time);
-  }
-  function previewBar(bar) {
-    if (!A || S.playing) { return; }
-    var now = A.T.now() + 0.02, b = song[bar];
-    strum(guitarVoicing(b.chord), 1, now, 8, 0.6);
-  }
-  function setPlaying(on) {
-    ensureAudio();
-    S.playing = on;
-    if (A) {
-      if (on) {
-        S.step = Math.round(S.posBar * STEPS) % (BARS * STEPS);
-        A.T.Transport.start('+0.05');
-        if (A.noise.state !== 'started') { A.noise.start(); A.waveLfo.start(); }
-      } else {
-        A.T.Transport.stop();
-        A.noise.stop();
-      }
-    }
-    lightKey('play', on ? 'on' : 'off');
   }
 
   // ---- panel messages, as in shared/schema/panel-events.schema.json ----
-  var seq = { panel: 0, app: 0 }, t0 = performance.now();
+  var seq = 0, relaySeq = 0, t0 = performance.now();
+  function now() { return Math.round(performance.now() - t0); }
   var evlog = document.getElementById('evlog');
-  function emit(from, type, payload) {
-    var msg = { v: 1, type: type, seq: seq[from]++, t: Math.round(performance.now() - t0) };
-    if (payload) { msg.payload = payload; }
-    if (!evlog) { return msg; }
+  function log(from, type, payload) {
+    if (!evlog) { return; }
     var first = evlog.firstChild, li;
-    if (first && first.getAttribute('data-type') === type && from === 'app') {
+    if (first && first.getAttribute('data-type') === type && first.className === from && (from === 'app' || type !== 'key')) {
       li = first; li.textContent = '';
-      var n = (+li.getAttribute('data-n') || 1) + 1; li.setAttribute('data-n', n);
+      li.setAttribute('data-n', (+li.getAttribute('data-n') || 1) + 1);
     } else {
       li = document.createElement('li'); li.setAttribute('data-type', type); li.setAttribute('data-n', 1);
     }
@@ -1110,190 +954,196 @@ body.show-wiring .wiring { display: block; }
     li.appendChild(tag); li.appendChild(code);
     if (li !== first) { evlog.insertBefore(li, evlog.firstChild); }
     while (evlog.children.length > 9) { evlog.removeChild(evlog.lastChild); }
+  }
+  /** One message from the panel to the app. */
+  function emit(type, payload) {
+    var msg = { v: 1, type: type, seq: seq++, t: now() };
+    if (payload) { msg.payload = payload; }
+    log('panel', type, payload);
+    if (device.open) { toDevice({ kind: 'panel', msg: msg }); }
     return msg;
   }
+  // the relay's part: it answers the app's pings and tells it that a panel is there
+  function relay(type, payload) {
+    var msg = { v: 1, type: type, seq: relaySeq++, t: now() };
+    if (payload) { msg.payload = payload; }
+    toDevice({ kind: 'panel', msg: msg });
+  }
+  var faderVal = TRACK_IDS.map(function () { return 0.8; });
+  function faderSnapshot() { var f = {}; TRACK_IDS.forEach(function (id, i) { f[id] = faderVal[i]; }); return f; }
+  function panelHello() {
+    relay('peer.status', { panel: true });
+    emit('hello', { role: 'panel', name: 'simulator' });
+    emit('snapshot', { faders: faderSnapshot(), keysDown: [] });
+  }
 
-  // ---- lights ----
-  var lastRing = '';
-  function updateRing() {
-    var bar = Math.floor(S.posBar) % BARS, sec = sectionOf(bar);
-    var pixels = [];
+  // ---- lights, set by the app ----
+  var WHITE = new T.Color(0xffffff);
+  function setRing(pixels, brightness) {
     for (var i = 0; i < 16; i++) {
-      var m = ringMats[i];
-      if (i === bar) { m.color.setHex(0xffc463); m.emissive.setHex(0xe08a12); m.emissiveIntensity = 1.1; pixels.push('#e08a12'); }
-      else if (sectionOf(i) === sec) { m.color.setHex(0xf6e3b8); m.emissive.setHex(0xb08a50); m.emissiveIntensity = 0.45; pixels.push('#5a4630'); }
-      else { m.color.setHex(0xf1e9d6); m.emissive.setHex(0x8a7a5a); m.emissiveIntensity = 0.06; pixels.push(null); }
+      var m = ringMats[i], px = pixels && pixels[i];
+      if (px) { m.color.set(px).lerp(WHITE, 0.55); m.emissive.set(px); m.emissiveIntensity = 0.3 + 1.2 * brightness; }
+      else { m.color.setHex(0xf1e9d6); m.emissive.setHex(0x8a7a5a); m.emissiveIntensity = 0.06; }
     }
-    var key = bar + ':' + sec;
-    if (key !== lastRing) { lastRing = key; emit('app', 'ring.set', { pixels: pixels, brightness: 0.6 }); }
   }
-  var keyModes = {};
-  function lightKey(id, mode) {
-    if (keyModes[id] === mode) { return; }
-    keyModes[id] = mode;
-    emit('app', 'key.light', { id: id, mode: mode });
+  var keyLight = {};
+  function fromApp(msg) {
+    if (!msg || typeof msg.type !== 'string') { return; }
+    if (msg.type === 'ping') { relay('pong'); return; }
+    if (msg.type === 'pong') { return; }
+    var p = msg.payload || {};
+    log('app', msg.type, msg.payload);
+    if (msg.type === 'ring.set') { setRing(p.pixels, p.brightness == null ? 0.6 : p.brightness); }
+    else if (msg.type === 'key.light' && p.id) { keyLight[p.id] = { mode: p.mode, color: p.color || (keyLight[p.id] && keyLight[p.id].color) }; }
   }
-  function updateKeyLights(now) {
-    var cap = keyCaps.capture.material;
-    cap.emissiveIntensity = S.recording ? (Math.sin(now / 120) > 0 ? 1.2 : 0.15) : 0.3;
-    keyCaps.play.material.emissiveIntensity = S.playing ? 0.75 : 0;
-    trackKeys.forEach(function (k, i) {
-      k.material.emissiveIntensity = S.muted[i] ? 0.0 : i === S.selected ? 0.75 : 0.22;
-      k.material.color.set(S.muted[i] ? '#5a5048' : TRACKS[i].c);
+  function level(mode, t) {
+    if (mode === 'on') { return 1; }
+    if (mode === 'blink') { return Math.floor(t / 250) % 2 ? 0.08 : 1; }
+    if (mode === 'pulse') { return 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 1200 * Math.PI * 2)); }
+    return 0;
+  }
+  var MUTED = '#5a5048';
+  function updateKeyLights(t) {
+    ACT_IDS.forEach(function (id) {
+      var L = keyLight[id], m = keyCaps[id].material;
+      if (!L) { m.emissiveIntensity = id === 'capture' ? 0.3 : 0; return; }
+      if (L.color) { m.emissive.set(L.color); }
+      m.emissiveIntensity = level(L.mode, t) * (id === 'capture' ? (L.mode === 'on' ? 0.45 : 1.3) : 0.6);
+    });
+    TRACK_IDS.forEach(function (tid, i) {
+      var L = keyLight['track.' + tid], m = trackKeys[i].material;
+      if (!L) { m.color.set(TRACKS[i].c); m.emissive.set(TRACKS[i].c); m.emissiveIntensity = 0.2; return; }
+      var lv = level(L.mode, t);
+      m.color.set(lv ? TRACKS[i].c : MUTED);
+      m.emissive.set(L.color || TRACKS[i].c);
+      m.emissiveIntensity = 0.75 * lv;
     });
   }
 
-  // ---- history (undo) ----
-  function snapshot() { return JSON.parse(JSON.stringify({ knobs: S.knobs, takes: S.takes, muted: S.muted })); }
-  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
-  function pushHistory(label, before) {
-    history.push({ label: label, snap: before });
-    if (history.length > 50) { history.shift(); }
-  }
-  function undo() {
-    var h = history.pop();
-    if (!h) { toast('没有可以撤销的了'); return; }
-    S.knobs = h.snap.knobs; S.takes = h.snap.takes; S.muted = h.snap.muted;
-    if (A) { A.T.Transport.bpm.rampTo(S.knobs.tempo, 0.1); }
-    TRACK_IDS.forEach(function (_, i) { applyGain(i); });
-    applyTone(); computeSong(); syncKnobs();
-    toast('已撤销：' + h.label);
-  }
+  // ---- the printed card: out of the print outlet, then (a click on it) onto the card stand ----
+  var SERIF = '"Songti SC","Noto Serif CJK SC","Noto Serif SC","STSong",serif';
+  var outCv = document.createElement('canvas'), rackCv = document.createElement('canvas');
+  outCv.width = rackCv.width = CARD_W * 10; outCv.height = rackCv.height = CARD_H * 10;
+  var outTex = tex(outCv), rackTex = tex(rackCv);
+  ejectFace.material.map = outTex; ejectFace.material.needsUpdate = true;
+  face.material.map = rackTex; face.material.color.setHex(0xffffff); face.material.needsUpdate = true;
+  // the same card standing up, for the move from the outlet to the stand
+  var flyer = new T.Group();
+  flyer.visible = false;
+  base.add(flyer);
+  flyer.add(box(CARD_W, CARD_H, CARD_T, std(0xf6f3ec, 0.7), 0, 0, 0));
+  var flyerFace = new T.Mesh(new T.PlaneGeometry(CARD_W, CARD_H), new T.MeshBasicMaterial({ map: outTex }));
+  flyerFace.position.z = CARD_T / 2 + 0.05;
+  flyer.add(flyerFace);
+  // the standing card turned to lie as the card in the outlet does: its face up, its top towards the case
+  var LYING = new T.Quaternion().setFromRotationMatrix(new T.Matrix4().set(0, -1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 1));
 
-  function toast(text) { S.toast = { text: text, until: performance.now() + 2200 }; }
-
-  // ---- actions ----
-  function another() {
-    var sec = sectionOf(Math.floor(S.posBar) % BARS), before = snapshot();
-    S.takes[sec] = (S.takes[sec] + 1) % 3;
-    pushHistory('换一个（' + SECTION_DEF[sec].label + '）', before);
-    computeSong();
-    toast('换一个：' + SECTION_DEF[sec].label + ' 第 ' + (S.takes[sec] + 1) + ' 版');
-    if (!S.playing) { previewBar(SECTION_DEF[sec].start); }
+  function fitText(c, s, maxW) {
+    s = String(s || '');
+    if (c.measureText(s).width <= maxW) { return s; }
+    while (s.length > 1 && c.measureText(s + '…').width > maxW) { s = s.slice(0, -1); }
+    return s + '…';
   }
-  function setKnob(id, value) {
-    if (id === 'tempo') {
-      S.knobs.tempo = Math.max(60, Math.min(132, Math.round(value)));
-      if (A) { A.T.Transport.bpm.rampTo(S.knobs.tempo, 0.1); }
+  /** The front of an instax WIDE print (10 px per mm): the app's card in the 99 x 62 mm image area. */
+  function drawCard(cv, d, photo) {
+    var c = cv.getContext('2d');
+    c.fillStyle = '#f8f6f1'; c.fillRect(0, 0, cv.width, cv.height);
+    var ix = 45, iy = 62, iw = 990, ih = 620, ph = 452;
+    c.fillStyle = '#f7f1e4'; c.fillRect(ix, iy, iw, ih);
+    c.save();
+    c.beginPath(); c.rect(ix, iy, iw, ph); c.clip();
+    if (photo) {
+      var s = Math.max(iw / photo.naturalWidth, ph / photo.naturalHeight);
+      c.drawImage(photo, ix + (iw - photo.naturalWidth * s) / 2, iy + (ph - photo.naturalHeight * s) / 2, photo.naturalWidth * s, photo.naturalHeight * s);
+    } else if (d.style === 'text') {
+      c.fillStyle = '#3a2a1e'; c.font = '48px ' + SERIF; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(fitText(c, d.line || d.title, iw - 120), ix + iw / 2, iy + ph / 2);
+      c.textAlign = 'start'; c.textBaseline = 'alphabetic';
     } else {
-      var oldLevel = level(S.knobs[id]), oldDark = isDark();
-      S.knobs[id] = Math.max(0, Math.min(1, Math.round(value * 100) / 100));
-      if (id === 'brightness') { applyTone(); }
-      if (level(S.knobs[id]) !== oldLevel || isDark() !== oldDark) {
-        computeSong();
-        if (id === 'complexity') { toast('简繁：' + LANE_NAMES[level(S.knobs.complexity)]); }
-        if (id === 'density') { toast('疏密：' + LEVEL_NAMES[level(S.knobs.density)]); }
-        if (id === 'brightness') { toast(isDark() ? '明暗：偏暗' : '明暗：偏亮'); }
+      var g = c.createLinearGradient(0, iy, 0, iy + ph);
+      g.addColorStop(0, '#e8c27a'); g.addColorStop(0.6, '#a8613a'); g.addColorStop(1, '#43261a');
+      c.fillStyle = g; c.fillRect(ix, iy, iw, ph);
+      c.fillStyle = 'rgba(255,243,214,0.85)'; c.beginPath(); c.arc(ix + iw * 0.7, iy + ph * 0.48, 70, 0, Math.PI * 2); c.fill();
+    }
+    c.restore();
+    var tx = ix + 34, codeX = ix + iw - 34 - 126, maxW = codeX - tx - 30;
+    c.fillStyle = '#3a2a1e'; c.font = '700 48px ' + SERIF;
+    c.fillText(fitText(c, d.title || 'FretCase', maxW), tx, iy + ph + 64);
+    c.fillStyle = '#6e5644'; c.font = '25px ' + CJK;
+    c.fillText(fitText(c, d.line || '', maxW), tx, iy + ph + 104);
+    c.font = '21px ' + CJK;
+    c.fillText(fitText(c, (d.city ? d.city + ' · ' : '') + (d.date || ''), maxW), tx, iy + ph + 140);
+    // a stand-in for the QR code that opens the song page
+    c.fillStyle = '#3a2a1e';
+    for (var y = 0; y < 9; y++) {
+      for (var x = 0; x < 9; x++) {
+        var finder = (x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5);
+        if (finder ? !(x % 6 === 1 && y % 6 === 1) : (x * 7 + y * 13 + x * y) % 3 === 0) { c.fillRect(codeX + x * 14, iy + ph + 20 + y * 14, 14, 14); }
       }
     }
-    syncKnobs();
   }
-  function syncKnobs() {
-    ['brightness', 'complexity', 'density', 'tempo'].forEach(function (id, k) {
-      var v = id === 'tempo' ? (S.knobs.tempo - 60) / 72 : S.knobs[id];
-      knobGroups[k].rotation.y = -(v - 0.5) * Math.PI * 1.5;
-    });
-  }
-  function startRecording() {
-    showView('capture');
-    S.recording = true; S.recStart = performance.now();
-    lightKey('capture', 'blink');
-  }
-  function stopRecording() {
-    S.recording = false;
-    lightKey('capture', 'off');
-    var before = snapshot();
-    S.takes = [Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3)];
-    pushHistory('做成歌', before);
-    computeSong();
-    showView('pick');
-    toast('出了三首候选，挑最像今天的一首');
-  }
-  function takePhoto() { showView('capture'); S.flash = performance.now(); toast('拍了一张（箱盖背面的镜头，最多 9 张）'); }
 
-  computeSong();
-
-  // ---- screen: real screenshots of the app, with the prototype's overlays on top ----
-  var scr = null;
-  var VIEW_ORDER = ['capture', 'pick', 'shape', 'tracks', 'lyrics', 'card'];
-  var VIEW_NAMES = { capture: '采集', pick: '选一首', shape: '打磨', tracks: '音轨', lyrics: '歌词', card: '做卡' };
-  // a page opened from file:// cannot hand local images to WebGL; it shows the screen names instead
-  var canLoad = location.protocol !== 'file:';
-  function loadImg(src, done) {
-    if (!canLoad) { return null; }
-    var im = new Image();
-    im.onload = function () { im.ok = true; if (done) { done(im); } };
-    im.src = src;
-    return im;
+  var printJob = null, waiting = false, flying = null, onRack = 0;
+  function showRack() {
+    rackCards.forEach(function (rc, i) { rc.visible = i < onRack; });
+    face.visible = onRack > 0;
   }
-  var shots = {};
-  VIEW_ORDER.forEach(function (v) { shots[v] = loadImg('screens/' + v + '.jpg'); });
-  loadImg('screens/card-print.jpg', drawCardFace);
-  function roundRect(c, x, y, w, h, r) {
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  function landOnRack() {
+    rackCv.getContext('2d').drawImage(outCv, 0, 0);
+    rackTex.needsUpdate = true;
+    onRack = Math.min(rackCards.length, onRack + 1);
+    showRack();
   }
-  function showView(v) {
-    S.view = v;
-    var r = document.getElementById('v-' + v);
-    if (r) { r.checked = true; }
-  }
-  function drawScreen(cv) {
-    var w = cv.width, h = cv.height, c = cv.getContext('2d'), u = w / 100, now = performance.now();
-    c.textBaseline = 'middle';
-    var im = shots[S.view];
-    if (im && im.ok) { c.drawImage(im, 0, 0, w, h); }
-    else {
-      c.fillStyle = '#1c1611'; c.fillRect(0, 0, w, h);
-      c.fillStyle = '#e8d9b8'; c.textAlign = 'center'; c.font = '700 ' + (5 * u) + 'px ' + CJK;
-      c.fillText(VIEW_NAMES[S.view], w / 2, h * 0.45);
-      c.font = '500 ' + (2.4 * u) + 'px ' + CJK; c.fillStyle = '#a99a80';
-      c.fillText(canLoad ? '截图加载中' : '用本地网页服务器打开才能看到截图', w / 2, h * 0.56);
+  function startPrint(d) {
+    if (printJob || flying) { return; }
+    if (waiting) { waiting = false; ejectCard.visible = false; landOnRack(); }   // a card left in the outlet goes to the stand first
+    var photo = null;
+    function go() {
+      drawCard(outCv, d, photo);
+      outTex.needsUpdate = true;
+      ejectCard.position.x = EJECT_IN;
+      ejectCard.visible = true;
+      printJob = { start: performance.now() };
+      setHint('正在打印：卡片从箱子右侧的出卡口出来');
+      flyTo('front');
     }
-    if (S.recording) {
-      c.fillStyle = 'rgba(80,10,6,0.82)'; c.fillRect(0, 0, w, h);
-      var secs = (now - S.recStart) / 1000;
-      c.fillStyle = '#ffd9cf'; c.textAlign = 'center'; c.font = '700 ' + (6 * u) + 'px ' + CJK;
-      c.fillText('录音中  ' + Math.floor(secs / 60) + ':' + ('0' + Math.floor(secs % 60)).slice(-2), w / 2, h * 0.36);
-      c.font = '500 ' + (3 * u) + 'px ' + CJK; c.fillText('哼一段旋律，松开红键结束', w / 2, h * 0.47);
-      for (var i = 0; i < 40; i++) {
-        var lv = 0.25 + 0.75 * Math.abs(Math.sin(now / 160 + i * 0.7) * Math.sin(now / 410 + i * 0.31));
-        c.fillStyle = '#ff8a70'; c.fillRect(w * 0.2 + i * (w * 0.6 / 40), h * 0.66 - lv * h * 0.12, w * 0.6 / 40 * 0.6, lv * h * 0.24);
+    if (d.photo) {
+      photo = new Image();
+      photo.onload = go;
+      photo.onerror = function () { photo = null; go(); };
+      photo.src = d.photo;
+    } else { go(); }
+  }
+  function placeOnRack() {
+    if (!waiting || flying) { return; }
+    waiting = false;
+    flyer.position.copy(ejectCard.position);
+    flyer.quaternion.copy(LYING);
+    ejectCard.visible = false;
+    flyer.visible = true;
+    flying = { start: performance.now(), p0: ejectCard.position.clone() };
+  }
+  var slotPos = new T.Vector3();
+  function updateCard(t) {
+    if (printJob) {
+      // the printer takes a moment to start, then the film comes out over about 3 s (the real one takes ~15 s in all)
+      var k = reduce ? 1 : Math.max(0, Math.min(1, ((t - printJob.start) / 1000 - 0.8) / 3));
+      ejectCard.position.x = EJECT_IN + ease(k) * (EJECT_OUT - EJECT_IN);
+      if (k >= 1) { printJob = null; waiting = true; setHint('印好了：点一下出卡口的卡片，把它插到卡片架上'); }
+    }
+    if (flying) {
+      var f = reduce ? 1 : Math.min(1, (t - flying.start) / 1400), e = ease(f);
+      rack.updateMatrix();
+      slotPos.set(0, CARD_H / 2, 0).applyMatrix4(rack.matrix);
+      flyer.position.lerpVectors(flying.p0, slotPos, e);
+      flyer.position.y += Math.sin(Math.PI * f) * 70;
+      flyer.quaternion.copy(LYING).slerp(rack.quaternion, e);
+      if (f >= 1) {
+        flying = null; flyer.visible = false;
+        landOnRack();
+        setHint('卡片插在卡片架上了。真机上扫卡片的二维码就能打开这首歌');
       }
     }
-    if (S.toast && now < S.toast.until) {
-      c.font = '600 ' + (2.8 * u) + 'px ' + CJK;
-      var tw = c.measureText(S.toast.text).width + 6 * u;
-      c.fillStyle = 'rgba(227,161,74,0.96)'; roundRect(c, (w - tw) / 2, h - 9 * u, tw, 6 * u, 1.4 * u); c.fill();
-      c.fillStyle = '#201305'; c.textAlign = 'center'; c.fillText(S.toast.text, w / 2, h - 6 * u);
-    }
-    var fl = now - S.flash;
-    if (fl < 350) { c.fillStyle = 'rgba(255,255,255,' + (1 - fl / 350) + ')'; c.fillRect(0, 0, w, h); }
-  }
-  function screenTap() {
-    if (S.view === 'card') { startPrint(); return; }
-    showView(VIEW_ORDER[VIEW_ORDER.indexOf(S.view) + 1]);
-    toast('下一步：' + VIEW_NAMES[S.view]);
-  }
-  function runAction(a) {
-    if (a === 'print') { startPrint(); }
-    else if (VIEW_NAMES[a]) { showView(a); }
-  }
-
-  // ---- printing ----
-  var printing = null;
-  function startPrint() {
-    if (printing) { return; }
-    printing = { start: performance.now(), done: false };
-    toast('正在打印（实际约 15 秒）');
-  }
-  function updatePrint(now) {
-    if (!printing) { return; }
-    var t = (now - printing.start) / 1000;
-    ejectCard.visible = t < 4;
-    ejectCard.position.x = W / 2 - 4 - CARD_H / 2 + Math.min(1, t / 2.2) * 58;
-    if (t >= 4 && !printing.done) { printing.done = true; S.printed++; toast('印好了，插到卡片架上'); }
-    if (t > 4.5) { printing = null; }
   }
 
   // ---- pointer interaction ----
@@ -1304,12 +1154,16 @@ body.show-wiring .wiring { display: block; }
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
   }
+  // the raycaster also meets hidden objects (the stand's empty slots, the internals)
+  function shown(o) { for (; o; o = o.parent) { if (!o.visible) { return false; } } return true; }
   function pick(ev) {
     setNdc(ev);
     var all = ray.intersectObject(root, true);
-    if (!all.length) { return null; }
-    var o = all[0].object;
-    if (o.userData.ctrl) { return { ctrl: o.userData.ctrl, uv: all[0].uv }; }
+    for (var i = 0; i < all.length; i++) {
+      if (!shown(all[i].object)) { continue; }
+      var c = all[i].object.userData.ctrl;
+      return c ? { ctrl: c, uv: all[i].uv } : null;
+    }
     return null;
   }
   function screenXY(x, y, z) {
@@ -1330,65 +1184,61 @@ body.show-wiring .wiring { display: block; }
   }
   function setFader(i, v) {
     v = Math.round(v * 100) / 100;
-    if (Math.abs(v - S.vol[i]) < 0.01) { return; }
-    S.vol[i] = v;
+    if (Math.abs(v - faderVal[i]) < 0.01) { return; }
+    faderVal[i] = v;
     faderCaps[i].position.z = faderZ(v);
-    applyGain(i);
-    emit('panel', 'fader.move', { track: TRACK_IDS[i], value: v });
+    emit('fader.move', { track: TRACK_IDS[i], value: v });
   }
   function pressCap(obj, down) { obj.position.y = obj.userData.restY - (down ? 2 : 0); }
+  function capOf(ctrl) { return ctrl.track != null ? trackKeys[ctrl.track] : keyCaps[ctrl.id]; }
 
-  function keyDown(ctrl) {
-    emit('panel', 'key', { id: ctrl.id, action: 'down' });
-    var cap = ctrl.track != null ? trackKeys[ctrl.track] : keyCaps[ctrl.id];
-    pressCap(cap, true);
-    drag.cap = cap;
-    drag.downAt = performance.now();
-    if (ctrl.id === 'capture') {
-      drag.onLong = startRecording;
-    } else if (ctrl.track != null) {
-      drag.onLong = function () {
-        var before = snapshot(), i = ctrl.track;
-        S.muted[i] = !S.muted[i]; applyGain(i);
-        pushHistory((S.muted[i] ? '静音' : '取消静音') + '：' + TRACKS[i].n, before);
-        toast((S.muted[i] ? '静音：' : '取消静音：') + TRACKS[i].n);
-      };
-    } else if (ctrl.id === 'play') { setPlaying(!S.playing); }
-    else if (ctrl.id === 'undo') { undo(); }
-    else if (ctrl.id === 'another') { another(); }
+  // While the pointer is over the display, the WebGL canvas lets it through to the app's page underneath.
+  var through = false;
+  function passThrough(on) {
+    if (through === on) { return; }
+    through = on;
+    canvas.style.pointerEvents = on ? 'none' : '';
+    canvas.style.cursor = '';
   }
-  // long press is measured from timestamps, not timers, so a slow frame cannot swallow it
-  var LONG_MS = 600;
-  function checkLong(now) {
-    if (drag && drag.onLong && !drag.long && now - drag.downAt >= LONG_MS) { drag.long = true; drag.onLong(); }
-  }
-  function keyUp(ctrl) {
-    emit('panel', 'key', { id: ctrl.id, action: 'up' });
-    if (drag.cap) { pressCap(drag.cap, false); }
-    checkLong(performance.now());
-    if (ctrl.id === 'capture') { if (drag.long) { stopRecording(); } else { takePhoto(); } }
-    else if (ctrl.track != null && !drag.long) { S.selected = ctrl.track; toast('选中：' + TRACKS[ctrl.track].n + '，旋钮和屏幕编辑作用在这一轨'); }
-  }
+  function live() { return device.ready && !device.failed; }
+  function tapDevice(uv) { toDevice({ kind: 'tap', x: Math.round(uv.x * APP_W), y: Math.round((1 - uv.y) * APP_H) }); }
 
+  var STEP = Math.PI * 2 / 24;   // the encoders have 24 detents a turn
   stage.addEventListener('pointerdown', function (ev) {
-    if (ev.button !== 0) { return; }
+    if (through && ev.target !== frameEl) { passThrough(false); }
+    if (ev.button !== 0 || (ev.target !== canvas && ev.target !== stage)) { return; }
     var h = pick(ev);
     if (!h) { return; }
-    ensureAudio();
+    var ctrl = h.ctrl;
+    if (ctrl.type === 'screen') {
+      // a touch, or a press after the picture moved under a still mouse: forward it, then let the next ones through
+      if (live() && h.uv) { tapDevice(h.uv); passThrough(true); }
+      return;
+    }
     controls.enabled = false;
     ev.preventDefault();
-    var ctrl = h.ctrl;
+    if (ctrl.type === 'card') { placeOnRack(); controls.enabled = true; return; }
+    toDevice({ kind: 'resume' });
     drag = { ctrl: ctrl, x: ev.clientX, y: ev.clientY, acc: 0 };
-    if (ctrl.type === 'key') { keyDown(ctrl); }
-    else if (ctrl.type === 'platter') { drag.angle = platterAngle(ev); }
-    else if (ctrl.type === 'knob') { drag.before = snapshot(); }
+    if (ctrl.type === 'key') {
+      emit('key', { id: ctrl.id, action: 'down' });
+      drag.cap = capOf(ctrl);
+      pressCap(drag.cap, true);
+    } else if (ctrl.type === 'platter') { drag.angle = platterAngle(ev); }
     else if (ctrl.type === 'fader') { var v = faderValueAt(ev); if (v != null) { setFader(ctrl.track, v); } }
-    else if (ctrl.type === 'screen') { screenTap(); drag = null; controls.enabled = true; }
   }, true);
 
   window.addEventListener('pointermove', function (ev) {
     if (!drag) {
-      if (ev.target === canvas) { canvas.style.cursor = pick(ev) ? 'pointer' : ''; }
+      if (through) {
+        if (ev.target === frameEl) { return; }
+        passThrough(false);
+      }
+      if (ev.target === canvas && ev.buttons === 0) {
+        var h = pick(ev);
+        if (h && h.ctrl.type === 'screen' && live() && ev.pointerType !== 'touch') { passThrough(true); return; }
+        canvas.style.cursor = h && h.ctrl.type !== 'screen' && (h.ctrl.type !== 'card' || waiting) ? 'pointer' : '';
+      }
       return;
     }
     var ctrl = drag.ctrl;
@@ -1396,60 +1246,93 @@ body.show-wiring .wiring { display: block; }
       var a = platterAngle(ev), d = a - drag.angle;
       if (d > Math.PI) { d -= 2 * Math.PI; } if (d < -Math.PI) { d += 2 * Math.PI; }
       drag.angle = a; platter.rotation.y -= d; drag.acc += d;
-      var det = 0, step = Math.PI / 8;
-      while (drag.acc >= step) { det++; drag.acc -= step; }
-      while (drag.acc <= -step) { det--; drag.acc += step; }
-      if (det) {
-        emit('panel', 'platter.turn', { delta: det });
-        var prevBar = Math.floor(S.posBar);
-        S.posBar = ((S.posBar + det / 4) % BARS + BARS) % BARS;
-        if (S.playing) { S.step = Math.round(S.posBar * STEPS); }
-        else if (Math.floor(S.posBar) !== prevBar) { previewBar(Math.floor(S.posBar)); }
-      }
+      var det = 0;
+      while (drag.acc >= STEP) { det++; drag.acc -= STEP; }
+      while (drag.acc <= -STEP) { det--; drag.acc += STEP; }
+      if (det) { emit('platter.turn', { delta: det }); }
     } else if (ctrl.type === 'knob') {
       drag.acc += drag.y - ev.clientY; drag.y = ev.clientY;
       var n = 0;
       while (drag.acc >= 6) { n++; drag.acc -= 6; }
       while (drag.acc <= -6) { n--; drag.acc += 6; }
       if (n) {
-        emit('panel', 'knob.turn', { knob: ctrl.id, delta: n });
-        setKnob(ctrl.id, ctrl.id === 'tempo' ? S.knobs.tempo + n : S.knobs[ctrl.id] + n * 0.02);
+        knobGroups[KNOB_IDS.indexOf(ctrl.id)].rotation.y -= n * STEP;
+        emit('knob.turn', { knob: ctrl.id, delta: n });
       }
     } else if (ctrl.type === 'fader') {
       var fv = faderValueAt(ev); if (fv != null) { setFader(ctrl.track, fv); }
     }
   });
-  window.addEventListener('pointerup', function () {
+  function endDrag() {
     if (!drag) { return; }
-    var ctrl = drag.ctrl;
-    if (ctrl.type === 'key') { keyUp(ctrl); }
-    if (ctrl.type === 'knob' && drag.before && !same(drag.before.knobs, S.knobs)) { pushHistory(KNOB_NAMES[ctrl.id], drag.before); }
+    if (drag.ctrl.type === 'key') {
+      emit('key', { id: drag.ctrl.id, action: 'up' });
+      pressCap(drag.cap, false);
+    }
     drag = null;
     controls.enabled = true;
+  }
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  window.addEventListener('blur', endDrag);
+
+  window.addEventListener('message', function (e) {
+    if (!frameEl || e.source !== frameEl.contentWindow) { return; }
+    var d = e.data;
+    if (!d || d.fretcaseSim !== 1) { return; }
+    if (d.kind === 'ready') { device.ready = true; clearTimeout(fallbackTimer); }
+    else if (d.kind === 'open') { device.open = true; panelHello(); }
+    else if (d.kind === 'close') { device.open = false; }
+    else if (d.kind === 'app') { fromApp(d.msg); }
+    else if (d.kind === 'printed') { startPrint(d.detail || {}); }
   });
 
-  // ---- per-frame update ----
-  var frameNo = 0;
-  function protoFrame(now) {
-    frameNo++;
-    checkLong(now);
-    updateRing();
-    updateKeyLights(now);
-    updatePrint(now);
-    if (scr && (frameNo % 2 === 0)) { drawScreen(scr.cv); scr.tex.needsUpdate = true; }
+  // ---- the screen close-up, and starting over ----
+  var sv = new T.Vector3(), sn = new T.Vector3(), sq = new T.Quaternion();
+  function screenView() {
+    lid.updateMatrixWorld(true);
+    scr.mesh.getWorldPosition(sv);
+    sn.set(0, 0, 1).applyQuaternion(scr.mesh.getWorldQuaternion(sq));
+    var half = Math.tan(camera.fov * Math.PI / 360);
+    var dist = Math.max(controls.minDistance + 1, Math.max(IPAD.h / 2 / half, IPAD.w / 2 / (half * camera.aspect)) * 1.06);
+    return { p: sv.clone().addScaledVector(sn, dist).toArray(), t: sv.toArray() };
   }
+  document.getElementById('demo-screen').addEventListener('click', function () { flyTo('screen'); });
+  function restart() {
+    endDrag();
+    printJob = null; flying = null; waiting = false;
+    ejectCard.visible = false; flyer.visible = false;
+    onRack = 0; showRack();
+    keyLight = {}; setRing(null, 0);
+    faderVal = TRACK_IDS.map(function () { return 0.8; });
+    TRACK_IDS.forEach(function (_, i) { faderCaps[i].position.z = faderZ(faderVal[i]); });
+    if (evlog) { evlog.textContent = ''; }
+    passThrough(false);
+    setHint();
+    loadDevice();
+  }
+  document.getElementById('demo-restart').addEventListener('click', restart);
 
-  syncKnobs();
-  TRACK_IDS.forEach(function (_, i) { faderCaps[i].position.z = faderZ(S.vol[i]); });
-  emit('panel', 'hello', { role: 'panel', name: 'simulator' });
-  emit('panel', 'snapshot', { faders: { vocal: S.vol[0], melody: S.vol[1], guitar: S.vol[2], bass: S.vol[3], drums: S.vol[4], ambience: S.vol[5] }, keysDown: [] });
-  if (!window.Tone) { toast('声音库没有加载，原型可以操作但没有声音'); }
-  // small hooks for automated checks of the prototype
+  function simFrame(t) {
+    updateKeyLights(t);
+    updateCard(t);
+  }
+  // small hooks for automated checks
   window.__proj = function (x, y, z) { return screenXY(x, root.position.y + y, z); };
-  window.__state = function () { return { posBar: Math.round(S.posBar * 100) / 100, takes: S.takes, knobs: S.knobs, vol: S.vol, muted: S.muted, playing: S.playing, view: S.view, history: history.length, chords: song.map(function (b) { return b.chord.sym; }).join(' ') }; };
-  window.__action = runAction;
+  window.__sim = {
+    state: function () { return { ready: device.ready, failed: device.failed, open: device.open, through: through, printing: !!printJob, waiting: waiting, flying: !!flying, onRack: onRack, lights: keyLight }; },
+    screenPoint: function (u, v) {
+      // the page coordinates of a point of the app's screen (u, v in 0..1 from its top left)
+      scr.mesh.updateMatrixWorld(true);
+      var p = new T.Vector3((u - 0.5) * IPAD.dw, (0.5 - v) * IPAD.dh, 0).applyMatrix4(scr.mesh.matrixWorld);
+      return screenXY(p.x, p.y, p.z);
+    },
+    restart: restart
+  };
 
   buildScreen();
+  setRing(null, 0);
+  loadDevice();
 
   // ---- loop ----
   var vw = 0, vh = 0;
@@ -1458,6 +1341,7 @@ body.show-wiring .wiring { display: block; }
     if (!w || !h || (w === vw && h === vh)) { return; }
     vw = w; vh = h;
     renderer.setSize(w, h, false);
+    if (cssRenderer) { cssRenderer.setSize(w, h); }
     camera.aspect = w / h;
     camera.fov = w < 560 ? 40 : 30;
     camera.updateProjectionMatrix();
@@ -1480,7 +1364,12 @@ body.show-wiring .wiring { display: block; }
       if (fly.k >= 1) { fly = null; }
     }
     controls.update();
-    protoFrame(performance.now());
+    simFrame(performance.now());
+    if (cssObj && !device.failed) {
+      cssObj.matrix.multiplyMatrices(scr.mesh.matrixWorld, fitM);
+      cssObj.matrixWorldNeedsUpdate = true;
+      cssRenderer.render(cssScene, camera);
+    }
     renderer.render(scene, camera);
     if (tgLabels.checked) {
       for (var i = 0; i < PARTS.length; i++) {
@@ -1490,7 +1379,7 @@ body.show-wiring .wiring { display: block; }
         var dist = c3.length();
         caster.set(camera.position, c3.normalize());
         caster.far = Math.max(dist - 7, 1);
-        var facing = p.inside || caster.intersectObject(root, true).length === 0;
+        var facing = p.inside || !caster.intersectObject(root, true).some(function (hh) { return shown(hh.object); });
         v3.project(camera);
         var show = v3.z < 1 && v3.z > -1 && (!p.inside || inside.visible);
         p.el.style.display = show ? '' : 'none';

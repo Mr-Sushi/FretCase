@@ -27,7 +27,7 @@ FretCase grows out of [FretStudio](https://github.com/Mr-Sushi/FretStudio) and r
 | [docs/porting-from-fretstudio.md](docs/porting-from-fretstudio.md) | 从 FretStudio 移植哪些模块、不移植哪些 |
 | [docs/ui/](docs/ui/) | 第二阶段的界面设计：采集、选一首、打磨、音轨、歌词、做卡、歌曲页 |
 | [docs/milestone-2.md](docs/milestone-2.md) | 第二阶段的分工与卡片模块接口 |
-| [docs/model/index.html](docs/model/index.html) | 可交互的 3D 原型：控件能操作、能出声，下载后用浏览器打开 |
+| [docs/model/index.html](docs/model/index.html) | 3D 模型：iPad 屏幕里跑的是 app 本身（演示模式），箱上的控件像真机一样把面板消息发给它。先运行 `docs/model/build-device.sh` 生成 `docs/model/device/`，再在 `docs/model` 下起一个本地网页服务（如 `python3 -m http.server`）打开 |
 | [AGENTS.md](AGENTS.md) | 给开发代理的规则 |
 
 ## 目录
