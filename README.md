@@ -16,7 +16,9 @@ FretCase grows out of [FretStudio](https://github.com/Mr-Sushi/FretStudio) and r
 
 ## 现状
 
-设计阶段，代码尚未开始。
+第一阶段（milestone 1）完成：离线生成、HTTP API、iPad 网页、面板桥、固件草稿、屏幕模拟器、卡片渲染与打印都已实现，可以在没有网络、没有硬件的情况下跑通。运行全部测试：`./scripts/test-all.sh`。
+
+还缺：固件未在真机上编译；真实 MIDI 读取和热敏打印机未在硬件上测；人声合成、歌词生成和分享上传属于 v2。
 
 | 文档 | 内容 |
 | --- | --- |
@@ -34,8 +36,11 @@ server/          Raspberry Pi 上的后端：歌曲模型、生成、渲染、�
 app/             iPad 上的网页应用（React + TypeScript）
 device/bridge/   面板事件桥：读控制板，经 WebSocket 发给 app
 device/firmware/ 控制板固件
+device/card/     卡片渲染与热敏打印（fretcase_card）
+device/simulator/ 屏幕上的面板模拟器
 shared/schema/   歌曲模型和面板事件的 JSON Schema，前后端共用
 docs/            设计与架构文档
+scripts/         运行全部测试等脚本
 ```
 
 ## 目标

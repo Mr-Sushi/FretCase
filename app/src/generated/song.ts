@@ -270,7 +270,7 @@ export interface Note {
   start: Tick;
   duration: PositiveTick;
   /**
-   * MIDI note. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...).
+   * Sounding MIDI note, so a guitar note with a capo is the shape pitch plus the capo fret. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...).
    */
   pitch: number;
   velocity?: number;
