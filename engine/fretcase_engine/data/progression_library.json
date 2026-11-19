@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "description": "Curated library of common chord progressions used by the 'library' candidate source (no LLM). Degrees are scale degrees of the key (1-7); quality markers: 'm' minor, '7' dominant seventh, 'maj7', 'm7', 'dim'. Styles map to the Basic/Explore/Colour lanes (traditional/pop/jazz).",
+    "provenance": "Standard progressions found in guitar method books and popular-music harmony references (e.g. Berklee Harmony 1; Hooktheory 'Hooktheory I'); the library is a transparent rule-based baseline, not a corpus-mined model.",
+    "built_at": "2026-11-01"
+  },
+  "major": [
+    {"id": "I-IV-V-I", "name": "Primary triads cadence", "degrees": ["1", "4", "5", "1"], "styles": ["traditional"], "weight": 1.0},
+    {"id": "I-vi-IV-V", "name": "50s progression", "degrees": ["1", "6m", "4", "5"], "styles": ["traditional", "pop"], "weight": 1.0},
+    {"id": "I-V-vi-IV", "name": "Axis progression", "degrees": ["1", "5", "6m", "4"], "styles": ["pop"], "weight": 1.0},
+    {"id": "vi-IV-I-V", "name": "Axis (vi start)", "degrees": ["6m", "4", "1", "5"], "styles": ["pop"], "weight": 0.8},
+    {"id": "I-IV-vi-V", "name": "Pop variant", "degrees": ["1", "4", "6m", "5"], "styles": ["pop"], "weight": 0.8},
+    {"id": "I-iii-IV-V", "name": "Mediant colour", "degrees": ["1", "3m", "4", "5"], "styles": ["pop", "traditional"], "weight": 0.6},
+    {"id": "I-vi-ii-V", "name": "Turnaround (ii-V)", "degrees": ["1", "6m", "2m", "5"], "styles": ["traditional", "jazz"], "weight": 0.9},
+    {"id": "I-ii-V-I", "name": "ii-V-I cadence", "degrees": ["1", "2m", "5", "1"], "styles": ["traditional", "jazz"], "weight": 0.8},
+    {"id": "Imaj7-vi7-ii7-V7", "name": "Rhythm-changes A (sevenths)", "degrees": ["1maj7", "6m7", "2m7", "57"], "styles": ["jazz"], "weight": 1.0},
+    {"id": "Imaj7-IVmaj7-iii7-vi7", "name": "Colour cycle", "degrees": ["1maj7", "4maj7", "3m7", "6m7"], "styles": ["jazz"], "weight": 0.8},
+    {"id": "ii7-V7-Imaj7-Imaj7", "name": "ii-V-I (sevenths)", "degrees": ["2m7", "57", "1maj7", "1maj7"], "styles": ["jazz"], "weight": 0.9},
+    {"id": "I-V-IV-I", "name": "Rock cadence", "degrees": ["1", "5", "4", "1"], "styles": ["pop"], "weight": 0.5},
+    {"id": "I-IV-I-V", "name": "Folk alternation", "degrees": ["1", "4", "1", "5"], "styles": ["traditional"], "weight": 0.7}
+  ],
+  "minor": [
+    {"id": "i-iv-v-i", "name": "Minor primary triads", "degrees": ["1m", "4m", "5m", "1m"], "styles": ["traditional"], "weight": 1.0},
+    {"id": "i-iv-V7-i", "name": "Minor with dominant seventh", "degrees": ["1m", "4m", "57", "1m"], "styles": ["traditional", "jazz"], "weight": 1.0},
+    {"id": "i-VI-III-VII", "name": "Natural-minor pop", "degrees": ["1m", "6", "3", "7"], "styles": ["pop"], "weight": 1.0},
+    {"id": "i-VII-VI-V", "name": "Andalusian cadence", "degrees": ["1m", "7", "6", "57"], "styles": ["pop", "traditional"], "weight": 0.8},
+    {"id": "i-VI-iv-V7", "name": "Minor turnaround", "degrees": ["1m", "6", "4m", "57"], "styles": ["traditional"], "weight": 0.7},
+    {"id": "i-iv-VII-III", "name": "Minor cycle", "degrees": ["1m", "4m", "7", "3"], "styles": ["pop", "jazz"], "weight": 0.6},
+    {"id": "im7-ivm7-V7-im7", "name": "Minor ii-V style", "degrees": ["1m7", "4m7", "57", "1m7"], "styles": ["jazz"], "weight": 0.9}
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "version": "hre-bt-joint-v2-20261101",
+  "feature_set": "v2",
+  "generated_at": "2026-11-01T17:04:30+00:00",
+  "weights": {
+    "wm": 0.626,
+    "wf": 0.0,
+    "wp": 0.0287,
+    "wl": 0.2185,
+    "wn": 0.0,
+    "wa": 0.05,
+    "wv": 0.0767
+  },
+  "final_scorer": {
+    "best_weights": {
+      "alpha": 0.4238,
+      "beta": 0.3065,
+      "gamma": 0.2697
+    }
+  },
+  "temperatures": {
+    "canonical": 5.6452,
+    "ranking": 4.0008
+  },
+  "method": "conditional logit (Bradley-Terry) on annotator-level pairwise preferences; HRE weights on the simplex; final-scorer mix (alpha, beta, gamma) on the simplex; separate temperatures for single-bar and four-bar contexts; ridge 0.02 toward uniform; expert phrase priors rebuilt without the held-out context",
+  "planner_agreement_weight": {
+    "value": 0.05,
+    "status": "fixed a priori; constant in the expert benchmark"
+  },
+  "data": {
+    "canonical_cases": 30,
+    "ranking_items": 24,
+    "pairwise_preferences": 1512,
+    "pairwise_canonical": 1035,
+    "pairwise_ranking": 477,
+    "annotators": 8,
+    "fingerprint": "8d9d3d6f924835a5",
+    "path": "server/data/expert_benchmark"
+  },
+  "loco_cv": {
+    "bt_joint": {
+      "contexts": 54,
+      "top1_accuracy": 0.5,
+      "top1_hits": 25,
+      "top1_total": 50,
+      "pairwise_agreement": 0.6597,
+      "pairwise_total": 1512,
+      "acceptable_accuracy": 0.7,
+      "acceptable_hits": 21,
+      "acceptable_total": 30,
+      "pairwise_ci95": [
+        0.6196,
+        0.6969
+      ]
+    },
+    "bt_hre_only_alpha1": {
+      "contexts": 54,
+      "top1_accuracy": 0.52,
+      "top1_hits": 26,
+      "top1_total": 50,
+      "pairwise_agreement": 0.665,
+      "pairwise_total": 1512,
+      "acceptable_accuracy": 0.7,
+      "acceptable_hits": 21,
+      "acceptable_total": 30,
+      "pairwise_ci95": [
+        0.6272,
+        0.7015
+      ]
+    },
+    "default": {
+      "contexts": 54,
+      "top1_accuracy": 0.38,
+      "top1_hits": 19,
+      "top1_total": 50,
+      "pairwise_agreement": 0.6214,
+      "pairwise_total": 1512,
+      "acceptable_accuracy": 0.6,
+      "acceptable_hits": 18,
+      "acceptable_total": 30,
+      "pairwise_ci95": [
+        0.5806,
+        0.6605
+      ]
+    },
+    "legacy_grid": {
+      "contexts": 54,
+      "top1_accuracy": 0.56,
+      "top1_hits": 28,
+      "top1_total": 50,
+      "pairwise_agreement": 0.6415,
+      "pairwise_total": 1512,
+      "acceptable_accuracy": 0.7667,
+      "acceptable_hits": 23,
+      "acceptable_total": 30,
+      "pairwise_ci95": [
+        0.5999,
+        0.6799
+      ]
+    },
+    "grid_cv": {
+      "contexts": 54,
+      "top1_accuracy": 0.46,
+      "top1_hits": 23,
+      "top1_total": 50,
+      "pairwise_agreement": 0.6402,
+      "pairwise_total": 1512,
+      "acceptable_accuracy": 0.7333,
+      "acceptable_hits": 22,
+      "acceptable_total": 30,
+      "pairwise_ci95": [
+        0.6065,
+        0.6726
+      ]
+    }
+  },
+  "report_path": "server/benchmark_outputs/calibration_v2/report.json"
+}

@@ -1,0 +1,349 @@
+{
+ "meta": {
+  "source": "FretStudio curated supplement: standard beginner shapes commonly taught in method books; frets are absolute, -1 = muted, 0 = open; fingers 0 = none",
+  "purpose": "Fill shapes that chords-db lists only in full-barre form (e.g. Bm without low E) and the reduced beginner forms used in lessons (e.g. small F, four-string Bm). Open m7 shapes (Bm7 x20202, F#m7 202220) replace the m7b5 positions that were mislabelled as m7 before 2026-11-01.",
+  "built_at": "2026-11-01"
+ },
+ "voicings": [
+  {
+   "symbol": "Bm",
+   "frets": [
+    -1,
+    2,
+    4,
+    4,
+    3,
+    2
+   ],
+   "fingers": [
+    0,
+    1,
+    3,
+    4,
+    2,
+    1
+   ],
+   "barres": [
+    2
+   ],
+   "source": "curated"
+  },
+  {
+   "symbol": "Bm",
+   "frets": [
+    -1,
+    -1,
+    4,
+    4,
+    3,
+    2
+   ],
+   "fingers": [
+    0,
+    0,
+    3,
+    4,
+    2,
+    1
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "F",
+   "frets": [
+    -1,
+    -1,
+    3,
+    2,
+    1,
+    1
+   ],
+   "fingers": [
+    0,
+    0,
+    3,
+    2,
+    1,
+    1
+   ],
+   "barres": [
+    1
+   ],
+   "source": "curated"
+  },
+  {
+   "symbol": "F",
+   "frets": [
+    -1,
+    -1,
+    3,
+    2,
+    1,
+    -1
+   ],
+   "fingers": [
+    0,
+    0,
+    3,
+    2,
+    1,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Fmaj7",
+   "frets": [
+    -1,
+    -1,
+    3,
+    2,
+    1,
+    0
+   ],
+   "fingers": [
+    0,
+    0,
+    3,
+    2,
+    1,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "B7",
+   "frets": [
+    -1,
+    2,
+    1,
+    2,
+    0,
+    2
+   ],
+   "fingers": [
+    0,
+    2,
+    1,
+    3,
+    0,
+    4
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Bdim",
+   "frets": [
+    -1,
+    2,
+    3,
+    4,
+    3,
+    -1
+   ],
+   "fingers": [
+    0,
+    1,
+    2,
+    4,
+    3,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Cadd9",
+   "frets": [
+    -1,
+    3,
+    2,
+    0,
+    3,
+    3
+   ],
+   "fingers": [
+    0,
+    2,
+    1,
+    0,
+    3,
+    4
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "G",
+   "frets": [
+    3,
+    2,
+    0,
+    0,
+    3,
+    3
+   ],
+   "fingers": [
+    2,
+    1,
+    0,
+    0,
+    3,
+    4
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Dsus2",
+   "frets": [
+    -1,
+    -1,
+    0,
+    2,
+    3,
+    0
+   ],
+   "fingers": [
+    0,
+    0,
+    0,
+    1,
+    3,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Asus2",
+   "frets": [
+    -1,
+    0,
+    2,
+    2,
+    0,
+    0
+   ],
+   "fingers": [
+    0,
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Em7",
+   "frets": [
+    0,
+    2,
+    2,
+    0,
+    3,
+    0
+   ],
+   "fingers": [
+    0,
+    1,
+    2,
+    0,
+    3,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "C/G",
+   "frets": [
+    3,
+    3,
+    2,
+    0,
+    1,
+    0
+   ],
+   "fingers": [
+    3,
+    4,
+    2,
+    0,
+    1,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "D/F#",
+   "frets": [
+    2,
+    -1,
+    0,
+    2,
+    3,
+    2
+   ],
+   "fingers": [
+    1,
+    0,
+    0,
+    2,
+    4,
+    3
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "Bm7",
+   "frets": [
+    -1,
+    2,
+    0,
+    2,
+    0,
+    2
+   ],
+   "fingers": [
+    0,
+    1,
+    0,
+    2,
+    0,
+    3
+   ],
+   "barres": [],
+   "source": "curated"
+  },
+  {
+   "symbol": "F#m7",
+   "frets": [
+    2,
+    0,
+    2,
+    2,
+    2,
+    0
+   ],
+   "fingers": [
+    1,
+    0,
+    2,
+    3,
+    4,
+    0
+   ],
+   "barres": [],
+   "source": "curated"
+  }
+ ]
+}
