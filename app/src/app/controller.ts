@@ -141,7 +141,14 @@ export class Controller {
         case 'network': this.toast('连不上服务器', 'error'); this.store.set({ serverOnline: false }); return
         case 'timeout': this.toast('服务器没有及时响应', 'error'); return
         // Server messages are English and meant for logs, so the toast stays in Chinese.
-        case 'cannot_apply': console.warn(e.message); this.toast('这一步现在做不了', 'error'); return
+        case 'cannot_apply': {
+          console.warn(e.message)
+          const detail = (e as ApiError & { detail?: Record<string, unknown> }).detail ?? {}
+          if (detail.printer) { this.toast('打印机出了问题：没连上或没有相纸，请检查打印机', 'error'); return }
+          if (/range/i.test(e.message)) { this.toast('已经到这件乐器能到的最高或最低了', 'error'); return }
+          if (detail.reason === 'no_motif') { this.toast('这首歌没有哼唱，没有可以用回的旋律', 'error'); return }
+          this.toast('这一步现在做不了', 'error'); return
+        }
         case 'not_implemented': console.warn(e.message); this.toast('这个功能还没做好', 'error'); return
         default: console.warn(e.code, e.message); this.toast('出错了', 'error'); return
       }

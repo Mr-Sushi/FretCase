@@ -29,3 +29,16 @@ def photo(tmp_path_factory) -> Path:
     p = tmp_path_factory.mktemp("photo") / "sea.jpg"
     im.save(p, quality=90)
     return p
+
+
+import pytest as _pytest
+
+
+@_pytest.fixture(autouse=True)
+def _fresh_instax_status_cache():
+    """Printer keeps the last Instax status for 30 s across instances; tests must not share it."""
+    from fretcase_card import printer as _printer
+
+    _printer._instax_status_cache.clear()
+    yield
+    _printer._instax_status_cache.clear()

@@ -162,7 +162,7 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .pname { width: 44px; flex: none; }
 .pbar { flex: 1; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; display: flex; }
 .pbar span { border-radius: 5px; }
-.psound { width: 92px; text-align: right; color: #E8DCCB; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; }
+.psound { width: 108px; text-align: right; color: #E8DCCB; font-size: 12px; line-height: 1.25; flex: none; }
 .why { font-size: 14px; line-height: 1.6; color: var(--muted); }
 .cand-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 .progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
@@ -330,3 +330,8 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface2); }
 .btn.ghost { background: transparent; }
 .hint { color: var(--muted); font-size: 13px; }
+
+/* city next to its toggle on the card screen */
+.cityrow { display: flex; align-items: center; gap: 8px; }
+.cityrow .switch { flex: 1; min-width: 0; }
+.cityrow input { width: 116px; height: 40px; box-sizing: border-box; border-radius: 10px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font: inherit; font-size: 15px; padding: 0 10px; }

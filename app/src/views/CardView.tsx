@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { StepHeader } from '../App'
 import { useApp, useSel } from '../app/context'
 import type { CardStyle } from '../types'
@@ -26,17 +26,23 @@ export function CardView() {
   const [title, setTitle] = useState('')
   const [line, setLine] = useState('')
   const [msg, setMsg] = useState('')
-  useEffect(() => { if (song) { setTitle(song.title); setLine(song.card?.line ?? ''); setMsg(song.card?.message ?? '') } }, [song?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [city, setCity] = useState('')
+  // The last photo cover, so switching back from 只有字 to a picture style keeps the user's choice.
+  const lastCover = useRef<string | undefined>(undefined)
+  useEffect(() => { if (song) { setTitle(song.title); setLine(song.card?.line ?? ''); setMsg(song.card?.message ?? ''); setCity(song.card?.city ?? '') } }, [song?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!song?.card) return null
   const card = song.card
   const photos = (card.photoAssetIds ?? []) as string[]
   const hasPhotos = photos.length > 0
   const cover = card.coverAssetId
+  if (cover) lastCover.current = cover
+  const thumb = cover ?? lastCover.current ?? photos[0]
   const front = card.frontAssetId
   const date = (card.capturedAt ?? song.createdAt).slice(0, 10).replace(/-/g, '.')
   const shareId = card.share?.shareId
   const pageHref = shareId ? (c.api.mock ? `song.html?mock=1&share=${shareId}` : `/s/${shareId}`) : undefined
   const out = printer?.paper === 'out' || printer?.remaining === 0
+  const offline = !!printer && !printer.connected
   const chip = printer ? (out ? '相纸用完了' : printer.kind === 'dry_run' ? '试印模式，不出纸' : printer.remaining != null ? `相纸还剩 ${printer.remaining} 张` : printer.connected ? '打印机已连接' : '打印机没连上') : '正在看打印机'
   const styles = (hasPhotos ? CARD_STYLE_ORDER : (['text'] as CardStyle[]))
   return (
@@ -75,8 +81,8 @@ export function CardView() {
             <div className="b15">画风</div>
             <div role="radiogroup" aria-label="画风" className="styles5">
               {styles.map((st) => (
-                <button key={st} type="button" role="radio" aria-checked={card.style === st} className={card.style === st ? 'on' : ''} onClick={() => void c.setCard({ style: st })}>
-                  {st === 'text' || !cover ? <span className="sty-ph">字</span> : <img src={c.api.assetUrl(cover)} alt="" style={{ filter: STYLE_FILTER[st] }} />}
+                <button key={st} type="button" role="radio" aria-checked={card.style === st} className={card.style === st ? 'on' : ''} onClick={() => void c.setCard(st !== 'text' && !cover && lastCover.current ? { style: st, coverAssetId: lastCover.current } : { style: st })}>
+                  {st === 'text' || !thumb ? <span className="sty-ph">字</span> : <img src={c.api.assetUrl(thumb)} alt="" style={{ filter: STYLE_FILTER[st] }} />}
                   <span>{STYLE_NAME[st]}</span>
                 </button>
               ))}
@@ -92,12 +98,15 @@ export function CardView() {
             <textarea value={msg} maxLength={500} onChange={(e) => setMsg(e.target.value)} onBlur={() => { if (msg !== (card.message ?? '')) void c.setCard({ message: msg }) }} />
           </label>
           <div className="toggles">
-            <Toggle label={card.city ? `显示城市和日期（${card.city} · ${date}）` : `显示日期（${date}）`} on={card.showCity} disabled={!card.city} onFlip={() => void c.setCard({ showCity: !card.showCity })} />
-            <Toggle label="歌曲页显示真实照片" on={card.showPhoto} disabled={!hasPhotos} onFlip={() => void c.setCard({ showPhoto: !card.showPhoto })} />
+            <div className="cityrow">
+              <Toggle label={`显示城市和日期（${date}）`} on={!!card.city && card.showCity} disabled={!card.city} onFlip={() => void c.setCard({ showCity: !card.showCity })} />
+              <input aria-label="城市" placeholder="写城市" value={city} maxLength={60} onChange={(e) => setCity(e.target.value)} onBlur={() => { const v = city.trim(); if (v !== (card.city ?? '')) void c.setCard(v ? { city: v, showCity: true } : { showCity: false }) }} />
+            </div>
+            <Toggle label="歌曲页显示真实照片" on={hasPhotos && card.showPhoto} disabled={!hasPhotos} onFlip={() => void c.setCard({ showPhoto: !card.showPhoto })} />
           </div>
           <div className="printbox">
-            <button type="button" className="gobtn" disabled={busy || out} onClick={() => void c.printCard()}>印出来</button>
-            <div className="muted13 center">{out ? '相纸用完了，换一盒再印' : '约 15 秒，从箱子侧面的出卡口出来'}</div>
+            <button type="button" className="gobtn" disabled={busy || out || offline} onClick={() => void c.printCard()}>印出来</button>
+            <div className="muted13 center">{out ? '相纸用完了，换一盒再印' : offline ? '打印机没连上：打开打印机，靠近箱子' : '约 15 秒，从箱子侧面的出卡口出来'}</div>
           </div>
         </aside>
       </main>

@@ -241,3 +241,13 @@ describe('screens', () => {
     expect(out).toEqual([{ type: 'photo' }])
   })
 })
+
+describe('"another" on the track screen', () => {
+  it('acts on the selected region, not on the play position', () => {
+    const { out, state, send } = setup('bass', 'detail')
+    state.sectionIndex = 2
+    send('key', { id: 'another', action: 'down' }, 0)
+    send('key', { id: 'another', action: 'up' }, 50)
+    expect(out).toEqual([{ type: 'another', section: 's-chorus', track: 'bass' }])
+  })
+})

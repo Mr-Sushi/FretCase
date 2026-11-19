@@ -258,7 +258,7 @@ def test_themes_come_from_the_text_and_photo_colours_offline(api):
     song = api.song(seed=seed)
     themes = api.c.get(f"/api/songs/{song['id']}/lyrics/themes").json()["themes"]
     by_text = {t["text"]: t["source"] for t in themes}
-    assert by_text["海"] == "text" and by_text["想家"] == "text" and by_text["暖光"] == "photo"
+    assert by_text["海边"] == "text" and "海" not in by_text and by_text["想家"] == "text" and by_text["暖光"] == "photo"
     assert api.c.get("/api/songs/song-nothing-here/lyrics/themes").status_code == 404
 
 
@@ -469,3 +469,26 @@ def test_song_page_html_is_served_from_the_app_build(tmp_path, card_module):
     missing = TestClient(create_app(Settings(data_dir=tmp_path / "e", app_dist=tmp_path / "nowhere"), card_module_loader=lambda: card_module))
     r = missing.get("/s/k3Hq9xV2mPzT")
     assert r.status_code == 404 and r.headers["content-type"].startswith("text/plain") and len(r.text) < 200
+
+
+def test_undo_never_changes_a_printed_card_and_previews_are_not_undo_steps(api):
+    song = api.song()
+    song = api.edit(song, {"op": "setCard", "line": "海风把傍晚吹进歌里", "message": "回来唱给你听"})
+    song = api.post(song, "card/preview")
+    printed = api.post(song, "card/print")
+    card = printed["card"]
+    # one undo takes back the setCard, not the preview; the printed card stays exactly as printed
+    back = api.post(printed, "undo")
+    assert back["card"] == card and back["title"] == printed["title"]
+    assert any(a["id"] == card["frontAssetId"] for a in back["assets"])
+    page = api.c.get(f"/api/share/{card['share']['shareId']}/page").json()["page"]
+    assert page["line"] == "海风把傍晚吹进歌里" and page.get("card")
+
+
+def test_bass_register_moves_the_notes_that_fit(api):
+    for direction in ("up", "down"):
+        song = api.song()
+        section = next(s for s in song["sections"] if any(r["play"] for r in song["tracks"]["bass"]["regions"] if r["section"] == s["id"]))
+        out = api.edit(song, {"op": "shiftRegister", "track": "bass", "section": section["id"], "direction": direction})
+        assert out["tracks"]["bass"]["notes"] != song["tracks"]["bass"]["notes"]
+        assert all(28 <= n["pitch"] <= 55 for n in out["tracks"]["bass"]["notes"])

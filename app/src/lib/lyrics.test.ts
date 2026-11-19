@@ -67,3 +67,17 @@ describe('what plays in a section, in plain words', () => {
     expect(describeSection(s, DEFAULT_CATALOG, 's-chorus')).toContain('大家一起上')
   })
 })
+
+describe('the lead in the section sentence', () => {
+  it('is named once, with the same word as the list', () => {
+    const s = JSON.parse(JSON.stringify(song)) as Song
+    for (const t of Object.values(s.tracks)) t.regions[2].play = false
+    s.tracks.guitar.regions[2].play = true
+    s.tracks.vocal.regions[2].play = true
+    s.tracks.bass.regions[2].play = true
+    s.sections[2].lead = 'guitar'
+    const text = describeSection(s, DEFAULT_CATALOG, 's-chorus')
+    expect(text).toBe('吉他领着，人声和贝斯跟着')
+    expect(text.split('吉他').length - 1).toBe(1)
+  })
+})

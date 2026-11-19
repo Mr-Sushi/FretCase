@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import re
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from fretcase_engine import harmonise as H
@@ -55,8 +56,11 @@ def _variant(seed: Dict[str, Any]) -> int:
 def song_title(seed: Dict[str, Any]) -> str:
     for item in seed.get("inputs", []):
         if item.get("kind") == "text" and str(item.get("text", "")).strip():
-            first = str(item["text"]).strip().splitlines()[0]
-            return first[:20]
+            # The first clause, without punctuation: "海边的傍晚，风很大" -> "海边的傍晚".
+            first = re.split(r"[，。！？；、,.!?;:：\s]+", str(item["text"]).strip())
+            first = next((c for c in first if c), "")
+            if first:
+                return first[:12]
     mood = str(seed.get("mood") or "").strip()
     return (mood + "的歌")[:80] if mood else "新歌"
 

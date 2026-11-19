@@ -65,7 +65,7 @@ export class HttpApi implements Api {
   }
   async undo(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/undo`, { baseRevision })).song }
   async cardPreview(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/preview`, { baseRevision }, undefined, 30000)).song }
-  async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 30000)).song }
+  async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 90000)).song }
   async lyricsRewrite(id: string, baseRevision: number, req: LyricsRewriteRequest) {
     return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/lyrics`, { baseRevision, ...req }, undefined, 25000)).song
   }
@@ -73,7 +73,8 @@ export class HttpApi implements Api {
     return (await this.request<{ alternatives: LyricsAlternative[] }>('POST', `/api/songs/${id}/lyrics/alternatives`, req, undefined, 25000)).alternatives
   }
   async lyricsThemes(id: string) { return (await this.request<{ themes: LyricsTheme[] }>('GET', `/api/songs/${id}/lyrics/themes`)).themes }
-  async printer() { return (await this.request<{ printer: PrinterStatus }>('GET', '/api/printer')).printer }
+  // A Bluetooth printer check can take several seconds on the Pi.
+  async printer() { return (await this.request<{ printer: PrinterStatus }>('GET', '/api/printer', undefined, undefined, 15000)).printer }
   sharePage(shareId: string) { return this.request<{ page: SharePage; song: Song }>('GET', `/api/share/${encodeURIComponent(shareId)}/page`) }
   async resolveShare(shareId: string) { return (await this.request<{ songId: string }>('GET', `/api/share/${encodeURIComponent(shareId)}`)).songId }
   getLocation() { return this.request<{ city: string | null; source: 'gps' | 'manual' | 'none' }>('GET', '/api/location') }

@@ -180,10 +180,13 @@ class Store:
                 raise cannot_apply("There is nothing left to undo")
             target = meta["undo"].pop()
             restored = _read_json(self.song_dir(song_id) / "revisions" / f"{target}.json")
-            # a printed card stays printed
+            # A printed card is out in the world: undoing past the print must not change what its page shows.
             printed = (current.get("card") or {}).get("printedAt")
-            if printed and restored.get("card"):
-                restored["card"]["printedAt"] = printed
+            if printed and (restored.get("card") or {}).get("printedAt") != printed:
+                restored["card"] = current["card"]
+                restored["title"] = current["title"]
+                kept = [a for a in current["assets"] if a["role"] == "card_print"]
+                restored["assets"] = [a for a in restored["assets"] if a["role"] != "card_print"] + kept
             restored["revision"] = current["revision"] + 1
             restored["updatedAt"] = self.clock()
             meta["takes"] = {}

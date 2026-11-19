@@ -324,10 +324,12 @@ def shift_register(song: Song, track: str, section_id: str, direction: str) -> S
         notes = [n for n in s["tracks"]["bass"]["notes"] if start <= n["start"] < end]
         if not notes:
             raise CannotApply("There are no notes to move", {"track": track, "section": section_id})
+        # Move every note that stays inside the bass range by an octave; notes already at the edge stay.
         low, high = R.BASS_RANGE
-        if min(n["pitch"] for n in notes) + 12 * sign < low or max(n["pitch"] for n in notes) + 12 * sign > high:
+        movable = [n for n in notes if low <= n["pitch"] + 12 * sign <= high]
+        if not movable:
             raise CannotApply("That would leave the range of this instrument", {"track": track, "direction": direction})
-        for n in notes:
+        for n in movable:
             n["pitch"] += 12 * sign
     else:  # guitar
         moved_any = False

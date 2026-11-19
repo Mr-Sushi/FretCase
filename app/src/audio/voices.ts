@@ -6,6 +6,16 @@ import type { NoteEvent } from './schedule'
 export interface Voice { trigger(n: NoteEvent, time: number, durSec: number): void; dispose(): void }
 
 /**
+ * Monophonic Tone instruments throw "Start time must be strictly greater than previous start time" when two notes
+ * land on the same instant (a bass note doubled after a register change, a kick and a fill on one tick).
+ * Each such instrument gets its own clock that nudges a repeated time forward by a millisecond.
+ */
+function monoClock(): (time: number) => number {
+  let last = -Infinity
+  return (time) => { const t = Math.max(time, last + 0.001); last = t; return t }
+}
+
+/**
  * Voices for the catalogue's instrument ids. No sample files are bundled yet, so every id maps to a synth patch;
  * an unknown id gets the track's default patch. Works in a live or an offline Tone context.
  */
@@ -44,8 +54,9 @@ export function makeVoice(track: TrackId, instrument: string, out: Tone.ToneAudi
   }
   synth.volume.value = gain
   connect(synth)
+  const at = synth instanceof Tone.MonoSynth ? monoClock() : (t: number) => t
   return {
-    trigger(n, time, durSec) { synth.triggerAttackRelease(midiToHz(n.pitch), Math.max(0.05, durSec), time, n.velocity / 127) },
+    trigger(n, time, durSec) { synth.triggerAttackRelease(midiToHz(n.pitch), Math.max(0.05, durSec), at(time), n.velocity / 127) },
     dispose() { synth.dispose() },
   }
 }
@@ -57,12 +68,13 @@ function drumVoice(instrument: string, connect: <T extends Tone.ToneAudioNode>(n
   const snare = connect(new Tone.NoiseSynth({ noise: { type: pop ? 'white' : 'pink' }, envelope: { attack: 0.001, decay: pop ? 0.18 : 0.25, sustain: 0 } }))
   const hat = connect(new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }))
   hat.volume.value = -12
+  const kickAt = monoClock(), snareAt = monoClock(), hatAt = monoClock()
   return {
     trigger(n, time) {
       const v = n.velocity / 127
-      if (n.pitch === 36 || n.pitch === 35) kick.triggerAttackRelease(hand ? 'G2' : 'C1', 0.2, time, v)
-      else if (n.pitch === 38 || n.pitch === 40 || n.pitch === 39) snare.triggerAttackRelease(0.15, time, v)
-      else hat.triggerAttackRelease(0.05, time, v)
+      if (n.pitch === 36 || n.pitch === 35) kick.triggerAttackRelease(hand ? 'G2' : 'C1', 0.2, kickAt(time), v)
+      else if (n.pitch === 38 || n.pitch === 40 || n.pitch === 39) snare.triggerAttackRelease(0.15, snareAt(time), v)
+      else hat.triggerAttackRelease(0.05, hatAt(time), v)
     },
     dispose() { kick.dispose(); snare.dispose(); hat.dispose() },
   }

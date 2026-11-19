@@ -514,7 +514,8 @@ def create_app(
             meta["preview"] = {"fingerprint": cards.card_fingerprint(song), "assetId": info["id"], "replaced": old}
             return song
 
-        return changed(song_id, body.baseRevision, "card/preview", apply)
+        # Previews are made automatically while the user edits the card, so they are not undo steps.
+        return changed(song_id, body.baseRevision, "card/preview", apply, undoable=False)
 
     @app.post("/api/songs/{song_id}/card/print")
     def card_print(song_id: str, body: RevisionRequest) -> Dict[str, Any]:

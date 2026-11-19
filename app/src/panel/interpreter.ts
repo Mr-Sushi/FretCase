@@ -228,7 +228,8 @@ export class PanelInterpreter {
       case 'undo': this.emit({ type: 'undo' }); return
       case 'another': {
         if (this.ctx.screen() === 'pick') { this.emit({ type: 'pick.more' }); return }
-        const s = this.sectionUnderPlatter()
+        // On the track screen the platter moves the selected region, so "another" acts on that section.
+        const s = this.ctx.screen() === 'detail' ? this.ctx.sections[this.ctx.sectionIndex()] : this.sectionUnderPlatter()
         if (!s) return
         const track = this.ctx.selectedTrack ?? undefined
         this.emit(track ? { type: 'another', section: s.id, track } : { type: 'another', section: s.id })

@@ -186,8 +186,13 @@ def alternatives(
 # ------------------------------------------------------------------------------------------- themes (offline)
 
 PHOTO_THEMES = [("偏暖", "暖光"), ("偏冷", "清冷"), ("偏亮", "白天"), ("偏暗", "夜晚")]
-_CJK_CHUNK = re.compile(r"[一-鿿]{1,4}")
-_STOP = set("的了是在我你他她它们和与就都也很把被给让呢吗吧啊")
+# Words that make good lyric themes. Longer words first, so 海风 wins over 海 and 风.
+THEME_WORDS = sorted(set("""
+海 海边 海风 海浪 沙滩 港口 船 桥 岸 潮水 风 晚风 雨 雪 雾 云 天空 星星 星空 月亮 太阳 夕阳 阳光 山 河 江 湖 树 花 草地
+清晨 早晨 午后 傍晚 黄昏 夜 夜晚 深夜 春天 夏天 秋天 冬天 灯 路灯 街道 小巷 城市 路 远方 火车 飞机 车站 旅行 窗
+家 想家 回家 故乡 朋友 妈妈 爸爸 孩子 爱 想你 思念 告别 再见 相遇 等待 梦 时间 自由 孤单 温暖 安静 咖啡 猫 狗
+""".split()), key=len, reverse=True)
+_CLAUSE = re.compile(r"[，。！？；、,.!?;:：\s]+")
 
 
 def themes(song: Dict[str, Any]) -> List[Dict[str, str]]:
@@ -199,20 +204,27 @@ def themes(song: Dict[str, Any]) -> List[Dict[str, str]]:
     out: List[Dict[str, str]] = []
 
     def add(text: str, source: str) -> None:
-        if text and text not in {t["text"] for t in out}:
+        # Skip a theme that repeats one already listed (海 after 海边, 想家了 after 想家).
+        if text and not any(text in t["text"] or t["text"] in text for t in out):
             out.append({"text": text, "source": source})
 
     for item in inputs:
         if item.get("kind") != "text":
             continue
         text = item.get("text", "")
+        rest = text
+        for w in THEME_WORDS:
+            if w in rest:
+                add(w, "text")
+                rest = rest.replace(w, " ")
         for words, _, _, _ in KEYWORDS:
             for w in words:
                 if w in text and re.match(r"^[一-鿿]+$", w):
                     add(w, "text")
-        for chunk in _CJK_CHUNK.findall(text):
-            if len(chunk) >= 2 and not set(chunk) <= _STOP:
-                add(chunk, "text")
+        # A short clause on its own (2 to 4 characters) is a theme as written; longer ones are never cut.
+        for clause in _CLAUSE.split(text):
+            if 2 <= len(clause) <= 4 and re.match(r"^[一-鿿]+$", clause):
+                add(clause, "text")
     reasons = " ".join(r.get("text", "") for r in seed.get("reasons", []) if "照片" in r.get("text", ""))
     if any(i.get("kind") == "photo" for i in inputs):
         for marker, label in PHOTO_THEMES:

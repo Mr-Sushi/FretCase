@@ -148,9 +148,15 @@ def test_print_sequence_end_to_end(print_png):
 
 
 def test_status(print_png):
+    from fretcase_card import printer as printer_module
+
     assert printer_with(FakeBle(films=5)).status() == {
         "kind": "instax", "connected": True, "paper": "ok", "remaining": 5}
+    # the last answer is kept for a while, so a second printer object does not scan again
+    assert printer_with(FakeBle(films=0)).status()["remaining"] == 5
+    printer_module._instax_status_cache.clear()
     assert printer_with(FakeBle(films=0)).status()["paper"] == "out"
+    printer_module._instax_status_cache.clear()
     assert printer_with(FakeBle(fail_connect=True)).status() == {
         "kind": "instax", "connected": False, "paper": "unknown", "remaining": None}
 

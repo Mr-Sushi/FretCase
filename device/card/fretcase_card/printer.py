@@ -15,6 +15,12 @@ from . import instax
 
 log = logging.getLogger("fretcase.card.printer")
 
+# An Instax status check scans Bluetooth, which takes seconds. The server builds a Printer per request,
+# so the last answer is kept here for a short while. A print clears it.
+_INSTAX_STATUS_TTL = 30.0
+_INSTAX_STATUS_SCAN = 4.0
+_instax_status_cache: dict[str, tuple[float, dict]] = {}
+
 PRINTER_ENV = "FRETCASE_PRINTER"
 DRY_RUN_DIR_ENV = "FRETCASE_DRY_RUN_DIR"
 THERMAL_WIDTH = 384  # dots across 58 mm paper at 203 dpi
@@ -115,12 +121,21 @@ class Printer:
         if self.kind == "dry_run":
             return {"kind": "dry_run", "connected": True, "paper": "ok", "remaining": None}
         if self.kind == "instax":
+            import time
+
+            key = self.address or ""
+            cached = _instax_status_cache.get(key)
+            if cached and time.monotonic() - cached[0] < _INSTAX_STATUS_TTL:
+                return dict(cached[1])
             try:
-                left = self._instax().status()["remaining"]
+                device = instax.InstaxWide(self.address, client_factory=self._instax_client_factory, scan_timeout=_INSTAX_STATUS_SCAN)
+                left = device.status()["remaining"]
+                result = {"kind": "instax", "connected": True, "paper": "ok" if left > 0 else "out", "remaining": left}
             except Exception as e:  # noqa: BLE001
                 log.info("instax status failed: %s", e)
-                return {"kind": "instax", "connected": False, "paper": "unknown", "remaining": None}
-            return {"kind": "instax", "connected": True, "paper": "ok" if left > 0 else "out", "remaining": left}
+                result = {"kind": "instax", "connected": False, "paper": "unknown", "remaining": None}
+            _instax_status_cache[key] = (time.monotonic(), result)
+            return dict(result)
         try:
             backend = self._open_thermal()
         except PrinterError:
@@ -141,6 +156,7 @@ class Printer:
         if self.kind == "dry_run":
             self._print_dry(print_png)
         elif self.kind == "instax":
+            _instax_status_cache.pop(self.address or "", None)
             try:
                 self._instax().print_image(print_png)
             except instax.InstaxError as e:

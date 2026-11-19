@@ -20,56 +20,56 @@ Song = Dict[str, Any]
 # sections are given as four flags: opening, verse, chorus, ending
 ARCHETYPES: List[Dict[str, Any]] = [
     {
-        "id": "dusk-folk", "name": "黄昏民谣", "tags": ["温暖", "慢一点"], "lane": 0.5, "lead": "vocal", "shift": -0.05,
+        "id": "dusk-folk", "feel": "像傍晚坐在台阶上", "name": "黄昏民谣", "names": {"day": "午后民谣", "night": "夜里民谣"}, "tags": ["温暖", "慢一点"], "lane": 0.5, "lead": "vocal", "shift": -0.05,
         "time": {"day": 1, "dusk": 3, "night": 1},
         "inst": {"vocal": "synth-female", "melody": "piano", "guitar": "nylon", "bass": "finger-bass", "drums": "jazz-kit"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "arpeggio", "bass": "sustain", "drums": "brush"},
         "play": {"vocal": "0111", "melody": "1001", "guitar": "1111", "bass": "0111", "drums": "0011", "ambience": "1111"},
     },
     {
-        "id": "bright-strum", "name": "轻快扫弦", "tags": ["轻快", "木吉他"], "lane": 0.2, "lead": "guitar", "shift": 0.1,
+        "id": "bright-strum", "feel": "适合边走边唱", "name": "轻快扫弦", "tags": ["轻快", "木吉他"], "lane": 0.2, "lead": "guitar", "shift": 0.1,
         "time": {"day": 3, "dusk": 1, "night": 0},
         "inst": {"vocal": "synth-male", "melody": "harmonica", "guitar": "steel", "bass": "finger-bass", "drums": "pop-kit"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "strum", "bass": "groove", "drums": "sticks"},
         "play": {"vocal": "0111", "melody": "1010", "guitar": "1111", "bass": "0111", "drums": "0111", "ambience": "1111"},
     },
     {
-        "id": "quiet-piano", "name": "安静钢琴", "tags": ["安静", "很轻"], "lane": 0.8, "lead": "melody", "shift": -0.2,
+        "id": "quiet-piano", "feel": "留出很多安静的空白", "name": "安静钢琴", "tags": ["安静", "很轻"], "lane": 0.8, "lead": "melody", "shift": -0.2,
         "time": {"day": 0, "dusk": 1, "night": 3},
         "inst": {"vocal": "synth-soft", "melody": "piano", "guitar": "nylon", "bass": "upright-bass", "drums": "jazz-kit"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "sustain", "bass": "sustain", "drums": "brush"},
         "play": {"vocal": "0111", "melody": "1111", "guitar": "0111", "bass": "0011", "drums": "0000", "ambience": "1111"},
     },
     {
-        "id": "campfire", "name": "手鼓篝火", "tags": ["热闹", "围坐"], "lane": 0.5, "lead": "vocal", "shift": 0.05,
+        "id": "campfire", "feel": "像大家围坐着拍手", "name": "手鼓篝火", "tags": ["热闹", "围坐"], "lane": 0.5, "lead": "vocal", "shift": 0.05,
         "time": {"day": 2, "dusk": 2, "night": 1},
         "inst": {"vocal": "synth-male", "melody": "whistle", "guitar": "ukulele", "bass": "upright-bass", "drums": "hand-drum"},
         "style": {"vocal": "harmony", "melody": "answer", "guitar": "muted", "bass": "groove", "drums": "hand"},
         "play": {"vocal": "0111", "melody": "0111", "guitar": "1111", "bass": "0111", "drums": "0111", "ambience": "1111"},
     },
     {
-        "id": "night-electric", "name": "夜色电吉他", "tags": ["深夜", "悠长"], "lane": 0.8, "lead": "guitar", "shift": -0.1,
+        "id": "night-electric", "feel": "慢慢晃着走夜路", "name": "夜色电吉他", "names": {"day": "电吉他漫游", "dusk": "晚风电吉他"}, "tags": ["悠长", "电吉他"], "lane": 0.8, "lead": "guitar", "shift": -0.1,
         "time": {"day": 0, "dusk": 1, "night": 3},
         "inst": {"vocal": "synth-soft", "melody": "flute", "guitar": "electric-clean", "bass": "synth-bass", "drums": "pop-kit"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "arpeggio", "bass": "sustain", "drums": "brush"},
         "play": {"vocal": "0111", "melody": "1001", "guitar": "1111", "bass": "0111", "drums": "0011", "ambience": "1111"},
     },
     {
-        "id": "long-flute", "name": "悠长长笛", "tags": ["安静", "开阔"], "lane": 0.2, "lead": "melody", "shift": -0.05,
+        "id": "long-flute", "feel": "开阔，像在看远处", "name": "悠长长笛", "tags": ["安静", "开阔"], "lane": 0.2, "lead": "melody", "shift": -0.05,
         "time": {"day": 1, "dusk": 2, "night": 2},
         "inst": {"vocal": "synth-female", "melody": "flute", "guitar": "steel", "bass": "upright-bass", "drums": "jazz-kit"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "sustain", "bass": "walking", "drums": "brush"},
         "play": {"vocal": "0011", "melody": "1111", "guitar": "1111", "bass": "0111", "drums": "0011", "ambience": "1111"},
     },
     {
-        "id": "cafe-jazz", "name": "小酒馆", "tags": ["慵懒", "有点爵士"], "lane": 0.8, "lead": "guitar", "shift": 0.0,
+        "id": "cafe-jazz", "feel": "有点慵懒，像在小酒馆", "name": "小酒馆", "tags": ["慵懒", "有点爵士"], "lane": 0.8, "lead": "guitar", "shift": 0.0,
         "time": {"day": 1, "dusk": 1, "night": 2},
         "inst": {"vocal": "synth-male", "melody": "piano", "guitar": "electric-clean", "bass": "upright-bass", "drums": "jazz-kit"},
         "style": {"vocal": "plain", "melody": "answer", "guitar": "muted", "bass": "walking", "drums": "brush"},
         "play": {"vocal": "0111", "melody": "0111", "guitar": "1111", "bass": "1111", "drums": "0111", "ambience": "1111"},
     },
     {
-        "id": "whistle-walk", "name": "口哨散步", "tags": ["轻松", "明亮"], "lane": 0.2, "lead": "melody", "shift": 0.1,
+        "id": "whistle-walk", "feel": "轻松地吹着口哨散步", "name": "口哨散步", "tags": ["轻松", "明亮"], "lane": 0.2, "lead": "melody", "shift": 0.1,
         "time": {"day": 3, "dusk": 1, "night": 0},
         "inst": {"vocal": "synth-female", "melody": "whistle", "guitar": "ukulele", "bass": "finger-bass", "drums": "hand-drum"},
         "style": {"vocal": "plain", "melody": "follow", "guitar": "strum", "bass": "groove", "drums": "hand"},
@@ -83,6 +83,8 @@ TIME_SETTINGS = {
     "night": {"brightness": 0.3, "tempo": 0.85, "shift": -0.1, "tag": "安静"},
 }
 NEUTRAL = {"brightness": 0.5, "tempo": 1.0, "shift": 0.0, "tag": None}
+# A time-of-day tag is left out when it contradicts the arrangement's own tags.
+CONFLICTS = {"安静": {"热闹", "轻快", "明亮", "轻松"}, "明亮": {"安静", "慵懒", "很轻"}, "温柔": {"热闹"}}
 LEAD_TAG = {"vocal": "人声在前", "melody": "旋律在前", "guitar": "吉他在前"}
 SHORT = {
     "guitar": {"strum": "扫弦", "arpeggio": "分解", "muted": "闷音", "sustain": "长音"},
@@ -156,7 +158,7 @@ def sound_label(track: str, instrument: str, style: str, plays: bool, has_ambien
     return base + SHORT[track].get(style, "")
 
 
-def _why(seed: Dict[str, Any], a: Dict[str, Any], lead: str) -> str:
+def _why(seed: Dict[str, Any], a: Dict[str, Any], lead: str, index: int = 0) -> str:
     inputs = {i["kind"] for i in seed.get("inputs", [])}
     reason_text = " ".join(r.get("text", "") for r in seed.get("reasons", []))
     clauses = []
@@ -168,12 +170,13 @@ def _why(seed: Dict[str, Any], a: Dict[str, Any], lead: str) -> str:
         clauses.append("你录的声音")
     if not clauses and seed.get("mood"):
         clauses.append(f"心情是{seed['mood']}")
-    start = "、".join(clauses[:2]) if clauses else "这些素材"
+    # Each of the three starts from a different input, so the reasons do not all read the same.
+    start = clauses[index % len(clauses)] if clauses else "这些素材"
     guitar = instrument_label("guitar", a["inst"]["guitar"]) + SHORT["guitar"].get(a["style"]["guitar"], "")
     tail = {"vocal": "副歌让人声唱在前面", "melody": "副歌让旋律走在前面", "guitar": "副歌让吉他走在前面"}[lead]
-    text = f"{start}，配上{guitar}；{tail}。"
     if seed.get("motif"):
-        text = f"{start}，配上{guitar}；副歌用你哼的那句。"
+        tail = "副歌用你哼的那句"
+    text = f"从{start}出发，{a['feel']}：{guitar}，{tail}。"
     return text[:80]
 
 
@@ -231,10 +234,14 @@ def _candidate_block(song: Song, seed: Dict[str, Any], a: Dict[str, Any], index:
         has_ambience = bool(song["tracks"]["ambience"]["clips"])
         parts[track] = {"level": round(min(1.0, level), 2), "sound": sound_label(track, song["tracks"][track]["instrument"], first["style"], any(r["play"] for r in regions), has_ambience)[:16]}
     tags: List[str] = []
-    for tag in list(a["tags"]) + [time_cfg["tag"], LEAD_TAG[lead]]:
+    time_tag = time_cfg["tag"]
+    if time_tag and CONFLICTS.get(time_tag, set()) & set(a["tags"]):
+        time_tag = None
+    for tag in list(a["tags"]) + [time_tag, LEAD_TAG[lead]]:
         if tag and tag not in tags:
             tags.append(tag[:8])
-    block: Dict[str, Any] = {"groupId": group_id, "index": index, "name": a["name"][:12], "tags": tags[:4], "why": _why(seed, a, lead), "parts": parts, "chosen": False}
+    name = a.get("names", {}).get(time_of_day or "", a["name"])
+    block: Dict[str, Any] = {"groupId": group_id, "index": index, "name": name[:12], "tags": tags[:4], "why": _why(seed, a, lead, index), "parts": parts, "chosen": False}
     if time_of_day:
         block["timeOfDay"] = time_of_day
     return block
