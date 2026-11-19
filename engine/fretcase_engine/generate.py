@@ -231,6 +231,10 @@ def apply_density(song: Song) -> Song:
         for region in s["tracks"][track]["regions"]:
             if not is_locked(s, track, region["section"]):
                 region["complexity"] = round(density, 3)
+    # turning density takes back a preset chosen by hand (setRhythm)
+    first = next((r for r in s["tracks"]["guitar"]["regions"] if r["play"]), s["tracks"]["guitar"]["regions"][0])
+    preset = choose_preset(s["meter"], density, "arpeggio" if first["style"] == "arpeggio" else "strumming")
+    s["tracks"]["guitar"]["rhythm"] = {"family": preset["family"], "presetId": preset["id"]}
     R.regenerate_all(s, tracks=("guitar", "bass", "drums"), only_unlocked=True)
     return s
 

@@ -370,7 +370,7 @@ def create_app(
         if name == "unlock":
             return editing.unlock(song, op.track, op.section)
         if name == "setSections":
-            return editing.set_sections(song, [s.model_dump(mode="json") for s in op.sections])
+            return editing.set_sections(song, [s.model_dump(mode="json", exclude_none=True) for s in op.sections])
         if name == "setTitle":
             song["title"] = op.title
             if song.get("card"):

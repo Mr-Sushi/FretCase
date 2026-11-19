@@ -18,18 +18,21 @@ def test_preview_sets_images_and_reserves_the_share(api, card_module):
     song = api.song()
     out = api.post(song, "card/preview")
     card = out["card"]
-    assert card["frontAssetId"] and card["backAssetId"]
+    assert card["frontAssetId"] and "backAssetId" not in card
     assert card["share"]["state"] == "reserved"
     assert card["share"]["url"] == f"https://fretcase.example/s/{card['share']['shareId']}"
     assert 10 <= len(card["share"]["shareId"]) <= 32
     roles = {a["role"] for a in out["assets"]}
-    assert {"card_front", "card_back", "card_print"} <= roles
+    assert "card_print" in roles and not {"card_front", "card_back"} & roles
     png = api.c.get(f"/api/assets/{card['frontAssetId']}")
     assert png.status_code == 200 and png.headers["content-type"] == "image/png" and png.content[:4] == b"\x89PNG"
+    from PIL import Image
+    import io
+    assert Image.open(io.BytesIO(png.content)).size == (1260, 840)
     # the same QR code on every preview of this song, and the asset list does not pile up
     again = api.post(out, "card/preview")
     assert again["card"]["share"] == card["share"]
-    assert sum(1 for a in again["assets"] if a["role"] == "card_front") == 1
+    assert sum(1 for a in again["assets"] if a["role"] == "card_print") == 1
     assert api.c.get(f"/api/share/{card['share']['shareId']}").json() == {"songId": song["id"]}
 
 
@@ -38,7 +41,6 @@ def test_preview_is_deterministic_for_the_same_card(api):
     a = api.post(song, "card/preview")
     b = api.post(a, "card/preview")
     assert api.c.get(f"/api/assets/{a['card']['frontAssetId']}").content == api.c.get(f"/api/assets/{b['card']['frontAssetId']}").content
-    assert api.c.get(f"/api/assets/{a['card']['backAssetId']}").content == api.c.get(f"/api/assets/{b['card']['backAssetId']}").content
 
 
 def test_print_needs_a_preview_of_the_current_card(api, card_module):
@@ -48,6 +50,7 @@ def test_print_needs_a_preview_of_the_current_card(api, card_module):
     printed = api.post(previewed, "card/print")
     assert printed["card"]["printedAt"]
     assert len(card_module.Printer.instances) == 1 and len(card_module.Printer.instances[0].printed) == 1
+    assert card_module.Printer.instances[0].printed[0] == api.c.get(f"/api/assets/{previewed['card']['frontAssetId']}").content
     assert card_module.Printer.instances[0].dry_run_dir is not None  # no printer configured: PNG files
     assert list(card_module.Printer.instances[0].dry_run_dir.glob("*.png"))
     # changing what the card shows makes the preview stale
@@ -65,7 +68,7 @@ def test_print_ignores_fields_that_only_appear_on_the_song_page(api):
     song = api.song()
     previewed = api.post(song, "card/preview")
     edited = api.edit(previewed, {"op": "setCard", "message": "给你的", "showPhoto": True})
-    assert "frontAssetId" not in edited["card"] and "backAssetId" not in edited["card"]
+    assert "frontAssetId" not in edited["card"]
     assert api.post(edited, "card/print", expect=422)["code"] == "cannot_apply"
     assert api.post(api.post(edited, "card/preview"), "card/print")["card"]["printedAt"]
 
@@ -96,19 +99,26 @@ def test_city_is_printed_only_when_shown(api, card_module, monkeypatch):
     assert seen[-1].city == "Lisbon"
 
 
-def test_photo_card_passes_the_photo_path_and_text_style_does_not(api, card_module, monkeypatch):
+def test_photo_card_passes_the_cover_path_and_text_style_does_not(api, card_module, monkeypatch):
     seen = []
     original = card_module.render_card
     monkeypatch.setattr(card_module, "render_card", lambda card: (seen.append(card), original(card))[1])
     photo = api.upload(png_bytes(), "photo", "p.png", "image/png")
     seed = api.seed([{"kind": "photo", "assetId": photo["id"]}, {"kind": "text", "text": "quiet night"}])
     song = api.song(seed=seed)
-    assert song["card"]["style"] == "ink" and song["card"]["photoAssetId"] == photo["id"]
+    assert song["card"]["style"] == "xieyi" and song["card"]["coverAssetId"] == photo["id"]
+    assert song["card"]["photoAssetIds"] == [photo["id"]]
     api.post(song, "card/preview")
-    assert seen[-1].photo_path is not None and seen[-1].style == "ink"
+    assert seen[-1].cover_path is not None and seen[-1].style == "xieyi"
     text_song = api.edit(api.c.get(f"/api/songs/{song['id']}").json()["song"], {"op": "setCard", "style": "text", "line": "一行字"})
+    assert "coverAssetId" not in text_song["card"]
     api.post(text_song, "card/preview")
-    assert seen[-1].photo_path is None and seen[-1].line == "一行字"
+    assert seen[-1].cover_path is None and seen[-1].line == "一行字"
+
+
+def test_photo_style_without_a_cover_is_refused_at_preview(api):
+    song = api.edit(api.song(), {"op": "setCard", "style": "ink"})
+    assert api.post(song, "card/preview", expect=422)["detail"]["reason"] == "no_cover"
 
 
 def test_printer_errors_are_422_with_the_printer_detail(api, card_module):
@@ -126,9 +136,32 @@ def test_set_card_validation(api):
     cleared = api.edit(out, {"op": "setCard", "city": None})
     assert "city" not in cleared["card"]
     assert api.edit(cleared, {"op": "setCard", "style": "neon"}, expect=400)["code"] == "invalid_request"
-    assert api.edit(cleared, {"op": "setCard", "photoAssetId": "a-nothing-here"}, expect=404)["code"] == "not_found"
+    assert api.edit(cleared, {"op": "setCard", "photoAssetIds": ["a-nothing-here"]}, expect=404)["code"] == "not_found"
     wav = api.upload(b"RIFF....", "hum", "h.wav", "audio/wav")
-    assert api.edit(cleared, {"op": "setCard", "photoAssetId": wav["id"]}, expect=422)["code"] == "cannot_apply"
+    assert api.edit(cleared, {"op": "setCard", "photoAssetIds": [wav["id"]]}, expect=422)["code"] == "cannot_apply"
+
+
+def test_set_card_photos_cover_and_style_rules(api):
+    photos = [api.upload(png_bytes(color=(i * 30, 90, 90)), "photo", f"p{i}.png", "image/png") for i in range(3)]
+    ids = [p["id"] for p in photos]
+    song = api.song()
+    out = api.edit(song, {"op": "setCard", "photoAssetIds": ids, "style": "ink"})
+    assert out["card"]["coverAssetId"] == ids[0]  # a photo style without a cover picks the first photo
+    out = api.edit(out, {"op": "setCard", "coverAssetId": ids[2]})
+    assert out["card"]["coverAssetId"] == ids[2]
+    assert api.edit(out, {"op": "setCard", "coverAssetId": "a-notinlist1"}, expect=422)["code"] == "cannot_apply"
+    out = api.edit(out, {"op": "setCard", "photoAssetIds": ids[:2]})  # the cover left the list
+    assert out["card"]["coverAssetId"] == ids[0]
+    out = api.edit(out, {"op": "setCard", "style": "text"})  # text removes the cover
+    assert "coverAssetId" not in out["card"] and out["card"]["photoAssetIds"] == ids[:2]
+    assert api.edit(out, {"op": "setCard", "photoAssetIds": [ids[0], ids[0]]}, expect=422)["code"] == "cannot_apply"
+    assert api.edit(out, {"op": "setCard", "photoAssetIds": ids * 4}, expect=400)["code"] == "invalid_request"
+
+
+def test_printer_status(api):
+    r = api.c.get("/api/printer")
+    assert r.status_code == 200
+    assert r.json() == {"printer": {"kind": "dry_run", "connected": True, "paper": "ok", "remaining": None}}
 
 
 def test_card_endpoints_say_so_when_the_module_is_missing(make_client):

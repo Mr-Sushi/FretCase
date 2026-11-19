@@ -14,6 +14,9 @@ def test_health_and_catalog(client):
     assert set(catalog["instruments"]) == {"vocal", "melody", "guitar", "bass", "drums", "ambience"}
     assert len(catalog["rhythmPresets"]["presets"]) == 30
     assert catalog["cardStyles"] == ["ink", "comic", "xieyi", "original", "text"]
+    assert {i["id"] for i in catalog["instruments"]["drums"]} == {"jazz-kit", "pop-kit", "hand-drum"}
+    assert [s["id"] for s in catalog["styles"]["guitar"]] == ["strum", "arpeggio", "muted", "sustain"]
+    assert [s["id"] for s in catalog["spaces"]] == ["dry", "room", "hall"]
 
 
 def test_error_shape_for_unknown_song_and_bad_body(client):
@@ -140,10 +143,11 @@ def test_replace_notes_adds_locks_and_ambience_is_refused(api):
 def test_lyrics_and_syllable_mismatch(api):
     song = api.song()
     count = len([n for n in song["tracks"]["vocal"]["notes"] if n["start"] < 4 * bar_ticks(song["meter"])])
+    assert all(n["lyric"] == "啦" for n in song["tracks"]["vocal"]["notes"])  # a new song sings 啦 on every note
     error = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "短"}, expect=422)
     assert error["detail"] == {"noteCount": count, "syllableCount": 1}
-    out = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "啦" * count})
-    assert sum(1 for n in out["tracks"]["vocal"]["notes"] if n.get("lyric")) == count
+    out = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "，".join(["海"] * count)})  # punctuation is ignored
+    assert sum(1 for n in out["tracks"]["vocal"]["notes"] if n.get("lyric") == "海") == count
 
 
 def test_lock_unlock_and_sections(api):
@@ -246,7 +250,7 @@ def test_export_formats(api):
 
 def test_v2_endpoints_answer_501_and_jobs_are_unknown(api):
     song = api.song()
-    for path in ("lyrics", "vocal", "share"):
+    for path in ("vocal", "share"):
         r = api.c.post(f"/api/songs/{song['id']}/{path}", json={"baseRevision": 0})
         assert r.status_code == 501 and r.json()["error"]["code"] == "not_implemented", path
     assert api.edit(song, {"op": "setVocalTake", "assetId": "a-whatever-1"}, expect=501)["code"] == "not_implemented"
