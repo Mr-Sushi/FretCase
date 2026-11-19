@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "fretcase"
 version = "0.1.0"
@@ -28,3 +32,7 @@ testpaths = ["engine/tests", "server/tests"]
 # basic-pitch lists tensorflow as a dependency, which has no wheel for Python 3.13.
 # We run its bundled ONNX model with onnxruntime instead, so tensorflow is excluded.
 override-dependencies = ["tensorflow; sys_platform == 'never'", "tensorflow-macos; sys_platform == 'never'", "tflite-runtime; sys_platform == 'never'", "coremltools; sys_platform == 'never'"]
+
+[tool.hatch.build.targets.wheel]
+include = ["engine/fretcase_engine", "server/fretcase_server"]
+sources = ["engine", "server"]
