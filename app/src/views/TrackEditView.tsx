@@ -184,7 +184,7 @@ function Roll({ song, track, sectionId, range, color, pos }: { song: Song; track
       <div className="roll-labels">
         {rows.map((p, i) => (
           <div key={p} className="rl" style={{ height: `${rowH}%` }} data-row={i}>
-            {drums ? DRUM_ROWS.find((r) => r.pitch === p)?.label : (p % 12 === 0 ? noteName(p) : '')}
+            {drums ? DRUM_ROWS.find((r) => r.pitch === p)?.label : (inKey(p, song) ? noteName(p) : '')}
           </div>
         ))}
       </div>

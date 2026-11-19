@@ -26,6 +26,8 @@ export function CardView() {
   /** Writes the text fields that differ, in one edit, before a preview. */
   const flush = async () => {
     const ops: Parameters<typeof c.edit>[0] = []
+    // Without a photo only the text front makes sense.
+    if (!hasPhoto && card.style !== 'text') ops.push({ op: 'setCard', style: 'text' })
     if (title !== song.title && title.trim()) ops.push({ op: 'setTitle', title: title.trim() })
     const patch: Record<string, string> = {}
     if (line !== (card.line ?? '')) patch.line = line
@@ -54,10 +56,10 @@ export function CardView() {
           <label>风格</label>
           <div className="seg wide">
             {styles.map((s) => (
-              <button key={s} className={card.style === s ? 'on' : ''} disabled={!hasPhoto && s !== 'text'} onClick={() => void c.setCard({ style: s })}>{STYLE_NAMES[s]}</button>
+              <button key={s} className={(hasPhoto ? card.style : 'text') === s ? 'on' : ''} disabled={!hasPhoto && s !== 'text'} onClick={() => void c.setCard({ style: s })}>{STYLE_NAMES[s]}</button>
             ))}
           </div>
-          {!hasPhoto && <div className="hint">没有照片时，卡片正面印歌名或下面这句话。</div>}
+          {!hasPhoto && <div className="hint">没有照片，卡片正面会印歌名或下面这句话（文字风格）。</div>}
         </div>
         <div className="field">
           <label>一句话（没有照片时印在正面）</label>

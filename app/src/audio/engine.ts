@@ -66,6 +66,7 @@ export class PlaybackEngine {
   private raf = 0
   private loop: { from: number; to: number } | null = null
   private ended = false
+  private gen = 0
 
   constructor(private assetUrl: (id: string) => string, private events: EngineEvents = {}) {
     Tone.getTransport().PPQ = 480
@@ -121,14 +122,24 @@ export class PlaybackEngine {
     }
     const clips = [...sched.clips.map((c) => ({ ...c, track: 'ambience' as TrackId }))]
     if (sched.vocalAssetId) clips.push({ assetId: sched.vocalAssetId, tick: 0, duration: sched.endTick, offsetSec: 0, loop: false, gain: 1, track: 'vocal' })
+    const gen = ++this.gen
     for (const c of clips) {
       // A clip that cannot be loaded is skipped: the song still plays without it.
-      const player = new Tone.Player({
-        url: this.assetUrl(c.assetId), loop: c.loop, volume: Tone.gainToDb(Math.max(0.0001, c.gain)),
-        onerror: () => this.events.onLoadError?.(c.assetId),
-      }).connect(this.gains.get(c.track)!)
-      player.sync().start(`${c.tick}i`, c.offsetSec).stop(`${c.tick + c.duration}i`)
-      this.players.push(player)
+      const url = this.assetUrl(c.assetId)
+      if (!url) { this.events.onLoadError?.(c.assetId); continue }
+      const buffer = new Tone.ToneAudioBuffer(
+        url,
+        () => {
+          if (gen !== this.gen) { buffer.dispose(); return } // the song changed while the file was loading
+          const player = new Tone.Player(buffer)
+          player.loop = c.loop
+          player.volume.value = Tone.gainToDb(Math.max(0.0001, c.gain))
+          player.connect(this.gains.get(c.track)!)
+          player.sync().start(`${c.tick}i`, c.offsetSec).stop(`${c.tick + c.duration}i`)
+          this.players.push(player)
+        },
+        () => this.events.onLoadError?.(c.assetId),
+      )
     }
     this.applyLoop()
   }
