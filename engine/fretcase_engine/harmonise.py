@@ -247,7 +247,7 @@ def _solve(
         for detail, symbol, voicing in zip(path, symbols, result["voicing_seq"]):
             picks.append(ChordPick(symbol=symbol, shape_symbol=None, roman=detail.roman, function=detail.function, voicing=voicing))
         score = 0.6 * avg_score + 0.4 * clamp01(result["arrangement_score"])
-        score += 0.12 * bias * (2 * _minor_share(symbols) - 1)
+        score -= 0.12 * bias * (2 * _minor_share(symbols) - 1)  # darker (bias < 0) rewards minor chords
         subs = tuple(
             {"bar": i + 1, "reason": "no_playable_shape"}
             for i, (a, b) in enumerate(zip([d.chord.symbol for d in path], symbols)) if a != b
