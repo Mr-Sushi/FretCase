@@ -31,10 +31,12 @@
 | --- | --- | --- | --- |
 | `shared/schema/` | JSON Schema | 歌曲模型、面板事件、API 载荷的唯一定义；生成 Pydantic 和 TypeScript 类型 | 主代理 |
 | `engine/` | Python | 纯函数库：和声候选、HRE 打分、ACS 可弹性、变调夹、和弦拼写、贝斯与鼓生成。不依赖 web 框架 | A 后端 |
-| `server/` | Python | FastAPI：歌曲会话、操作历史（撤销、换一个）、锁定、生成接口、渲染适配层、哼唱转谱、卡片排版与打印、定位 | A 后端（打印由 C） |
-| `app/` | TypeScript | iPad 网页：种子卡、整首歌、单轨编辑、卡片预览四个视图；六轨混音播放；扫码；控件模拟器 | B 前端（模拟器由 C） |
+| `server/` | Python | FastAPI：歌曲会话、操作历史（撤销、换一个）、锁定、生成接口、渲染适配层、哼唱转谱、卡片接口、定位、面板转发 | A 后端 |
+| `app/` | TypeScript | iPad 网页：种子卡、整首歌、单轨编辑、卡片预览四个视图；六轨混音播放；扫码 | B 前端 |
 | `device/bridge/` | Python | asyncio 服务：读 USB MIDI，发 WebSocket 事件，接收灯光状态 | C 设备 |
 | `device/firmware/` | C++（Arduino） | Teensy 或 Pico 固件，用 Control Surface 库 | C 设备 |
+| `device/simulator/` | Web | 屏幕上的二维面板，以面板身份连接 `/ws/panel`，硬件到货前代替控制板 | C 设备 |
+| `device/card/` | Python | 卡片排版、离线风格化、热敏打印（`fretcase_card` 包，接口见 `docs/milestone-1.md`），由 `server/` 调用 | C 设备 |
 
 `engine/` 从 `server/` 分出来，是 FretStudio 没有做的：FretStudio 里和声逻辑和 API、会话、日志混在 `server/` 下，测试和复用都要带上整个服务。
 
