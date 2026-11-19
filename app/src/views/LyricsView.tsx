@@ -1,3 +1,4 @@
+import { lyricsFailureText } from '../app/controller'
 import { useEffect, useState } from 'react'
 import { useApp, useSel } from '../app/context'
 import { countLine, rhymeLabel, rhymeNote, sectionLines } from '../lib/lyrics'
@@ -88,7 +89,7 @@ export function LyricsView() {
                 ))}
               </>
             ) : <><h2>换个说法</h2><div className="muted13">点一句左边的播放键，就能看到别的说法</div></>}
-            {ui.offline && <div className="offnote" role="status">换说法需要联网，现在没有网络。可以直接在左边改字。</div>}
+            {ui.offline && <div className="offnote" role="status">{lyricsFailureText(ui.offlineReason) ?? '换说法需要联网，现在没有网络'}。可以直接在左边改字。</div>}
           </section>
 
           <section aria-label="重写的方向" className="panel dir">
@@ -103,8 +104,8 @@ export function LyricsView() {
               <Segmented label="语气" value={ui.tone} onPick={(v) => c.setTone(v)} options={[{ id: 'plain', label: '直白' }, { id: 'subtle', label: '含蓄' }, { id: 'playful', label: '俏皮' }]} className="round" /></div>
             <div><div className="b14">押韵</div>
               <Segmented label="押韵" value={ui.rhyme ? 'yes' : 'no'} onPick={(v) => c.setRhyme(v === 'yes')} options={[{ id: 'yes', label: '每段押韵' }, { id: 'no', label: '不强求' }]} className="round" /></div>
-            <button type="button" className="gobtn rewrite" onClick={() => void c.rewriteLyrics()}>按这些重写没保留的句子</button>
-            {ui.offline && <div className="offnote" role="status">重写需要联网，现在没有网络。歌词不会变，你可以直接改字。</div>}
+            <button type="button" className="gobtn rewrite" disabled={ui.writing} onClick={() => void c.rewriteLyrics()}>{ui.writing ? '正在写词…' : '按这些重写没保留的句子'}</button>
+            {ui.offline && <div className="offnote" role="status">{lyricsFailureText(ui.offlineReason) ?? '重写需要联网，现在没有网络'}。歌词不会变，你可以直接改字。</div>}
             <div className="tiny center">字数会跟着旋律走，每一句都和音数一样</div>
           </section>
         </aside>

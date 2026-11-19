@@ -18,6 +18,15 @@ class Offline(Exception):
     """The adapter needs the network and there is none (or no provider is configured)."""
 
 
+class ModelError(Exception):
+    """A model call failed. ``reason`` says why, for the API's ``error.detail.reason``:
+    ``auth`` (key refused), ``rate_limited``, ``unreachable``, ``timeout`` or ``bad_answer``."""
+
+    def __init__(self, reason: str, message: str = ""):
+        super().__init__(message or reason)
+        self.reason = reason
+
+
 class SeedModel(Protocol):
     """Multimodal seed-card parsing (photos, text, sounds) by a model."""
 
@@ -113,12 +122,26 @@ def call_with_timeout(fn: Callable[..., T], *args: Any, timeout: float = DEFAULT
         return fallback
 
 
+DEFAULT_TEXT_MODEL_URL = "https://api.anthropic.com"
+DEFAULT_TEXT_MODEL_NAME = "claude-sonnet-5-5"
+
+
 class AnthropicTextModel:
-    """Text model through the Anthropic Messages API format. Configured by ``FRETCASE_TEXT_MODEL_URL`` (the endpoint,
-    or a base URL that the path /v1/messages is added to), ``FRETCASE_TEXT_MODEL_KEY`` and ``FRETCASE_TEXT_MODEL_NAME``."""
+    """Text model through the Anthropic Messages API format.
+
+    Configured by ``FRETCASE_TEXT_MODEL_KEY`` (required), ``FRETCASE_TEXT_MODEL_URL`` (the endpoint, or a base URL that
+    the path /v1/messages is added to; default https://api.anthropic.com) and ``FRETCASE_TEXT_MODEL_NAME`` (default
+    claude-sonnet-5-5). Without a key nothing is configured and no connection is ever opened.
+    """
+
+    ONLINE_TTL_S = 30.0
 
     def __init__(self, url: Optional[str], key: Optional[str], name: Optional[str]):
-        self.url, self.key, self.name = url, key, name
+        self.key = key
+        self.url = url or (DEFAULT_TEXT_MODEL_URL if key else None)
+        self.name = name or (DEFAULT_TEXT_MODEL_NAME if key else None)
+        self._online_at = -1e9
+        self._probe: Optional[tuple[float, bool]] = None
 
     @property
     def configured(self) -> bool:
@@ -132,6 +155,9 @@ class AnthropicTextModel:
         if not self.configured:
             raise Offline("text model")
         import json
+        import socket
+        import time
+        import urllib.error
         import urllib.request
 
         body = json.dumps({"model": self.name, "max_tokens": max_tokens, "system": system, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
@@ -139,9 +165,43 @@ class AnthropicTextModel:
             self.endpoint(), data=body, method="POST",
             headers={"content-type": "application/json", "x-api-key": self.key or "", "anthropic-version": "2023-06-01"},
         )
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (the URL is operator configuration)
-            data = json.loads(response.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (the URL is operator configuration)
+                data = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            self._online_at = time.monotonic()  # the service answered, so the network is there
+            if exc.code in (401, 403):
+                raise ModelError("auth", f"the model service refused the key ({exc.code})") from exc
+            if exc.code == 429:
+                raise ModelError("rate_limited", "the model service is rate limiting") from exc
+            raise ModelError("unreachable", f"the model service answered {exc.code}") from exc
+        except (socket.timeout, TimeoutError) as exc:
+            raise ModelError("timeout", "the model did not answer in time") from exc
+        except (urllib.error.URLError, OSError) as exc:
+            raise ModelError("unreachable", str(exc)) from exc
+        except ValueError as exc:
+            raise ModelError("bad_answer", "the model service sent something that is not JSON") from exc
+        self._online_at = time.monotonic()
         return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
 
     def is_online(self) -> bool:
-        return False
+        """True when a call worked in the last 30 s, or a quick connection to the model host works (cached 30 s)."""
+        if not self.configured:
+            return False
+        import socket
+        import time
+        from urllib.parse import urlparse
+
+        now = time.monotonic()
+        if now - self._online_at < self.ONLINE_TTL_S:
+            return True
+        if self._probe and now - self._probe[0] < self.ONLINE_TTL_S:
+            return self._probe[1]
+        parsed = urlparse(self.endpoint())
+        try:
+            with socket.create_connection((parsed.hostname or "", parsed.port or (443 if parsed.scheme == "https" else 80)), timeout=2.0):
+                ok = True
+        except OSError:
+            ok = False
+        self._probe = (now, ok)
+        return ok

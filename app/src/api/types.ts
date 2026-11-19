@@ -31,7 +31,8 @@ export type EditOp =
 
 export type AssetRole = 'hum' | 'ambience' | 'photo' | 'vocal_take'
 
-export interface Health { ok: boolean; online: boolean; version: string; panel: boolean }
+/** `lyrics`: whether the server has a text model configured for writing lyrics. */
+export interface Health { ok: boolean; online: boolean; version: string; panel: boolean; lyrics?: boolean }
 export interface SongListItem { id: string; title: string; updatedAt: string; card?: unknown }
 export interface PrinterStatus { kind: 'instax' | 'thermal' | 'dry_run'; connected: boolean; paper: 'ok' | 'out' | 'unknown'; remaining: number | null }
 export interface LyricsRequest { themes?: string[]; tone?: 'plain' | 'subtle' | 'playful'; rhyme?: boolean }

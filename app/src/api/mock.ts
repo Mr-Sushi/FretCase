@@ -70,7 +70,7 @@ export class MockApi implements Api {
     return clone(next)
   }
 
-  async health(): Promise<Health> { return { ok: true, online: this.online, version: 'mock', panel: false } }
+  async health(): Promise<Health> { return { ok: true, online: this.online, version: 'mock', panel: false, lyrics: this.online } }
   async catalog() { return clone(MOCK_CATALOG) }
 
   async uploadAsset(file: Blob, role: AssetRole) {

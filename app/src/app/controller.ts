@@ -95,7 +95,7 @@ export class Controller {
   async refreshHealth() {
     try {
       const h = await this.api.health()
-      this.store.set({ serverOnline: true, netOnline: h.online })
+      this.store.set({ serverOnline: true, netOnline: h.online, lyricsAvailable: !!h.lyrics })
     } catch {
       this.store.set({ serverOnline: false })
     }
@@ -137,7 +137,7 @@ export class Controller {
         case 'revision_conflict':
           if (e.song) this.setSong(e.song)
           this.toast('歌曲刚刚有了新的版本，已更新，请再试一次', 'error'); return
-        case 'offline_unavailable': this.toast('这一步需要联网，现在没有网络', 'error'); return
+        case 'offline_unavailable': this.toast(lyricsFailureText(lyricsFailure(e)) ?? '这一步需要联网，现在没有网络', 'error'); return
         case 'network': this.toast('连不上服务器', 'error'); this.store.set({ serverOnline: false }); return
         case 'timeout': this.toast('服务器没有及时响应', 'error'); return
         // Server messages are English and meant for logs, so the toast stays in Chinese.
@@ -499,7 +499,33 @@ export class Controller {
       this.applyLoop()
       void this.refreshSongs()
       this.log('candidate.choose', index)
+      // New songs sing 啦. With a lyrics model on the server, words are written in the background right away.
+      if (this.store.state.lyricsAvailable) void this.writeFirstLyrics(song.id)
     } catch (e) { this.fail(e) } finally { this.store.set({ busy: null }) }
+  }
+
+  private async writeFirstLyrics(songId: string) {
+    const song = this.store.state.song
+    if (!song || song.id !== songId) return
+    this.setLyricsUi({ writing: true })
+    this.toast('正在写词…')
+    try {
+      const themes = (await this.api.lyricsThemes(songId)).slice(0, 4).map((t) => t.text)
+      const cur = this.store.state.song
+      if (!cur || cur.id !== songId) return
+      const written = await this.api.lyricsRewrite(songId, cur.revision, { themes, tone: 'plain', rhyme: true })
+      // Only apply it if nothing changed meanwhile; otherwise the user's edits win and words can be asked for again.
+      if (this.store.state.song?.id === songId && this.store.state.song.revision === cur.revision) {
+        this.setSong(written)
+        this.toast('歌词写好了，可以在歌词页改')
+      }
+      this.log('lyrics.first', 'ok')
+    } catch (e) {
+      const reason = lyricsFailure(e)
+      this.setLyricsUi({ offline: true, offlineReason: reason })
+      if (reason !== 'conflict') this.toast(`没写成歌词：${lyricsFailureText(reason) ?? '可以在歌词页再试'}`, 'error')
+      this.log('lyrics.first', reason)
+    } finally { this.setLyricsUi({ writing: false }) }
   }
 
   // ---- lyrics -----------------------------------------------------------------------------------
@@ -565,10 +591,10 @@ export class Controller {
     try {
       const alternatives = await this.api.lyricsAlternatives(song.id, { section, line: index, themes: l.themeSel, tone: l.tone, rhyme: l.rhyme })
       const cur = this.store.state.lyrics.selected
-      if (cur && cur.section === section && cur.index === index) this.setLyricsUi({ alternatives, offline: false, loading: false })
+      if (cur && cur.section === section && cur.index === index) this.setLyricsUi({ alternatives, offline: false, offlineReason: null, loading: false })
     } catch (e) {
       const off = e instanceof ApiError && (e.code === 'offline_unavailable' || e.code === 'timeout' || e.code === 'network')
-      this.setLyricsUi({ alternatives: null, offline: off ? true : this.store.state.lyrics.offline, loading: false })
+      this.setLyricsUi({ alternatives: null, offline: off ? true : this.store.state.lyrics.offline, offlineReason: off ? lyricsFailure(e) : this.store.state.lyrics.offlineReason, loading: false })
       if (!off) this.fail(e)
     }
   }
@@ -587,15 +613,17 @@ export class Controller {
     const l = this.store.state.lyrics
     const keep = { ...l.keeps }
     if (sections) for (const s of sections) delete keep[s]
+    this.setLyricsUi({ writing: true })
     const res = await this.mutate('lyrics.rewrite', async (s) => {
       try {
         return await this.api.lyricsRewrite(s.id, s.revision, { ...(sections ? { sections } : {}), keep, themes: l.themeSel, tone: l.tone, rhyme: l.rhyme })
       } catch (e) {
-        if (e instanceof ApiError && (e.code === 'offline_unavailable' || e.code === 'timeout' || e.code === 'network')) this.setLyricsUi({ offline: true })
+        if (e instanceof ApiError && (e.code === 'offline_unavailable' || e.code === 'timeout' || e.code === 'network')) this.setLyricsUi({ offline: true, offlineReason: lyricsFailure(e) })
         throw e
       }
     }, true)
-    if (res) this.setLyricsUi({ offline: false, misfit: [] })
+    this.setLyricsUi({ writing: false })
+    if (res) this.setLyricsUi({ offline: false, offlineReason: null, misfit: [] })
   }
 
   /** Plays one lyric line (and a little after it) so it can be heard as sung. */
@@ -790,3 +818,25 @@ export class Controller {
 }
 
 export { CARD_STYLE_ORDER }
+
+/** Why a lyrics call failed: the server's error.detail.reason, "network" when the server could not be reached in time. */
+export function lyricsFailure(e: unknown): string {
+  if (!(e instanceof ApiError)) return 'network'
+  if (e.code === 'revision_conflict') return 'conflict'
+  if (e.code === 'timeout' || e.code === 'network') return 'network'
+  const reason = (e.detail as { reason?: string } | undefined)?.reason
+  return reason ?? 'network'
+}
+
+/** Plain words for each reason; null when the generic network text fits. */
+export function lyricsFailureText(reason: string | null): string | null {
+  switch (reason) {
+    case 'not_configured': return '还没有接上写词的模型'
+    case 'auth': return '写词模型的密钥不对，请检查设置'
+    case 'rate_limited': return '写词模型现在太忙，过一会儿再试'
+    case 'bad_answer': return '这次没写出字数合适的句子，再试一次'
+    case 'timeout': return '写词模型太久没有回答，再试一次'
+    case 'unreachable': case 'network': return '写词需要联网，现在连不上'
+    default: return null
+  }
+}

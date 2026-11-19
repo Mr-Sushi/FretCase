@@ -476,3 +476,44 @@ describe('errors', () => {
     expect(api.edit).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('lyrics failure reasons', () => {
+  it('turn the server reason into plain words', async () => {
+    const { lyricsFailure, lyricsFailureText } = await import('./controller')
+    const { ApiError } = await import('../api/types')
+    const err = (reason?: string) => new ApiError('offline_unavailable', 'x', 503, undefined, reason ? { reason } : undefined)
+    expect(lyricsFailure(err('auth'))).toBe('auth')
+    expect(lyricsFailureText('auth')).toContain('密钥')
+    expect(lyricsFailure(err())).toBe('network')
+    expect(lyricsFailure(new ApiError('timeout', 'x', 0))).toBe('network')
+    expect(lyricsFailureText('not_configured')).toContain('还没有接上')
+    expect(lyricsFailureText('something-new')).toBeNull()
+  })
+})
+
+describe('first lyrics after choosing', () => {
+  it('are written in the background when the server has a lyrics model', async () => {
+    const api = new MockApi(0, true)
+    const store = new Store(initialState(true))
+    const c = new Controller(api, store, new FakeAudio())
+    await c.init()
+    expect(store.state.lyricsAvailable).toBe(true)
+    const spy = vi.spyOn(api, 'lyricsRewrite')
+    await c.addPhoto(photo())
+    await c.makeSong()
+    await c.chooseCandidate(0)
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(store.state.lyrics.writing).toBe(false))
+  })
+
+  it('are not asked for when the server has no lyrics model', async () => {
+    const { api, store, c } = ctx
+    expect(store.state.lyricsAvailable).toBe(false)
+    const spy = vi.spyOn(api, 'lyricsRewrite')
+    await c.addPhoto(photo())
+    await c.makeSong()
+    await c.chooseCandidate(0)
+    await new Promise((r) => setTimeout(r, 20))
+    expect(spy).not.toHaveBeenCalled()
+  })
+})

@@ -67,10 +67,10 @@ export class HttpApi implements Api {
   async cardPreview(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/preview`, { baseRevision }, undefined, 30000)).song }
   async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 90000)).song }
   async lyricsRewrite(id: string, baseRevision: number, req: LyricsRewriteRequest) {
-    return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/lyrics`, { baseRevision, ...req }, undefined, 25000)).song
+    return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/lyrics`, { baseRevision, ...req }, undefined, 60000)).song
   }
   async lyricsAlternatives(id: string, req: LyricsRequest & { section: string; line: number }) {
-    return (await this.request<{ alternatives: LyricsAlternative[] }>('POST', `/api/songs/${id}/lyrics/alternatives`, req, undefined, 25000)).alternatives
+    return (await this.request<{ alternatives: LyricsAlternative[] }>('POST', `/api/songs/${id}/lyrics/alternatives`, req, undefined, 60000)).alternatives
   }
   async lyricsThemes(id: string) { return (await this.request<{ themes: LyricsTheme[] }>('GET', `/api/songs/${id}/lyrics/themes`)).themes }
   // A Bluetooth printer check can take several seconds on the Pi.

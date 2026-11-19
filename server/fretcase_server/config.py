@@ -10,6 +10,27 @@ VERSION = "0.1.0"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def load_env_file(path: Optional[Path] = None) -> None:
+    """Read KEY=value lines from a .env file into the environment, without overriding what is already set.
+
+    The file is ``FRETCASE_ENV_FILE`` if set, else ``.env`` at the repository root. It is gitignored, which keeps keys
+    such as ``FRETCASE_TEXT_MODEL_KEY`` out of the repository."""
+    path = path or Path(os.environ.get("FRETCASE_ENV_FILE") or REPO_ROOT / ".env")
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        name = name.strip().removeprefix("export ").strip()
+        value = value.strip().strip('"').strip("'")
+        if name and name not in os.environ:
+            os.environ[name] = value
+
+
 def _env(name: str) -> Optional[str]:
     return os.environ.get(name) or None
 

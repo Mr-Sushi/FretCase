@@ -31,8 +31,12 @@ export interface LyricsUi {
   keeps: Record<string, number[]>
   selected: { section: string; index: number } | null
   alternatives: LyricsAlternative[] | null
-  /** The last wording or rewrite call answered "needs the network". Typing stays available. */
+  /** The last wording or rewrite call failed. Typing stays available. */
   offline: boolean
+  /** Why it failed, from the server's error.detail.reason (or "network" when the server could not be reached). */
+  offlineReason: string | null
+  /** A rewrite is running. */
+  writing: boolean
   loading: boolean
   /** Lines the server or the app found not to fit: "section:index" keys. */
   misfit: string[]
@@ -68,6 +72,8 @@ export interface AppState {
   toast: Toast | null
   serverOnline: boolean | null
   netOnline: boolean
+  /** The server has a text model for lyrics (GET /health `lyrics`). */
+  lyricsAvailable: boolean
   panelConnected: boolean
   panelAttached: boolean
   catalog: Catalog
@@ -79,13 +85,13 @@ export interface AppState {
   mock: boolean
 }
 
-export const initialLyrics = (): LyricsUi => ({ themes: [], themeSel: [], tone: 'plain', rhyme: true, keeps: {}, selected: null, alternatives: null, offline: false, loading: false, misfit: [] })
+export const initialLyrics = (): LyricsUi => ({ themes: [], themeSel: [], tone: 'plain', rhyme: true, keeps: {}, selected: null, alternatives: null, offline: false, offlineReason: null, writing: false, loading: false, misfit: [] })
 
 export const initialState = (mock: boolean): AppState => ({
   view: 'capture', song: null, seed: null, inputs: [], captureMode: 'photo', photoSel: null, recentSongs: [],
   candidates: null, timeOfDay: 'dusk', focus: 0, preview: null,
   selectedTrack: null, editSection: null, looping: false, solo: null, takes: {}, lyrics: initialLyrics(), printer: null, cardBusy: false,
-  positionTick: 0, playing: false, recording: null, busy: null, toast: null, serverOnline: null, netOnline: false,
+  positionTick: 0, playing: false, recording: null, busy: null, toast: null, serverOnline: null, netOnline: false, lyricsAvailable: false,
   panelConnected: false, panelAttached: false, catalog: DEFAULT_CATALOG, city: '', previewSig: null, scanning: false, showSongs: false, mock,
 })
 

@@ -130,7 +130,8 @@ def create_app(
     # ------------------------------------------------------------------ status and catalogue
     @app.get("/health")
     def health() -> Dict[str, Any]:
-        return {"ok": True, "online": adapters.online(), "version": VERSION, "panel": hub.panel_connected}
+        lyrics_on = bool(getattr(adapters.text_model, "configured", False))
+        return {"ok": True, "online": adapters.online(), "version": VERSION, "panel": hub.panel_connected, "lyrics": lyrics_on}
 
     @app.get("/api/catalog")
     def catalog() -> Dict[str, Any]:
@@ -261,16 +262,10 @@ def create_app(
             raise cannot_apply("This song is not a candidate", {"songId": song_id})
         if song["candidate"].get("chosen"):
             return song_response(song)
-        try:
-            texts = lyrics.initial_texts(adapters, song)
-        except Exception:  # noqa: BLE001
-            texts = {}
+        # Lyrics are not written here: a model call can take many seconds, and choosing must feel instant.
+        # The app asks POST /lyrics right after choosing when /health says lyrics are available.
 
         def apply(current: Dict[str, Any], meta: Dict[str, Any]) -> Dict[str, Any]:
-            try:
-                current = apply_texts(current, texts)
-            except CannotApply:
-                pass
             current["candidate"]["chosen"] = True
             return current
 

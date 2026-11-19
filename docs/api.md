@@ -52,10 +52,10 @@ Operations that may take longer than about 2 s (vocal synthesis, whole-song rend
 ### `GET /health`
 
 ```json
-{ "ok": true, "online": true, "version": "0.1.0", "panel": true }
+{ "ok": true, "online": true, "version": "0.1.0", "panel": true, "lyrics": true }
 ```
 
-`online`: whether the server reached the internet in the last 30 s. `panel`: whether a panel is connected to `/ws/panel`.
+`online`: whether the server reached the internet in the last 30 s (a model call worked, or a quick connection to the model host did; checked at most every 30 s). `panel`: whether a panel is connected to `/ws/panel`. `lyrics`: whether a text model is configured for writing lyrics (`FRETCASE_TEXT_MODEL_KEY` is set); it says nothing about whether the network is up.
 
 ### `GET /api/catalog`
 
@@ -127,7 +127,7 @@ Response: `201 { "candidates": [Song, Song, Song] }`. Each song is a draft with 
 
 ### `POST /api/songs/{id}/choose` (M2)
 
-Keep this draft. Request: `{}`. Sets `candidate.chosen = true`, deletes the other drafts of its group, and returns `{ "song": Song }`. The song then behaves like any other song (listed, editable, printable).
+Keep this draft. Request: `{}`. Sets `candidate.chosen = true`, deletes the other drafts of its group, and returns `{ "song": Song }` at once. The song then behaves like any other song (listed, editable, printable). Choosing never waits for a model: when `/health` reports `lyrics: true`, the app calls `POST …/lyrics` right after choosing, in the background, and applies the result only if the song has not changed meanwhile.
 
 ### `POST /api/songs`
 
@@ -137,7 +137,7 @@ Request: `{ "seed": SeedCard, "bars": 16 }`. `bars` is optional (default 16; 8 w
 
 Response: `201 { "song": Song }`. The new song has default sections (开头, 主歌, 副歌, 结尾 for 16 bars), all faders at 0.8, `master` at volume 0.8 and space `room`, no locks, and controls at 0.5. Every track has one region per section; a region whose track has nothing to play there has `play: false`.
 
-Lyrics on a new song: with a model, the vocal notes get lyrics written from the text input and the photos; offline, every vocal note gets the syllable 啦 so the line can still be sung as a guide tone, and the user can type lyrics.
+Lyrics on a new song: every vocal note gets the syllable 啦 so the line can be sung as a guide tone, and the user can type lyrics. `POST /api/songs` (tools) also tries the model once when one is configured; drafts from `/api/candidates` never call the model.
 
 ### `GET /api/songs`
 
@@ -218,11 +218,24 @@ Request: `{ "baseRevision": 12 }`. Takes back the most recent action that has no
 
 Rewrite lyrics with a model, one syllable per vocal note, so the result always fits the melody.
 
-Request: `{ "baseRevision", "sections"?: [id], "keep"?: { "<sectionId>": [lineIndex] }, "themes": ["海", "想家"], "tone": "plain" | "subtle" | "playful", "rhyme": true }`. Without `sections`, every section with vocal notes is rewritten. Lines listed in `keep` stay as they are ("保留"). Response: `{ "song": Song }`. Offline or when the model call fails after its timeout (20 s for this endpoint): `503 offline_unavailable`; typing lyrics with `setLyrics` always works.
+Request: `{ "baseRevision", "sections"?: [id], "keep"?: { "<sectionId>": [lineIndex] }, "themes": ["海", "想家"], "tone": "plain" | "subtle" | "playful", "rhyme": true }`. Without `sections`, every section with vocal notes is rewritten. Lines listed in `keep` stay as they are ("保留"). Response: `{ "song": Song }`. Typing lyrics with `setLyrics` always works.
+
+The server sends the model the captured text, what the photos suggested, the mood, the place (only when `showCity`), the time of day and the title, plus the song's structure: each section with its role (verse sets the scene, chorus is the heart, outro comes back softly) and each line's exact number of characters. The model answers each line as an array of single characters. Lines with the wrong length are asked for again with the exact counts, up to three model calls in all, each limited to 20 s and all of them to 45 s together.
+
+Failures answer `503 offline_unavailable` with `error.detail.reason`:
+
+| `reason` | Meaning |
+| --- | --- |
+| `not_configured` | No `FRETCASE_TEXT_MODEL_KEY` on the server |
+| `auth` | The model service refused the key |
+| `rate_limited` | The model service is busy; try later |
+| `unreachable` | No network, or the service answered with an error |
+| `timeout` | The model did not answer in time |
+| `bad_answer` | After three tries some lines still had the wrong length |
 
 ### `POST /api/songs/{id}/lyrics/alternatives` (M2)
 
-Three other wordings of one lyric line, each with exactly that line's number of notes ("换个说法").
+Up to three other wordings of one lyric line, each with exactly that line's number of notes ("换个说法"). Same limits and failure reasons as above; fewer than three come back when only some had the right length.
 
 Request: `{ "section", "line": lineIndex, "themes"?, "tone"?, "rhyme"? }`. Response: `{ "alternatives": [ { "text": "我把乡愁说给海听", "note": "更含蓄" } ] }`. The song does not change; the app applies a choice with `setLyrics`. Offline: `503`.
 

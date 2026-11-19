@@ -9,7 +9,7 @@ from fretcase_engine.common import bar_ticks, is_locked
 
 def test_health_and_catalog(client):
     health = client.get("/health").json()
-    assert health == {"ok": True, "online": False, "version": "0.1.0", "panel": False}
+    assert health == {"ok": True, "online": False, "version": "0.1.0", "panel": False, "lyrics": False}
     catalog = client.get("/api/catalog").json()
     assert set(catalog["instruments"]) == {"vocal", "melody", "guitar", "bass", "drums", "ambience"}
     assert len(catalog["rhythmPresets"]["presets"]) == 30

@@ -35,14 +35,18 @@ class FakeText:
         wrong = self.mode == "wrong" or (self.mode == "short" and len(self.prompts) == 1)
         if self.mode == "off":
             raise TimeoutError("not now")
-        if "Lines: " in prompt:
-            spec = json.loads(re.search(r"Lines: (\{.*\})\n", prompt).group(1))
-            out = {sid: {str(item["line"]): ("海" * (item["syllables"] + (1 if wrong else 0))) for item in items} for sid, items in spec.items()}
+        if "section by section" in prompt:
+            structure = json.loads(re.search(r"\n(\[.*\])\n", prompt).group(1))
+            out = [
+                {"id": row["id"], "chars": list("海" * (row["characters"] + (1 if wrong else 0)))}
+                for sec in structure for row in sec["lines"]
+                if "characters" in row and row.get("note") != "not needed now"
+            ]
             return "Here you go: " + json.dumps({"lines": out}, ensure_ascii=False)
-        count = int(re.search(r"EXACTLY (\d+) syllables", prompt).group(1))
+        count = int(re.search(r"each EXACTLY (\d+) characters", prompt).group(1))
         need = int(re.search(r"Give (\d+) other", prompt).group(1))
         words = ["山", "云", "风", "雨", "星"]
-        alts = [{"text": words[i] * (count + (1 if wrong else 0)), "note": "更含蓄"} for i in range(need)]
+        alts = [{"chars": list(words[i % 5] * (count + (1 if wrong else 0))), "note": "更含蓄"} for i in range(need)]
         return json.dumps({"alternatives": alts}, ensure_ascii=False)
 
 
@@ -277,7 +281,7 @@ def test_lyrics_rewrite_with_a_model_and_keep(text_api):
     assert all(n["lyric"] == "啦" for n in untouched)  # the intro was not asked for
     assert "海, 想家" in model.prompts[0] and "subtle" in model.prompts[0]
     for prompt in model.prompts:
-        assert "Lines: " in prompt
+        assert "section by section" in prompt
     undone = api.post(out, "undo")
     assert [n.get("lyric") for n in verse(undone, "vocal")] == [n.get("lyric") for n in verse(song, "vocal")]
 
@@ -291,7 +295,7 @@ def test_lyrics_with_every_line_kept_has_nothing_to_write(text_api):
     assert error["code"] == "cannot_apply"
 
 
-def test_the_server_checks_syllable_counts_and_retries_once(make_client):
+def test_the_server_checks_syllable_counts_and_retries(make_client):
     model = FakeText("off")
     api = Api(make_client(adapters=Adapters(text_model=model)))
     song = api.song()
@@ -310,9 +314,11 @@ def test_lyrics_fail_with_503_when_the_model_cannot_deliver(make_client, mode):
     model.start(mode)
     r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": song["revision"]})
     assert r.status_code == 503 and r.json()["error"]["code"] == "offline_unavailable"
+    assert r.json()["error"]["detail"]["reason"] == {"wrong": "bad_answer", "error": "timeout"}[mode]
     assert api.c.get(f"/api/songs/{song['id']}").json()["song"] == song
     if mode == "wrong":
-        assert len(model.prompts) == 2  # one retry, then give up
+        assert len(model.prompts) == 3  # two retries with the counts, then give up
+        assert "needs" in model.prompts[1] and "you wrote" in model.prompts[1]
 
 
 def test_lyrics_with_a_stale_revision_is_409(text_api):
@@ -492,3 +498,65 @@ def test_bass_register_moves_the_notes_that_fit(api):
         out = api.edit(song, {"op": "shiftRegister", "track": "bass", "section": section["id"], "direction": direction})
         assert out["tracks"]["bass"]["notes"] != song["tracks"]["bass"]["notes"]
         assert all(28 <= n["pitch"] <= 55 for n in out["tracks"]["bass"]["notes"])
+
+
+
+class RefusingModel:
+    configured = True
+
+    def __init__(self, reason):
+        self.reason, self.calls = reason, 0
+
+    def complete(self, *a, **k):
+        from fretcase_server.adapters import ModelError
+
+        self.calls += 1
+        raise ModelError(self.reason)
+
+
+@pytest.mark.parametrize("reason", ["auth", "rate_limited", "unreachable"])
+def test_a_refused_model_call_says_why(make_client, reason):
+    model = RefusingModel(reason)
+    api = Api(make_client(adapters=Adapters(text_model=model)))
+    song = api.song()  # making a song tries the model once and keeps 啦
+    r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": song["revision"]})
+    assert r.status_code == 503 and r.json()["error"]["detail"]["reason"] == reason
+
+
+def test_without_a_model_the_reason_is_not_configured(api):
+    song = api.song()
+    r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": song["revision"]})
+    assert r.status_code == 503 and r.json()["error"]["detail"]["reason"] == "not_configured"
+    assert api.c.get("/health").json()["lyrics"] is False
+
+
+def test_choosing_does_not_wait_for_the_model(text_api):
+    api, model = text_api
+    made = api.c.post("/api/candidates", json={"seed": api.c.post("/api/seed", json={"inputs": [{"kind": "text", "text": "海边的傍晚"}]}).json()["seed"]}).json()["candidates"]
+    model.start("good")
+    chosen = api.c.post(f"/api/songs/{made[0]['id']}/choose", json={}).json()["song"]
+    assert model.prompts == [] and chosen["candidate"]["chosen"] is True
+    assert api.c.get("/health").json()["lyrics"] is True
+
+
+def test_the_text_model_defaults_to_the_anthropic_api_when_only_a_key_is_set():
+    from fretcase_server.adapters import AnthropicTextModel
+
+    m = AnthropicTextModel(None, "sk-test", None)
+    assert m.configured and m.endpoint() == "https://api.anthropic.com/v1/messages" and m.name == "claude-sonnet-5-5"
+    assert not AnthropicTextModel(None, None, None).configured
+
+
+def test_env_file_is_read_without_overriding(tmp_path, monkeypatch):
+    from fretcase_server.config import load_env_file
+
+    f = tmp_path / ".env"
+    f.write_text('# comment\nFRETCASE_TEXT_MODEL_KEY="sk-from-file"\nexport FRETCASE_SHARE_BASE=https://a.example\n', encoding="utf-8")
+    monkeypatch.delenv("FRETCASE_TEXT_MODEL_KEY", raising=False)
+    monkeypatch.setenv("FRETCASE_SHARE_BASE", "https://kept.example")
+    load_env_file(f)
+    import os
+
+    assert os.environ["FRETCASE_TEXT_MODEL_KEY"] == "sk-from-file"
+    assert os.environ["FRETCASE_SHARE_BASE"] == "https://kept.example"
+    monkeypatch.delenv("FRETCASE_TEXT_MODEL_KEY")
