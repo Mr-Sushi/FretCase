@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FretCase 面板模拟器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>FretCase 面板模拟器</h1>
+  <form id="link-form" autocomplete="off">
+    <label>服务器 <input id="url" type="text" spellcheck="false" placeholder="wss://主机:8443/ws/panel（留空为离线）"></label>
+    <button id="connect" type="submit">连接</button>
+    <button id="disconnect" type="button">断开</button>
+  </form>
+  <div class="badges">
+    <span id="link-badge" class="badge">离线</span>
+    <span id="app-badge" class="badge">iPad 未知</span>
+  </div>
+</header>
+
+<main>
+  <svg id="panel" viewBox="0 0 1180 620" role="group" aria-label="控制面板"></svg>
+  <section id="log-section">
+    <div class="log-head">
+      <h2>消息</h2>
+      <label><input id="show-in" type="checkbox" checked> 显示收到的</label>
+      <button id="clear-log" type="button">清空</button>
+    </div>
+    <pre id="log" aria-live="off"></pre>
+    <p class="hint">键盘：C 采集，P 播放，U 撤销，A 换一个，1 至 6 选音轨（按住为按下）。唱盘：拖动或滚轮。旋钮：上下拖动或滚轮。</p>
+  </section>
+</main>
+
+<script src="panel-client.js"></script>
+<script src="sim.js"></script>
+</body>
+</html>
