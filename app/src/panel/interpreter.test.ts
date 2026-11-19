@@ -8,10 +8,15 @@ const sections: Section[] = [
   { id: 's-chorus', label: '高潮', startBar: 8, endBar: 16 },
 ]
 
-function setup(selected: PanelContext['selectedTrack'] = null) {
+function setup(selected: PanelContext['selectedTrack'] = null, screen = 'shape') {
   const out: Intent[] = []
-  const state = { selected, volumes: { drums: 0.8 } as Record<string, number>, controls: { brightness: 0.5, complexity: 0.5, density: 0.5 }, tempo: 84 }
+  const state = { selected, screen, focus: 0, sectionIndex: 0, styleIndex: 1, region: { complexity: 0.5, intensity: 0.5 }, volumes: { drums: 0.8 } as Record<string, number>, controls: { brightness: 0.5, complexity: 0.5, density: 0.5 }, tempo: 84 }
   const ctx: PanelContext = {
+    screen: () => state.screen,
+    focus: () => state.focus,
+    sectionIndex: () => state.sectionIndex,
+    cardStyleIndex: () => state.styleIndex,
+    regionParam: (p) => state.region[p],
     bars: 16,
     sections,
     get selectedTrack() { return state.selected },
@@ -175,5 +180,64 @@ describe('knobs', () => {
     send('knob.turn', { knob: 'tempo', delta: -4 }, 0)
     vi.advanceTimersByTime(400)
     expect(out).toEqual([{ type: 'tempo', value: 80 }])
+  })
+})
+
+describe('screens', () => {
+  const press = (send: ReturnType<typeof setup>['send'], id: string, t = 0) => { send('key', { id, action: 'down' }, t); send('key', { id, action: 'up' }, t + 50) }
+
+  it('pick: four detents move the focus by one card, the other key asks for three more', () => {
+    const { out, send, state } = setup(null, 'pick')
+    send('platter.turn', { delta: 3 }, 0)
+    expect(out).toEqual([])
+    send('platter.turn', { delta: 1 }, 20)
+    expect(out).toEqual([{ type: 'pick.focus', index: 1 }])
+    state.focus = 1
+    send('platter.turn', { delta: 8 }, 40) // would pass the last card
+    expect(out.at(-1)).toEqual({ type: 'pick.focus', index: 2 })
+    state.focus = 2
+    send('platter.turn', { delta: -4 }, 60)
+    expect(out.at(-1)).toEqual({ type: 'pick.focus', index: 1 })
+    press(send, 'another')
+    expect(out.at(-1)).toEqual({ type: 'pick.more' })
+    press(send, 'play', 500)
+    expect(out.at(-1)).toEqual({ type: 'play.toggle' })
+  })
+
+  it('detail: the platter moves the section, the knobs set the selected region', () => {
+    const { out, send, state } = setup('guitar', 'detail')
+    send('platter.turn', { delta: 4 }, 0)
+    expect(out).toEqual([{ type: 'region.section', index: 1 }])
+    out.length = 0
+    send('knob.turn', { knob: 'complexity', delta: 5 }, 0)
+    send('knob.turn', { knob: 'density', delta: -5 }, 0)
+    vi.advanceTimersByTime(400)
+    expect(out).toEqual([
+      { type: 'region.param', param: 'complexity', value: 0.6 },
+      { type: 'region.param', param: 'intensity', value: 0.4 },
+    ])
+    out.length = 0
+    send('knob.turn', { knob: 'brightness', delta: 5 }, 0)
+    send('knob.turn', { knob: 'tempo', delta: 2 }, 0)
+    vi.advanceTimersByTime(400)
+    expect(out).toEqual([{ type: 'control', control: 'brightness', value: 0.6 }, { type: 'tempo', value: 86 }])
+    state.screen = 'shape'
+    out.length = 0
+    send('knob.turn', { knob: 'complexity', delta: 5 }, 0)
+    vi.advanceTimersByTime(400)
+    expect(out).toEqual([{ type: 'control', control: 'complexity', value: 0.6 }])
+  })
+
+  it('card: the platter cycles the styles', () => {
+    const { out, send } = setup(null, 'card')
+    send('platter.turn', { delta: 4 }, 0)
+    send('platter.turn', { delta: -8 }, 20)
+    expect(out).toEqual([{ type: 'card.style', index: 2 }, { type: 'card.style', index: 0 }])
+  })
+
+  it('capture: short press is a photo, hold is a hum', () => {
+    const { out, send } = setup(null, 'capture')
+    press(send, 'capture')
+    expect(out).toEqual([{ type: 'photo' }])
   })
 })

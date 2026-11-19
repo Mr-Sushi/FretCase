@@ -1,53 +1,9 @@
 import * as Tone from 'tone'
-import type { Song, TrackId } from '../types'
-import { TRACK_IDS, midiToHz } from '../lib/song'
+import type { Song, SpaceId, TrackId } from '../types'
+import { TRACK_IDS } from '../lib/song'
 import { buildSchedule, diffForPlayback, faderGain, type NoteEvent } from './schedule'
-
-type Voice = { trigger(n: NoteEvent, time: number, durSec: number): void; node: Tone.ToneAudioNode; dispose(): void }
-
-/** Sample-free voices: the device has no sample files in milestone 1, so every instrument id maps to a synth patch. */
-function makeVoice(track: TrackId, instrument: string, out: Tone.ToneAudioNode): Voice {
-  const connect = (n: Tone.ToneAudioNode) => { n.connect(out); return n }
-  if (track === 'drums') {
-    const pop = instrument === 'pop-kit'
-    const kick = connect(new Tone.MembraneSynth({ pitchDecay: 0.03, octaves: 5, envelope: { attack: 0.001, decay: pop ? 0.3 : 0.4, sustain: 0 } })) as Tone.MembraneSynth
-    const snare = connect(new Tone.NoiseSynth({ noise: { type: pop ? 'white' : 'pink' }, envelope: { attack: 0.001, decay: pop ? 0.18 : 0.25, sustain: 0 } })) as Tone.NoiseSynth
-    const hat = connect(new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } })) as Tone.NoiseSynth
-    hat.volume.value = -12
-    return {
-      node: out,
-      trigger(n, time) {
-        const v = n.velocity / 127
-        if (n.pitch === 36 || n.pitch === 35) kick.triggerAttackRelease('C1', 0.2, time, v)
-        else if (n.pitch === 38 || n.pitch === 40 || n.pitch === 39) snare.triggerAttackRelease(0.15, time, v)
-        else hat.triggerAttackRelease(0.05, time, v)
-      },
-      dispose() { kick.dispose(); snare.dispose(); hat.dispose() },
-    }
-  }
-  let synth: Tone.PolySynth | Tone.MonoSynth
-  if (track === 'bass') {
-    synth = new Tone.MonoSynth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.6, release: 0.2 }, filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.4, baseFrequency: 120, octaves: 2 } })
-  } else if (track === 'guitar') {
-    const steel = instrument === 'steel'
-    synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: steel ? 'sawtooth' : 'triangle' }, envelope: { attack: 0.005, decay: steel ? 0.6 : 0.9, sustain: 0.05, release: 0.6 } })
-  } else if (track === 'melody') {
-    const piano = instrument === 'piano'
-    synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: piano ? 'triangle' : 'sine' }, envelope: { attack: 0.005, decay: piano ? 1.0 : 0.4, sustain: piano ? 0.1 : 0.5, release: 0.8 } })
-  } else {
-    // Guide voice for the vocal line when no recording or synthesis is available.
-    synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'sine' }, envelope: { attack: 0.06, decay: 0.2, sustain: 0.6, release: 0.4 } })
-    ;(synth as Tone.PolySynth).volume.value = -4
-  }
-  connect(synth)
-  return {
-    node: out,
-    trigger(n, time, durSec) {
-      synth.triggerAttackRelease(midiToHz(n.pitch), Math.max(0.05, durSec), time, n.velocity / 127)
-    },
-    dispose() { synth.dispose() },
-  }
-}
+import { makeVoice, type Voice } from './voices'
+import { MasterBus } from './master'
 
 export interface EngineEvents { onPosition?(tick: number): void; onEnd?(): void; onLoadError?(assetId: string): void }
 
@@ -58,7 +14,8 @@ export interface EngineEvents { onPosition?(tick: number): void; onEnd?(): void;
  */
 export class PlaybackEngine {
   private song: Song | null = null
-  private master = new Tone.Gain(0.9).toDestination()
+  private master = new MasterBus()
+  private solo: TrackId | null = null
   private gains = new Map<TrackId, Tone.Gain>()
   private voices = new Map<TrackId, Voice>()
   private parts: Tone.Part[] = []
@@ -71,7 +28,7 @@ export class PlaybackEngine {
   constructor(private assetUrl: (id: string) => string, private events: EngineEvents = {}) {
     Tone.getTransport().PPQ = 480
     for (const t of TRACK_IDS) {
-      const g = new Tone.Gain(0).connect(this.master)
+      const g = new Tone.Gain(0).connect(this.master.input)
       this.gains.set(t, g)
     }
   }
@@ -84,7 +41,8 @@ export class PlaybackEngine {
     this.song = song
     const tr = Tone.getTransport()
     if (d.tempo || d.rebuild) tr.bpm.value = song.tempo
-    if (d.gains) this.applyGains()
+    this.master.set(song.master.volume, song.master.space)
+    if (d.gains || d.rebuild) this.applyGains()
     if (d.rebuild) this.rebuild()
   }
 
@@ -92,14 +50,27 @@ export class PlaybackEngine {
     if (!this.song) return
     for (const t of TRACK_IDS) {
       const tr = this.song.tracks[t]
-      this.gains.get(t)!.gain.rampTo(faderGain(tr.volume, tr.muted), 0.05)
+      this.gains.get(t)!.gain.rampTo(this.effective(t, tr.volume, tr.muted), 0.05)
     }
   }
 
   /** Moves a fader's gain now, before the server round trip has returned. */
   setTrackGain(track: TrackId, volume: number, muted: boolean) {
-    this.gains.get(track)?.gain.rampTo(faderGain(volume, muted), 0.03)
+    this.gains.get(track)?.gain.rampTo(this.effective(track, volume, muted), 0.03)
   }
+
+  private effective(track: TrackId, volume: number, muted: boolean) {
+    return faderGain(volume, muted || (this.solo !== null && this.solo !== track))
+  }
+
+  /** "Only listen to this one": app-side, never sent to the server. */
+  setSolo(track: TrackId | null) {
+    this.solo = track
+    this.applyGains()
+  }
+
+  /** Master volume and reverb while a slider is dragged, before the server round trip. */
+  setMaster(volume: number, space: SpaceId) { this.master.set(volume, space) }
 
   private rebuild() {
     for (const p of this.parts) { p.dispose() }

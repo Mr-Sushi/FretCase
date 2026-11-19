@@ -12,5 +12,5 @@ export function isMockMode(): boolean {
 }
 
 export function createApi(): Api {
-  return isMockMode() ? new MockApi(150) : new HttpApi('')
+  return isMockMode() ? new MockApi(150, typeof location !== 'undefined' && new URLSearchParams(location.search).get('lyrics') === 'online') : new HttpApi('')
 }

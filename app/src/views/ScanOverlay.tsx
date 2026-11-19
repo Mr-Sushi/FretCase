@@ -67,13 +67,13 @@ export function ScanOverlay() {
   return (
     <div className="overlay">
       <div className="scan">
-        <h2>把卡片背面对着屏幕上方的镜头</h2>
+        <h2>把卡片上的二维码对着屏幕上方的镜头</h2>
         <div className="viewfinder scanvf">
           <video ref={video} playsInline muted />
           {err && <div className="vf-empty">{err}</div>}
           <div className="reticle" />
         </div>
-        <div className="hint">识别方式：{engine}</div>
+        <div className="hint" hidden={!engine}>{engine ? "" : ""}</div>
         <form className="row" onSubmit={async (e) => { e.preventDefault(); if (!(await c.handleScan(manual))) c.toast('网址不对，应该像 https://…/s/xxxxxxxxxx', 'info') }}>
           <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="或者输入卡片上的网址" />
           <button className="btn small" disabled={!manual.trim()}>载入</button>

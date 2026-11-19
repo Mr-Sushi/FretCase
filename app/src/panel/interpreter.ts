@@ -17,9 +17,21 @@ export type Intent =
   | { type: 'control'; control: 'brightness' | 'complexity' | 'density'; value: number }
   | { type: 'tempo'; value: number }
   | { type: 'faders.sync'; faders: Record<TrackId, number> }
+  | { type: 'pick.focus'; index: number }
+  | { type: 'pick.more' }
+  | { type: 'region.section'; index: number }
+  | { type: 'region.param'; param: 'complexity' | 'intensity'; value: number }
+  | { type: 'card.style'; index: number }
 
 /** The part of the app state the interpretation needs. Read at the moment of use. */
 export interface PanelContext {
+  /** Which screen is showing: the same meaning of the panel's controls changes with it. */
+  screen(): string
+  focus(): number
+  sectionIndex(): number
+  cardStyleIndex(): number
+  /** Complexity or intensity of the selected region on the track screen, or null when none is selected. */
+  regionParam(param: 'complexity' | 'intensity'): number | null
   bars: number
   sections: Section[]
   selectedTrack: TrackId | null
@@ -35,6 +47,8 @@ export interface InterpreterOptions {
   knobDebounceMs: number
   /** One feel-knob detent changes the value by this much (docs/api.md: 0.02). */
   knobStep: number
+  /** Platter detents per step where the platter chooses between a few things (cards, sections, card styles). */
+  detentsPerStep: number
   /** Tempo knob: quarter notes per minute per detent. Not specified by docs/api.md. */
   tempoStep: number
 }
@@ -46,6 +60,7 @@ export const DEFAULT_OPTIONS: InterpreterOptions = {
   knobDebounceMs: 400,
   knobStep: 0.02,
   tempoStep: 1,
+  detentsPerStep: 4,
 }
 
 interface Msg { type: string; t?: number; payload?: Record<string, unknown> }
@@ -57,6 +72,8 @@ interface Msg { type: string; t?: number; payload?: Record<string, unknown> }
  * feel knobs debounced to one call 400 ms after the last detent.
  */
 export class PanelInterpreter {
+  private stepAcc = 0
+  private lastScreen = ''
   private position = 0 // in bars, fractional; one detent moves 1/detentsPerBar
   private downAt = new Map<KeyId, { t: number; timer: ReturnType<typeof setTimeout>; long: boolean }>()
   private faderTimers = new Map<TrackId, { timer: ReturnType<typeof setTimeout>; value: number }>()
@@ -99,6 +116,22 @@ export class PanelInterpreter {
 
   private platter(delta: number) {
     if (!Number.isInteger(delta) || delta === 0) return
+    const screen = this.ctx.screen()
+    if (screen !== this.lastScreen) { this.lastScreen = screen; this.stepAcc = 0 }
+    const stepper = screen === 'pick' ? { count: 3, cur: this.ctx.focus(), type: 'pick.focus' as const }
+      : screen === 'detail' ? { count: this.ctx.sections.length, cur: this.ctx.sectionIndex(), type: 'region.section' as const }
+      : screen === 'card' ? { count: 5, cur: this.ctx.cardStyleIndex(), type: 'card.style' as const }
+      : null
+    if (stepper) {
+      // Detents add up; every `detentsPerStep` of them moves the choice by one.
+      const total = this.stepAcc + delta
+      const steps = Math.trunc(total / this.opts.detentsPerStep)
+      this.stepAcc = total - steps * this.opts.detentsPerStep
+      if (steps === 0) return
+      const index = clamp(stepper.cur + steps, 0, stepper.count - 1)
+      if (index !== stepper.cur) this.emit({ type: stepper.type, index })
+      return
+    }
     this.position = clamp(this.position + delta / this.opts.detentsPerBar, 0, this.ctx.bars)
     this.emit({ type: 'seek', bar: this.position })
   }
@@ -108,16 +141,22 @@ export class PanelInterpreter {
   private knob(knob: KnobId, delta: number) {
     if (!Number.isInteger(delta) || delta === 0) return
     const pending = this.knobTimers.get(knob)
+    // On the track screen the complexity and density knobs set the selected region's complexity and intensity.
+    const param = this.ctx.screen() === 'detail' ? (knob === 'complexity' ? 'complexity' : knob === 'density' ? 'intensity' : null) : null
+    const regionNow = param ? this.ctx.regionParam(param) : null
+    const toRegion = param !== null && regionNow !== null
     const start = pending
       ? pending.value
-      : knob === 'tempo' ? this.ctx.tempo() : this.ctx.controlValue(knob)
+      : knob === 'tempo' ? this.ctx.tempo() : toRegion ? regionNow : this.ctx.controlValue(knob)
     const value = knob === 'tempo'
       ? clamp(Math.round(start + delta * this.opts.tempoStep), 40, 220)
       : clamp(Math.round((start + delta * this.opts.knobStep) * 1000) / 1000, 0, 1)
     if (pending) clearTimeout(pending.timer)
     const timer = setTimeout(() => {
       this.knobTimers.delete(knob)
-      this.emit(knob === 'tempo' ? { type: 'tempo', value } : { type: 'control', control: knob, value })
+      if (knob === 'tempo') this.emit({ type: 'tempo', value })
+      else if (toRegion) this.emit({ type: 'region.param', param: param!, value })
+      else this.emit({ type: 'control', control: knob, value })
     }, this.opts.knobDebounceMs)
     this.knobTimers.set(knob, { timer, value })
   }
@@ -188,6 +227,7 @@ export class PanelInterpreter {
       case 'play': this.emit({ type: 'play.toggle' }); return
       case 'undo': this.emit({ type: 'undo' }); return
       case 'another': {
+        if (this.ctx.screen() === 'pick') { this.emit({ type: 'pick.more' }); return }
         const s = this.sectionUnderPlatter()
         if (!s) return
         const track = this.ctx.selectedTrack ?? undefined

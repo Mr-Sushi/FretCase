@@ -1,5 +1,5 @@
-import type { Catalog, SeedCard, SeedInput, Song, TrackId } from '../types'
-import { ApiError, type Api, type AssetRole, type EditOp, type Health, type SongListItem } from './types'
+import type { Catalog, SeedCard, SeedInput, SharePage, Song, TrackId } from '../types'
+import { ApiError, type Api, type AssetRole, type CandidateRequest, type EditOp, type Health, type LyricsAlternative, type LyricsRequest, type LyricsRewriteRequest, type LyricsTheme, type PrinterStatus, type SongListItem } from './types'
 
 const TIMEOUT_MS = 8000
 
@@ -48,9 +48,10 @@ export class HttpApi implements Api {
   }
   assetUrl(id: string) { return `${this.base}/api/assets/${id}` }
   async createSeed(inputs: SeedInput[]) { return (await this.request<{ seed: SeedCard }>('POST', '/api/seed', { inputs }, undefined, 60000)).seed }
-  async createSong(seed: SeedCard, bars?: number) {
-    return (await this.request<{ song: Song }>('POST', '/api/songs', bars ? { seed, bars } : { seed }, undefined, 60000)).song
+  async candidates(seed: SeedCard, req: CandidateRequest = {}) {
+    return (await this.request<{ candidates: Song[] }>('POST', '/api/candidates', { seed, ...req }, undefined, 60000)).candidates
   }
+  async choose(id: string) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/choose`, {}, undefined, 30000)).song }
   async listSongs() { return (await this.request<{ songs: SongListItem[] }>('GET', '/api/songs')).songs }
   async getSong(id: string) { return (await this.request<{ song: Song }>('GET', `/api/songs/${id}`)).song }
   async edit(id: string, baseRevision: number, ops: EditOp[]) {
@@ -65,6 +66,15 @@ export class HttpApi implements Api {
   async undo(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/undo`, { baseRevision })).song }
   async cardPreview(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/preview`, { baseRevision }, undefined, 30000)).song }
   async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 30000)).song }
+  async lyricsRewrite(id: string, baseRevision: number, req: LyricsRewriteRequest) {
+    return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/lyrics`, { baseRevision, ...req }, undefined, 25000)).song
+  }
+  async lyricsAlternatives(id: string, req: LyricsRequest & { section: string; line: number }) {
+    return (await this.request<{ alternatives: LyricsAlternative[] }>('POST', `/api/songs/${id}/lyrics/alternatives`, req, undefined, 25000)).alternatives
+  }
+  async lyricsThemes(id: string) { return (await this.request<{ themes: LyricsTheme[] }>('GET', `/api/songs/${id}/lyrics/themes`)).themes }
+  async printer() { return (await this.request<{ printer: PrinterStatus }>('GET', '/api/printer')).printer }
+  sharePage(shareId: string) { return this.request<{ page: SharePage; song: Song }>('GET', `/api/share/${encodeURIComponent(shareId)}/page`) }
   async resolveShare(shareId: string) { return (await this.request<{ songId: string }>('GET', `/api/share/${encodeURIComponent(shareId)}`)).songId }
   getLocation() { return this.request<{ city: string | null; source: 'gps' | 'manual' | 'none' }>('GET', '/api/location') }
   async putLocation(city: string) { await this.request('PUT', '/api/location', { city }) }

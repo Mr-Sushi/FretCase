@@ -1,24 +1,17 @@
 import { useEffect, useMemo } from 'react'
 import { createApi } from './api'
 import { PlaybackEngine } from './audio/engine'
-import { AppContext, useSel } from './app/context'
+import { AppContext, useApp, useSel } from './app/context'
 import { Controller } from './app/controller'
 import { Store, initialState, type View } from './app/store'
 import { PanelClient, panelUrl } from './panel/client'
 import { CaptureView } from './views/CaptureView'
-import { SongView } from './views/SongView'
-import { TrackEditView } from './views/TrackEditView'
+import { PickView } from './views/PickView'
+import { ShapeView } from './views/ShapeView'
+import { DetailView } from './views/DetailView'
+import { LyricsView } from './views/LyricsView'
 import { CardView } from './views/CardView'
 import { ScanOverlay } from './views/ScanOverlay'
-import { TRACKS } from './lib/song'
-import { useApp } from './app/context'
-
-const TABS: { id: View; label: string }[] = [
-  { id: 'capture', label: '采集' },
-  { id: 'song', label: '整首歌' },
-  { id: 'track', label: '单轨' },
-  { id: 'card', label: '卡片' },
-]
 
 export function App() {
   const world = useMemo(() => {
@@ -45,6 +38,13 @@ export function App() {
       c.panel = panel
       panel.start()
     }
+    // A shortcut for demos and screenshots: ?view=shape opens the demo song on that screen.
+    const q = new URLSearchParams(location.search).get('view')
+    if (api.mock && q) void (async () => {
+      await c.init()
+      if (q !== 'capture' && q !== 'pick') await c.openSong('song-demo-0001')
+      if (q !== 'shape' && q !== 'capture' && q !== 'pick') c.setView(q as View)
+    })()
     const health = setInterval(() => void c.refreshHealth(), 10000)
     return () => { clearInterval(health); panel?.stop(); c.dispose(); world.engine.dispose() }
   }, [world])
@@ -56,54 +56,64 @@ export function App() {
   )
 }
 
-function Shell() {
+const STEPS: { view: View; no: string; label: string }[] = [
+  { view: 'capture', no: '①', label: '采集' },
+  { view: 'pick', no: '②', label: '选一首' },
+  { view: 'shape', no: '③', label: '打磨' },
+  { view: 'card', no: '④', label: '做卡' },
+]
+const STEP_OF: Record<View, View> = { capture: 'capture', pick: 'pick', shape: 'shape', detail: 'shape', lyrics: 'shape', card: 'card' }
+
+/** The top bar of the four main steps. */
+export function StepHeader({ right }: { right?: React.ReactNode }) {
   const { c } = useApp()
   const view = useSel((s) => s.view)
   const song = useSel((s) => s.song)
-  const playing = useSel((s) => s.playing)
-  const busy = useSel((s) => s.busy)
-  const toast = useSel((s) => s.toast)
+  const candidates = useSel((s) => s.candidates)
   const server = useSel((s) => s.serverOnline)
   const net = useSel((s) => s.netOnline)
   const panel = useSel((s) => s.panelConnected)
-  const attached = useSel((s) => s.panelAttached)
   const mock = useSel((s) => s.mock)
-  const scanning = useSel((s) => s.scanning)
-
+  const active = STEP_OF[view]
+  const enabled = (v: View) => v === 'capture' || (v === 'pick' ? !!candidates : !!song)
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="brand">FretCase</div>
-        <nav className="tabs">
-          {TABS.map((t) => (
-            <button key={t.id} className={`tab ${view === t.id ? 'on' : ''}`} onClick={() => (t.id === 'track' ? song && c.editTrack(c_selected(c), undefined) : c.setView(t.id))}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
-        <div className="grow song-name">{song ? song.title : ''}</div>
-        <div className="status">
-          {mock && <span className="chip mockchip">演示模式</span>}
-          <span className={`chip ${server ? 'ok' : server === false ? 'bad' : ''}`}>{server ? '服务器已连接' : server === false ? '服务器未连接' : '连接中'}</span>
-          <span className={`chip ${panel ? 'ok' : ''}`}>{panel ? '面板已连接' : attached ? '等待面板' : '无面板'}</span>
-          <span className={`chip ${net ? 'ok' : ''}`}>{net ? '在线' : '离线'}</span>
-        </div>
-        <button className="btn ghost" onClick={() => c.store.set({ scanning: !scanning })}>扫卡片</button>
-        <button className={`btn play ${playing ? 'on' : ''}`} disabled={!song} onClick={() => void c.togglePlay()}>{playing ? '暂停' : '播放'}</button>
-      </header>
-      <main className="main">
-        {view === 'capture' && <CaptureView />}
-        {view === 'song' && <SongView />}
-        {view === 'track' && <TrackEditView />}
-        {view === 'card' && <CardView />}
-        {scanning && <ScanOverlay />}
-      </main>
-      {busy && <div className="busy"><span className="spinner" />{busy}</div>}
-      {toast && <div className={`toast ${toast.kind}`} key={toast.id}>{toast.text}</div>}
-    </div>
+    <header className="topbar">
+      <div className="brand">FretCase</div>
+      <nav aria-label="步骤" className="steps">
+        {STEPS.map((s) => (
+          <button key={s.view} type="button" className={`step ${active === s.view ? 'on' : ''}`} disabled={!enabled(s.view)} aria-current={active === s.view ? 'step' : undefined} onClick={() => c.setView(s.view)}>
+            {s.no} {s.label}
+          </button>
+        ))}
+      </nav>
+      <div className="status">
+        {right}
+        {mock && <span className="pill">演示</span>}
+        {server === false && <span className="pill bad">连不上服务器</span>}
+        <span className="pill">{net ? '联网' : '没有网络'}</span>
+        <span className="pill">{panel ? '面板已连接' : '没有面板'}</span>
+        <button type="button" className="ghostbtn" onClick={() => c.store.set({ scanning: true })}>扫卡片</button>
+      </div>
+    </header>
   )
 }
 
-function c_selected(c: Controller) {
-  return c.store.state.selectedTrack ?? TRACKS[1].id
+function Shell() {
+  const view = useSel((s) => s.view)
+  const busy = useSel((s) => s.busy)
+  const toast = useSel((s) => s.toast)
+  const scanning = useSel((s) => s.scanning)
+  return (
+    <div className="shell">
+      {view === 'capture' && <CaptureView />}
+      {view === 'pick' && <PickView />}
+      {view === 'shape' && <ShapeView />}
+      {view === 'detail' && <DetailView />}
+      {view === 'lyrics' && <LyricsView />}
+      {view === 'card' && <CardView />}
+      {scanning && <ScanOverlay />}
+      {busy && <div className="busy" role="status"><span className="spinner" />{busy}</div>}
+      {toast && <div className={`toast ${toast.kind}`} key={toast.id} role="status">{toast.text}</div>}
+    </div>
+  )
 }

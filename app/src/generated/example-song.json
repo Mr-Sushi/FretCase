@@ -1,10 +1,49 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "id": "song-hai-bian-01",
   "revision": 3,
   "createdAt": "2026-11-18T18:02:11Z",
   "updatedAt": "2026-11-18T18:09:40Z",
   "title": "海边的傍晚",
+  "candidate": {
+    "groupId": "grp-hai-bian-01",
+    "index": 0,
+    "name": "黄昏民谣",
+    "tags": [
+      "温暖",
+      "慢一点",
+      "人声在前"
+    ],
+    "why": "照片里的暖色配上尼龙吉他分解和弦；副歌就是你哼的那句。",
+    "timeOfDay": "dusk",
+    "parts": {
+      "vocal": {
+        "level": 0.9,
+        "sound": "女声"
+      },
+      "melody": {
+        "level": 0.4,
+        "sound": "钢琴"
+      },
+      "guitar": {
+        "level": 0.8,
+        "sound": "尼龙吉他分解"
+      },
+      "bass": {
+        "level": 0.5,
+        "sound": "指弹贝斯"
+      },
+      "drums": {
+        "level": 0.35,
+        "sound": "爵士鼓刷子"
+      },
+      "ambience": {
+        "level": 0.3,
+        "sound": "海浪"
+      }
+    },
+    "chosen": true
+  },
   "key": {
     "tonic": "D",
     "mode": "major"
@@ -34,6 +73,14 @@
       {
         "kind": "photo",
         "assetId": "a-photo-01"
+      },
+      {
+        "kind": "photo",
+        "assetId": "a-photo-02"
+      },
+      {
+        "kind": "photo",
+        "assetId": "a-photo-03"
       }
     ],
     "key": {
@@ -122,7 +169,8 @@
       "id": "s-chorus",
       "label": "高潮",
       "startBar": 8,
-      "endBar": 12
+      "endBar": 12,
+      "lead": "vocal"
     },
     {
       "id": "s-outro",
@@ -592,6 +640,36 @@
       "instrument": "synth-female",
       "volume": 0.8,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "plain"
+        },
+        {
+          "section": "s-verse",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "plain"
+        },
+        {
+          "section": "s-chorus",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "plain"
+        },
+        {
+          "section": "s-outro",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "plain"
+        }
+      ],
       "source": "none",
       "notes": [
         {
@@ -643,6 +721,36 @@
       "instrument": "piano",
       "volume": 0.8,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "follow"
+        },
+        {
+          "section": "s-verse",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "follow"
+        },
+        {
+          "section": "s-chorus",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "follow"
+        },
+        {
+          "section": "s-outro",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "follow"
+        }
+      ],
       "notes": [
         {
           "start": 0,
@@ -686,6 +794,36 @@
       "instrument": "nylon",
       "volume": 0.8,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "arpeggio"
+        },
+        {
+          "section": "s-verse",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "arpeggio"
+        },
+        {
+          "section": "s-chorus",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "arpeggio"
+        },
+        {
+          "section": "s-outro",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "arpeggio"
+        }
+      ],
       "rhythm": {
         "family": "arpeggio",
         "presetId": "t321t321"
@@ -717,6 +855,36 @@
       "instrument": "finger-bass",
       "volume": 0.7,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "sustain"
+        },
+        {
+          "section": "s-verse",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "sustain"
+        },
+        {
+          "section": "s-chorus",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "sustain"
+        },
+        {
+          "section": "s-outro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "sustain"
+        }
+      ],
       "notes": [
         {
           "start": 0,
@@ -801,9 +969,39 @@
       ]
     },
     "drums": {
-      "instrument": "brush-kit",
+      "instrument": "jazz-kit",
       "volume": 0.45,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "brush"
+        },
+        {
+          "section": "s-verse",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "brush"
+        },
+        {
+          "section": "s-chorus",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "brush"
+        },
+        {
+          "section": "s-outro",
+          "play": false,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "brush"
+        }
+      ],
       "notes": [
         {
           "start": 0,
@@ -859,6 +1057,36 @@
       "instrument": "recording",
       "volume": 0.5,
       "muted": false,
+      "regions": [
+        {
+          "section": "s-intro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "recording"
+        },
+        {
+          "section": "s-verse",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "recording"
+        },
+        {
+          "section": "s-chorus",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "recording"
+        },
+        {
+          "section": "s-outro",
+          "play": true,
+          "complexity": 0.5,
+          "intensity": 0.5,
+          "style": "recording"
+        }
+      ],
       "clips": [
         {
           "assetId": "a-waves-01",
@@ -898,12 +1126,31 @@
       "mime": "image/jpeg",
       "width": 4032,
       "height": 3024
+    },
+    {
+      "id": "a-photo-02",
+      "role": "photo",
+      "mime": "image/jpeg",
+      "width": 4032,
+      "height": 3024
+    },
+    {
+      "id": "a-photo-03",
+      "role": "photo",
+      "mime": "image/jpeg",
+      "width": 3024,
+      "height": 4032
     }
   ],
   "card": {
     "style": "ink",
     "line": "海风把傍晚吹进歌里",
-    "photoAssetId": "a-photo-01",
+    "photoAssetIds": [
+      "a-photo-01",
+      "a-photo-02",
+      "a-photo-03"
+    ],
+    "coverAssetId": "a-photo-01",
     "showPhoto": true,
     "city": "Lisbon",
     "showCity": true,
@@ -917,5 +1164,9 @@
   "provenance": {
     "engine": "0.1.0",
     "harmonySource": "library"
+  },
+  "master": {
+    "volume": 0.8,
+    "space": "room"
   }
 }
