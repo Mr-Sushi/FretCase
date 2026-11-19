@@ -414,6 +414,41 @@ describe('panel intents', () => {
     vi.useRealTimers()
   })
 
+  it('on the capture screen the red key follows the chosen mode', async () => {
+    const { c, store } = ctx
+    const rec = { start: vi.fn(async () => {}), stop: vi.fn(async () => new Blob(['a'], { type: 'audio/webm' })) }
+    ;(c as unknown as { recorder: typeof rec }).recorder = rec
+    c.photoSource = async () => photo()
+    c.setView('capture')
+    // hum mode: one short press starts, the next stops, and the hum becomes an input
+    c.setCaptureMode('hum')
+    fire(c, 'key', { id: 'capture', action: 'down' }, 0)
+    fire(c, 'key', { id: 'capture', action: 'up' }, 100)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.state.recording).toBe('hum')
+    fire(c, 'key', { id: 'capture', action: 'down' }, 3000)
+    fire(c, 'key', { id: 'capture', action: 'up' }, 3100)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.state.recording).toBe(null)
+    expect(store.state.inputs.map((i) => i.kind)).toEqual(['hum'])
+    // sound mode: holding the key records ambience, not a hum
+    c.setCaptureMode('sound')
+    fire(c, 'key', { id: 'capture', action: 'down' }, 5000)
+    await vi.advanceTimersByTimeAsync(700)
+    expect(store.state.recording).toBe('sound')
+    fire(c, 'key', { id: 'capture', action: 'up' }, 6000)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.state.inputs.map((i) => i.kind)).toEqual(['hum', 'sound'])
+    expect(store.state.captureMode).toBe('sound')
+    // photo mode: a short press takes a photo
+    c.setCaptureMode('photo')
+    fire(c, 'key', { id: 'capture', action: 'down' }, 8000)
+    fire(c, 'key', { id: 'capture', action: 'up' }, 8100)
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.state.inputs.map((i) => i.kind)).toEqual(['hum', 'sound', 'photo'])
+    vi.useRealTimers()
+  })
+
   it('on the card screen the platter cycles the styles', async () => {
     const { c, store } = ctx
     c.setView('card')

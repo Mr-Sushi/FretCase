@@ -7,8 +7,8 @@ import { PlayIcon } from './ui'
 
 const MODES: { id: CaptureMode; label: string; sub: string }[] = [
   { id: 'photo', label: '拍照', sub: '红键短按' },
-  { id: 'hum', label: '哼一段', sub: '红键按住' },
-  { id: 'sound', label: '录声音', sub: '海浪、街道' },
+  { id: 'hum', label: '哼一段', sub: '红键按一下或按住' },
+  { id: 'sound', label: '录声音', sub: '红键按一下或按住' },
   { id: 'text', label: '写一句', sub: '也可以说' },
 ]
 
@@ -108,7 +108,7 @@ function HoldStage({ kind }: { kind: 'hum' | 'sound' }) {
   return (
     <div className="stage listen">
       <div className="stage-title">{kind === 'hum' ? '哼几句你脑子里的调子' : '录下周围的声音'}</div>
-      <div className="stage-sub">{kind === 'hum' ? '不用歌词，啦啦啦就行，5 到 20 秒' : '海浪、街道、雨声都可以，10 秒左右'}</div>
+      <div className="stage-sub">{kind === 'hum' ? '不用歌词，啦啦啦就行，5 到 20 秒' : '海浪、街道、雨声都可以，10 秒左右'}；按住下面的圆钮，或按一下箱子上的红键开始、再按一下结束</div>
       <button
         type="button" aria-label="按住录音" className={`holdbtn ${mine ? 'rec' : ''}`} disabled={!!recording && !mine}
         onPointerDown={(e) => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); void c.startRecording(kind) }}
@@ -252,7 +252,7 @@ export function CaptureView() {
         </div>
       </main>
       <footer className="footbar">
-        <span>箱子上：</span><span>红键 短按拍照 · 按住哼唱</span><span>撤销键 退回上一步</span>
+        <span>箱子上：</span><span>红键 按上面选的方式采集</span><span>撤销键 退回上一步</span>
         {songs.length > 0 && <button type="button" className="linkbtn right" onClick={() => c.store.set({ showSongs: !showSongs })}>打开以前的歌</button>}
         {showSongs && (
           <div className="songs-pop" role="menu">

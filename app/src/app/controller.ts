@@ -761,12 +761,22 @@ export class Controller {
     const s = this.store.state
     switch (i.type) {
       case 'record.start':
-        if (s.view === 'capture') { this.setCaptureMode('hum'); void this.startRecording('hum') }
-        else if ((s.view === 'shape' || s.view === 'detail') && s.song) void this.startRecording('hum')
+        if (s.view === 'capture') {
+          // Holding the red key records the sound mode's ambience when that mode is chosen, a hum otherwise.
+          const kind = s.captureMode === 'sound' ? 'sound' : 'hum'
+          this.setCaptureMode(kind)
+          void this.startRecording(kind)
+        } else if ((s.view === 'shape' || s.view === 'detail') && s.song) void this.startRecording('hum')
         return
       case 'record.stop': void this.stopRecording(); return
       case 'photo': {
         if (s.view !== 'capture') return
+        // In the hum and sound modes a short press starts the recording and the next short press stops it.
+        if (s.captureMode === 'hum' || s.captureMode === 'sound') {
+          if (s.recording) void this.stopRecording()
+          else void this.startRecording(s.captureMode)
+          return
+        }
         this.setCaptureMode('photo')
         const blob = await this.photoSource?.()
         if (blob) this.addPhoto(blob)

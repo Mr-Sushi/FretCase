@@ -15,8 +15,17 @@ function photoSvg(id: string): string {
   const g = PHOTO_GRADIENTS[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % PHOTO_GRADIENTS.length]
   return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g[0]}"/><stop offset="0.55" stop-color="${g[1]}"/><stop offset="1" stop-color="${g[2]}"/></linearGradient></defs><rect width="1200" height="800" fill="url(#g)"/><circle cx="820" cy="400" r="90" fill="#fff3d6" opacity="0.85"/><rect y="520" width="1200" height="280" fill="#000" opacity="0.25"/></svg>`)
 }
-/** Stand-in for the print image: photo on top, paper strip below with title, line and a code mark. */
-function cardSvg(song: Song): string {
+/** A blob as a data: URL, so that the stand-in card image can carry the real photo. Null when it cannot be read. */
+async function dataUrlOf(b: Blob): Promise<string | null> {
+  try {
+    const bytes = new Uint8Array(await b.arrayBuffer())
+    let bin = ''
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+    return `data:${b.type || 'image/jpeg'};base64,${btoa(bin)}`
+  } catch { return null }
+}
+/** Stand-in for the print image: photo on top (the real cover when the mock has it), paper strip below with title, line and a code mark. */
+function cardSvg(song: Song, cover?: string | null): string {
   const c = song.card
   const esc = (s: string) => s.replace(/[<>&]/g, '')
   const date = (c?.capturedAt ?? song.createdAt).slice(0, 10).replace(/-/g, '.')
@@ -26,6 +35,7 @@ function cardSvg(song: Song): string {
   for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) if ((x * 7 + y * 13 + x * y) % 3 === 0 || (x < 3 && y < 3)) code += `<rect x="${1040 + x * 19}" y="${640 + y * 19}" width="19" height="19" fill="#3a2a1e"/>`
   const top = text
     ? `<rect width="1260" height="610" fill="#f7f1e4"/><text x="630" y="330" font-size="64" text-anchor="middle" fill="#3a2a1e" font-family="serif">${esc(c?.line || song.title)}</text>`
+    : cover ? `<image href="${cover}" x="0" y="0" width="1260" height="610" preserveAspectRatio="xMidYMid slice"/>`
     : `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c27a"/><stop offset="0.6" stop-color="#a8613a"/><stop offset="1" stop-color="#43261a"/></linearGradient></defs><rect width="1260" height="610" fill="url(#g)"/><circle cx="880" cy="300" r="90" fill="#fff3d6" opacity="0.85"/>`
   return svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="840" viewBox="0 0 1260 840"><rect width="1260" height="840" fill="#f7f1e4"/>${top}<text x="50" y="715" font-size="64" font-weight="700" fill="#3a2a1e" font-family="serif">${esc(song.title)}</text><text x="50" y="765" font-size="28" fill="#6e5644" font-family="sans-serif">${esc(c?.line ?? '')}</text><text x="50" y="810" font-size="24" fill="#6e5644" font-family="sans-serif">${esc(meta)}</text>${code}</svg>`)
 }
@@ -38,6 +48,7 @@ export class MockApi implements Api {
   private songs = new Map<string, Stored>()
   private drafts = new Map<string, Stored>()
   private blobs = new Map<string, string>()
+  private photoData = new Map<string, string>()
   private groups = 0
   private city = '纽卡斯尔'
   private film = 7
@@ -77,6 +88,7 @@ export class MockApi implements Api {
     await this.tick()
     const id = `a-${role.replace('_', '-')}-${rid()}`
     this.blobs.set(id, URL.createObjectURL(file))
+    if (role === 'photo') { const d = await dataUrlOf(file); if (d) this.photoData.set(id, d) }
     return { id, role, mime: file.type || 'application/octet-stream' }
   }
   assetUrl(id: string) {
@@ -85,7 +97,7 @@ export class MockApi implements Api {
     if (id.startsWith('a-photo')) return photoSvg(id)
     if (id.startsWith('a-card-print')) {
       const st = [...this.songs.values()].find((s) => s.song.assets.some((a) => a.id === id))
-      return st ? cardSvg(st.song) : ''
+      return st ? cardSvg(st.song, this.coverData(st.song)) : ''
     }
     return ''
   }
@@ -239,7 +251,26 @@ export class MockApi implements Api {
     this.checkRev(st, baseRevision)
     if (!st.song.card?.frontAssetId || st.previewSig !== cardSig(st.song)) throw new ApiError('cannot_apply', '请先预览', 422)
     this.film = Math.max(0, this.film - 1)
-    return this.commit(st, (s) => { s.card = { ...s.card!, printedAt: now() } }, false)
+    const song = this.commit(st, (s) => { s.card = { ...s.card!, printedAt: now() } }, false)
+    this.announcePrint(song)
+    return song
+  }
+  private coverData(song: Song): string | null {
+    const c = song.card
+    const id = c?.coverAssetId ?? c?.photoAssetIds?.[0]
+    return id ? this.photoData.get(id) ?? null : null
+  }
+  /** The mock printer: a page that embeds the app (the 3D model of the case) hears about each print as a window event. */
+  private announcePrint(song: Song) {
+    const g = globalThis as unknown as { dispatchEvent?: (e: Event) => boolean; CustomEvent?: typeof CustomEvent }
+    if (typeof g.dispatchEvent !== 'function' || typeof g.CustomEvent !== 'function') return
+    const c = song.card
+    const photo = c && c.style !== 'text' && c.showPhoto !== false ? this.coverData(song) : null
+    g.dispatchEvent(new g.CustomEvent('fretcase:mock-print', { detail: {
+      songId: song.id, title: song.title, line: c?.line ?? '', city: c?.showCity && c.city ? c.city : '',
+      date: (c?.capturedAt ?? song.createdAt).slice(0, 10).replace(/-/g, '.'), style: c?.style ?? null, photo,
+      image: c?.frontAssetId ? this.assetUrl(c.frontAssetId) : null,
+    } }))
   }
   async printer(): Promise<PrinterStatus> { return { kind: 'dry_run', connected: true, paper: this.film ? 'ok' : 'out', remaining: this.film } }
 
