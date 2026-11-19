@@ -25,11 +25,21 @@
   <section id="log-section">
     <div class="log-head">
       <h2>消息</h2>
+      <label>当前界面
+        <select id="screen">
+          <option value="采集">采集</option>
+          <option value="选一首">选一首</option>
+          <option value="打磨">打磨</option>
+          <option value="音轨">音轨</option>
+          <option value="歌词">歌词</option>
+          <option value="做卡">做卡</option>
+        </select>
+      </label>
       <label><input id="show-in" type="checkbox" checked> 显示收到的</label>
       <button id="clear-log" type="button">清空</button>
     </div>
     <pre id="log" aria-live="off"></pre>
-    <p class="hint">键盘：C 采集，P 播放，U 撤销，A 换一个，1 至 6 选音轨（按住为按下）。唱盘：拖动或滚轮。旋钮：上下拖动或滚轮。</p>
+    <p class="hint">“当前界面”只用来在消息记录里标注你正在操作的界面，不会发送给服务器（面板协议不变）。键盘：C 采集，P 播放，U 撤销，A 换一个，1 至 6 选音轨（按住为按下）。唱盘：拖动或滚轮。旋钮：上下拖动或滚轮。</p>
   </section>
 </main>
 

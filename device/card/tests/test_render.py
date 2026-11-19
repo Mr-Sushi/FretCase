@@ -1,142 +1,206 @@
 import io
 
+import cv2
 import numpy as np
 import pytest
+from fretcase_card import CardInput, fonts, layout, render_card
 from PIL import Image
 
-from fretcase_card import CardInput, render_card
-from fretcase_card.layout import FACE_HEIGHT, FOLD_HEIGHT
-
 URL = "https://fretcase.example/s/Ab3dEf9hJk2LmN"
-STYLES = ["ink", "comic", "xieyi", "original", "text"]
+PHOTO_STYLES = ["ink", "comic", "xieyi", "original"]
+ALL_STYLES = PHOTO_STYLES + ["text"]
 
 
-def card(style="ink", **kw):
+def card(style="original", cover=None, **kw):
     base = dict(title="海边的傍晚", style=style, share_url=URL, date_text="2026.11.19",
-                line="潮声把今天慢慢收起来", city="Newcastle upon Tyne")  # fmt: skip
+                line="海风把傍晚吹进歌里", city="厦门", cover_path=cover)
     base.update(kw)
     return CardInput(**base)
 
 
-def img(b: bytes) -> Image.Image:
-    im = Image.open(io.BytesIO(b))
-    im.load()
-    return im
+def img(png: bytes) -> Image.Image:
+    return Image.open(io.BytesIO(png)).convert("RGB")
 
 
-def black_ratio(im: Image.Image) -> float:
-    return float((np.asarray(im.convert("L")) < 128).mean())
+@pytest.mark.parametrize("style", ALL_STYLES)
+def test_sizes_with_cover(style, photo):
+    out = render_card(card(style, photo))
+    assert img(out.print_png).size == (1260, 840)
+    assert img(out.preview_png).size == (630, 420)
 
 
-@pytest.mark.parametrize("style", STYLES)
-def test_sizes_and_mode_with_photo(style, photo):
-    r = render_card(card(style, photo_path=photo))
-    for png, h in ((r.front_png, FACE_HEIGHT), (r.back_png, FACE_HEIGHT), (r.strip_png, FACE_HEIGHT * 2 + FOLD_HEIGHT)):
-        im = img(png)
-        assert im.format == "PNG" and im.mode == "1"
-        assert im.size == (384, h)
+def test_text_style_without_cover_and_cover_is_ignored(photo):
+    a = render_card(card("text"))
+    b = render_card(card("text", photo))
+    assert a.print_png == b.print_png
+    assert img(a.print_png).size == (1260, 840)
 
 
-@pytest.mark.parametrize("style", STYLES)
+@pytest.mark.parametrize("style", PHOTO_STYLES)
+def test_photo_style_needs_a_cover(style):
+    with pytest.raises(ValueError, match="cover"):
+        render_card(card(style))
+
+
+@pytest.mark.parametrize("kw", [dict(title=" "), dict(style="oil"), dict(share_url=""), dict(date_text="")])
+def test_bad_input(kw):
+    with pytest.raises(ValueError):
+        render_card(card(**{"style": "text", **kw}))
+
+
+@pytest.mark.parametrize("style", ALL_STYLES)
 def test_deterministic(style, photo):
-    a = render_card(card(style, photo_path=photo))
-    b = render_card(card(style, photo_path=photo))
-    assert a == b
+    a = render_card(card(style, photo))
+    b = render_card(card(style, photo))
+    assert a.print_png == b.print_png and a.preview_png == b.preview_png
 
 
-@pytest.mark.parametrize("style", ["ink", "comic", "xieyi", "original"])
-def test_photo_styles_are_not_blank_and_differ(style, photo):
-    front = img(render_card(card(style, photo_path=photo)).front_png)
-    assert 0.05 < black_ratio(front) < 0.9
-    text_front = img(render_card(card("text", photo_path=photo)).front_png)
-    assert front.tobytes() != text_front.tobytes()
+def test_styles_differ(photo):
+    outs = {s: render_card(card(s, photo)).print_png for s in PHOTO_STYLES}
+    assert len(set(outs.values())) == 4
 
 
-def test_styles_look_different(photo):
-    fronts = {s: render_card(card(s, photo_path=photo)).front_png for s in ["ink", "comic", "xieyi", "original"]}
-    assert len(set(fronts.values())) == 4
+def test_nothing_over_the_picture(photo):
+    a = img(render_card(card("comic", photo, title="一", line="二", city=None)).print_png)
+    b = img(render_card(card("comic", photo, title="完全不同的标题", line="x" * 40, city="北京")).print_png)
+    top = (0, 0, 1260, layout.PICTURE_H)
+    assert np.array_equal(np.asarray(a.crop(top)), np.asarray(b.crop(top)))
 
 
-@pytest.mark.parametrize("style", STYLES)
-def test_card_without_photo(style):
-    r = render_card(card(style, photo_path=None))
-    front = img(r.front_png)
-    assert front.size == (384, FACE_HEIGHT)
-    assert 0.02 < black_ratio(front) < 0.5
-    # the front shows the line; a different line gives a different front
-    other = img(render_card(card(style, line="另一句话")).front_png)
-    assert other.tobytes() != front.tobytes()
+def test_strip_is_paper_with_dark_text(photo):
+    im = np.asarray(img(render_card(card("original", photo)).print_png))
+    strip = im[layout.PICTURE_H:]
+    assert tuple(strip[2, 2]) == layout.PAPER
+    assert (strip.sum(axis=2) < 300).sum() > 3000  # title and QR modules are dark
 
 
-def test_front_without_photo_or_line_uses_title():
-    a = img(render_card(card("text", line=None, title="Seaside")).front_png)
-    b = img(render_card(card("text", line=None, title="Mountain")).front_png)
-    assert a.tobytes() != b.tobytes()
-    assert black_ratio(a) > 0.02
+def test_preview_matches_print(photo):
+    out = render_card(card("xieyi", photo))
+    small = img(out.print_png).resize((630, 420), Image.Resampling.LANCZOS)
+    assert np.array_equal(np.asarray(small), np.asarray(img(out.preview_png)))
 
 
-def test_city_only_when_not_none():
-    with_city = img(render_card(card(city="Lisbon")).back_png)
-    none = img(render_card(card(city=None)).back_png)
-    empty = img(render_card(card(city="")).back_png)
-    assert with_city.tobytes() != none.tobytes()
-    assert none.tobytes() == empty.tobytes()
+# ---- long text ----------------------------------------------------------------------------
 
 
-def test_long_text_stays_inside_the_frame():
-    long = "很长很长的歌名" * 10 + " And a very long English title that keeps going " * 3
-    r = render_card(card(title=long, line=long, city="A" * 80))
-    for png in (r.front_png, r.back_png):
-        a = np.asarray(img(png).convert("L"))
-        assert (a[:, :5] == 255).all() and (a[:, -5:] == 255).all()
-        assert (a[:5, :] == 255).all() and (a[-5:, :] == 255).all()
+def _strip_text_bounds(im: Image.Image):
+    """Bounding box (x0, y0, x1, y1) of non-paper pixels in the strip, left of the QR code."""
+    a = np.asarray(im)[layout.PICTURE_H:, : layout.QR_X - 1].astype(int)
+    diff = np.abs(a - np.array(layout.PAPER)).sum(axis=2) > 30
+    ys, xs = np.where(diff)
+    return xs.min(), ys.min(), xs.max(), ys.max()
 
 
-def test_strip_is_front_fold_back(photo):
-    r = render_card(card("ink", photo_path=photo))
-    strip = np.asarray(img(r.strip_png).convert("L"))
-    front = np.asarray(img(r.front_png).convert("L"))
-    back = np.asarray(img(r.back_png).convert("L"))
-    assert (strip[:FACE_HEIGHT] == front).mean() > 0.999
-    lower = strip[FACE_HEIGHT + FOLD_HEIGHT :]
-    # the back is printed turned by 180 degrees so that it reads upright once folded
-    assert (lower == back[::-1, ::-1]).mean() > 0.999
-    fold = strip[FACE_HEIGHT : FACE_HEIGHT + FOLD_HEIGHT]
-    assert (fold < 128).any()
+@pytest.mark.parametrize("style", ["text", "comic"])
+@pytest.mark.parametrize("title,line", [
+    ("很长的歌名" * 12, "这是一句很长很长的歌词" * 10),
+    ("A very long English title " * 6, "a long line of english words " * 12),
+    ("x" * 300, "y" * 300),
+])
+def test_long_title_and_line_fit(style, title, line, photo):
+    im = img(render_card(card(style, photo, title=title, line=line, city="一个名字很长的城市" * 3)).print_png)
+    x0, y0, x1, y1 = _strip_text_bounds(im)
+    assert x0 >= layout.MARGIN - 2
+    assert x1 <= layout.QR_X - 40 + 2, "text runs into the QR code"
+    assert y1 < 840 - 10, "text runs off the bottom"
+    if style == "text":  # the big line stays inside the picture area and its margins
+        pic = np.asarray(im)[: layout.PICTURE_H]
+        d = np.abs(pic.astype(int) - np.array(layout.PAPER)).sum(axis=2) > 30
+        ys, xs = np.where(d)
+        assert xs.min() >= 100 and xs.max() <= 1260 - 100
+        assert ys.min() >= 40 and ys.max() <= layout.PICTURE_H - 40
 
 
-def test_qr_code_decodes():
-    cv2 = pytest.importorskip("cv2")
-    r = render_card(card())
-    for png, rotate in ((r.back_png, False), (r.strip_png, True)):
-        a = np.asarray(img(png).convert("L"))
-        if rotate:
-            a = a[FACE_HEIGHT + FOLD_HEIGHT :][::-1, ::-1]
-        a = np.ascontiguousarray(a)
-        text, points, _ = cv2.QRCodeDetector().detectAndDecode(a)
-        assert text == URL
+def test_no_city_prints_date_only(photo):
+    a = render_card(card("original", photo, city=None)).print_png
+    b = render_card(card("original", photo, city="厦门")).print_png
+    assert a != b
 
 
-def test_long_url_still_decodes():
-    cv2 = pytest.importorskip("cv2")
-    url = "https://fretcase.example/s/" + "x" * 30 + "?utm=" + "y" * 40
-    a = np.ascontiguousarray(np.asarray(img(render_card(card(share_url=url)).back_png).convert("L")))
-    assert cv2.QRCodeDetector().detectAndDecode(a)[0] == url
+# ---- QR code ------------------------------------------------------------------------------
 
 
-def test_bad_input(tmp_path):
-    with pytest.raises(ValueError):
-        render_card(card(style="oil"))
-    with pytest.raises(ValueError):
-        render_card(card(title="  "))
-    with pytest.raises(ValueError):
-        render_card(card(share_url=""))
+def decode(im: Image.Image) -> str:
+    qr = np.asarray(im.crop((layout.QR_X - 20, layout.QR_Y - 20, layout.QR_X + layout.QR_PX + 20,
+                             layout.QR_Y + layout.QR_PX + 20)).convert("RGB"))[:, :, ::-1].copy()
+    text, _, _ = cv2.QRCodeDetector().detectAndDecode(cv2.resize(qr, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST))
+    return text
+
+
+@pytest.mark.parametrize("style", ALL_STYLES)
+def test_qr_decodes(style, photo):
+    out = render_card(card(style, photo))
+    assert decode(img(out.print_png)) == URL
+
+
+def test_qr_decodes_long_url_and_from_half_size_preview(photo):
+    url = "https://fretcase.example/s/" + "Zy9" * 12
+    out = render_card(card("comic", photo, share_url=url))
+    assert decode(img(out.print_png)) == url
+
+
+def test_qr_is_error_correction_h_with_note_mark():
+    from fretcase_card.layout import qr_image
+    q = np.asarray(qr_image(URL)).astype(int)
+    c = q.shape[0] // 2
+    centre = q[c - 14:c + 14, c - 14:c + 14]
+    assert (np.abs(centre - np.array(layout.PAPER)).sum(axis=2) > 30).sum() > 20  # the note mark
+    assert q.shape[:2] == (178, 178)
+
+
+# ---- fonts and cover errors ---------------------------------------------------------------
+
+
+@pytest.fixture
+def no_font(monkeypatch):
+    monkeypatch.delenv(fonts.FONT_ENV, raising=False)
+    monkeypatch.setattr(fonts, "_CANDIDATES", {"serif": [], "sans": []})
+    fonts.clear_cache()
+    yield
+    fonts.clear_cache()
+
+
+@pytest.mark.parametrize("style", ["text", "original"])
+def test_missing_cjk_font_is_a_clear_error(no_font, style, photo):
+    with pytest.raises(OSError, match="fonts-noto-cjk"):
+        render_card(card(style, photo))
+
+
+def test_font_env_points_nowhere(monkeypatch):
+    monkeypatch.setenv(fonts.FONT_ENV, "/nonexistent/font.ttc")
+    fonts.clear_cache()
+    try:
+        with pytest.raises(OSError, match=fonts.FONT_ENV):
+            render_card(card("text"))
+    finally:
+        monkeypatch.undo()
+        fonts.clear_cache()
+
+
+def test_font_env_is_used(monkeypatch):
+    path = fonts.font_path("sans")
+    monkeypatch.setenv(fonts.FONT_ENV, path)
+    fonts.clear_cache()
+    try:
+        assert fonts.font_path("serif") == path
+        render_card(card("text"))
+    finally:
+        monkeypatch.undo()
+        fonts.clear_cache()
+
+
+def test_unreadable_cover(tmp_path):
     with pytest.raises(OSError):
-        render_card(card(photo_path=tmp_path / "missing.jpg"))
+        render_card(card("comic", tmp_path / "missing.jpg"))
+    bad = tmp_path / "bad.jpg"
+    bad.write_bytes(b"not an image")
+    with pytest.raises(OSError):
+        render_card(card("comic", bad))
 
 
-def test_portrait_and_exif_free_small_photo(tmp_path):
-    p = tmp_path / "small.png"
-    Image.new("RGB", (40, 90), (120, 80, 200)).save(p)
-    for s in ["ink", "comic", "xieyi", "original"]:
-        assert img(render_card(card(s, photo_path=p)).front_png).size == (384, FACE_HEIGHT)
+def test_small_and_portrait_covers(tmp_path):
+    for name, size in {"tiny": (40, 30), "portrait": (600, 1400), "wide": (3000, 400)}.items():
+        p = tmp_path / f"{name}.png"
+        Image.fromarray((np.random.default_rng(3).random((size[1], size[0], 3)) * 255).astype(np.uint8)).save(p)
+        for style in PHOTO_STYLES:
+            assert img(render_card(card(style, p)).print_png).size == (1260, 840)
