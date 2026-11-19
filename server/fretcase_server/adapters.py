@@ -1,8 +1,8 @@
-"""Seams for everything that would call an outside service (milestone 2). Milestone 1 ships only offline stubs.
+"""Seams for everything that would call an outside service (milestone 2). Milestone 2 adds one real adapter, the text model for lyrics (``AnthropicTextModel``).
 
 Every adapter method is called through ``call_with_timeout`` (default 8 s) and the caller falls back to the
 offline path. An adapter that has no offline path raises ``Offline`` and the API answers 503 ``offline_unavailable``.
-No adapter in this release opens a network connection.
+Only ``AnthropicTextModel``, and only when its environment variables are set, opens a connection.
 """
 from __future__ import annotations
 
@@ -30,8 +30,11 @@ class HarmonyModel(Protocol):
     def candidates(self, melody: Sequence[Dict[str, Any]], key: Dict[str, str], bars: int) -> Optional[List[List[str]]]: ...
 
 
-class LyricsWriter(Protocol):
-    def write(self, song: Dict[str, Any], section_id: str, note_count: int, hint: Optional[str]) -> str: ...
+class TextModel(Protocol):
+    """One adapter for a text model (lyrics). ``complete`` returns the model's text, raises ``Offline`` when no model
+    is configured and any other exception when the call fails."""
+
+    def complete(self, system: str, prompt: str, max_tokens: int = 1500, timeout: float = 20.0) -> str: ...
 
 
 class VocalSynth(Protocol):
@@ -64,8 +67,8 @@ class OfflineStub:
     def stylize(self, *a: Any, **k: Any) -> None:
         return None
 
-    def write(self, *a: Any, **k: Any) -> str:
-        raise Offline("lyrics generation")
+    def complete(self, *a: Any, **k: Any) -> str:
+        raise Offline("text model")
 
     def render(self, *a: Any, **k: Any) -> bytes:
         raise Offline("rendering")
@@ -81,7 +84,7 @@ class OfflineStub:
 class Adapters:
     seed_model: SeedModel = field(default_factory=OfflineStub)
     harmony_model: HarmonyModel = field(default_factory=OfflineStub)
-    lyrics: LyricsWriter = field(default_factory=OfflineStub)
+    text_model: TextModel = field(default_factory=OfflineStub)
     vocal: VocalSynth = field(default_factory=OfflineStub)
     stylizer: Stylizer = field(default_factory=OfflineStub)
     renderer: SongRenderer = field(default_factory=OfflineStub)
@@ -90,7 +93,7 @@ class Adapters:
 
     def online(self) -> bool:
         """Whether the server reached the internet recently. Always False until a real provider reports it."""
-        probes = [getattr(a, "is_online", None) for a in (self.seed_model, self.lyrics, self.vocal, self.stylizer, self.renderer, self.uploader)]
+        probes = [getattr(a, "is_online", None) for a in (self.seed_model, self.text_model, self.vocal, self.stylizer, self.renderer, self.uploader)]
         return any(bool(p()) for p in probes if callable(p))
 
 
@@ -108,3 +111,37 @@ def call_with_timeout(fn: Callable[..., T], *args: Any, timeout: float = DEFAULT
     except Exception:  # timeout or provider error: use the offline path
         future.cancel()
         return fallback
+
+
+class AnthropicTextModel:
+    """Text model through the Anthropic Messages API format. Configured by ``FRETCASE_TEXT_MODEL_URL`` (the endpoint,
+    or a base URL that the path /v1/messages is added to), ``FRETCASE_TEXT_MODEL_KEY`` and ``FRETCASE_TEXT_MODEL_NAME``."""
+
+    def __init__(self, url: Optional[str], key: Optional[str], name: Optional[str]):
+        self.url, self.key, self.name = url, key, name
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.url and self.key and self.name)
+
+    def endpoint(self) -> str:
+        url = (self.url or "").rstrip("/")
+        return url if url.endswith("/messages") else url + "/v1/messages"
+
+    def complete(self, system: str, prompt: str, max_tokens: int = 1500, timeout: float = 20.0) -> str:
+        if not self.configured:
+            raise Offline("text model")
+        import json
+        import urllib.request
+
+        body = json.dumps({"model": self.name, "max_tokens": max_tokens, "system": system, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+        request = urllib.request.Request(
+            self.endpoint(), data=body, method="POST",
+            headers={"content-type": "application/json", "x-api-key": self.key or "", "anthropic-version": "2023-06-01"},
+        )
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (the URL is operator configuration)
+            data = json.loads(response.read().decode("utf-8"))
+        return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
+
+    def is_online(self) -> bool:
+        return False
