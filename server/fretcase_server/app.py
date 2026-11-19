@@ -275,6 +275,9 @@ def create_app(
                     card.pop(field, None)
                 elif value is not None:
                     card[field] = value
+            # any card change makes the previewed images stale: print needs a new preview
+            card.pop("frontAssetId", None)
+            card.pop("backAssetId", None)
             return song
         if name == "setVocalTake":
             raise not_implemented("Using your own vocal recording")

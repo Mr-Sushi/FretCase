@@ -159,5 +159,8 @@ def transcribe(path: Path, fixed_tempo: Optional[float] = None) -> Optional[Dict
     estimated = estimate_tempo([s for s, _, _ in line])
     tempo = fixed_tempo or estimated or 90.0
     motif = quantise(line, tempo)
-    key, _ = detect_key([(p, e - s) for s, e, p in line])
+    weighted = [(p, e - s) for s, e, p in line]
+    weighted[0] = (weighted[0][0], weighted[0][1] * 1.5)  # a hummed tune usually starts and ends near its tonic
+    weighted[-1] = (weighted[-1][0], weighted[-1][1] * 2.0)
+    key, _ = detect_key(weighted)
     return {"motif": motif, "tempo": tempo, "key": key, "tempoFromHum": fixed_tempo is None and estimated is not None, "noteCount": len(motif)}
