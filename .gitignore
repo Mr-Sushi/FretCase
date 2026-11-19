@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local certificates for HTTPS on the LAN
+*.pem
+*.key
+
+# Generated media and prints
+output/
+*.wav
+*.mid
+prints/
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
