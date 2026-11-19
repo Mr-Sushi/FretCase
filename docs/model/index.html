@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FretCase 交互原型</title>
+<title>FretCase 3D 模型</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -123,7 +123,7 @@ h2 {
   color: var(--muted);
   margin: 0 0 10px;
 }
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label { text-align: center; padding: 10px 6px; }
 .seg input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
@@ -153,6 +153,22 @@ h2 {
 }
 .legend .t { font-weight: 600; }
 .legend .d { display: block; color: var(--muted); font-size: 13px; }
+.legend .m { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink); }
+.legend .m b { font-weight: 600; color: var(--accent); margin-right: 2px; }
+.legend li.in .n { background: var(--warm); }
+.tabs { position: absolute; right: 16px; top: 16px; display: flex; gap: 6px; }
+.tabs a { font: 600 13px/1 var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; text-decoration: none; }
+.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.wiring { display: none; height: 100%; overflow: auto; background: var(--bg); }
+.wiring .wrap { max-width: 1400px; margin: 0 auto; padding: 18px 20px 28px; }
+.wiring .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.wiring h1 { font-size: 26px; margin: 0; }
+.wiring .bar .tabs { position: static; }
+.wiring img { display: block; width: 100%; height: auto; background: #fbf8f2; border: 1px solid var(--line); border-radius: 8px; }
+.wiring .notes { columns: 2 320px; gap: 28px; margin: 16px 0 0; padding-left: 18px; color: var(--ink); }
+.wiring .notes li { margin: 0 0 8px; break-inside: avoid; }
+body.show-wiring .app { display: none; }
+body.show-wiring .wiring { display: block; }
 .foot { color: var(--muted); font-size: 12px; margin: 0; }
 .howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .howto b { font-weight: 600; color: var(--accent); }
@@ -182,47 +198,39 @@ h2 {
       <button type="button" data-view="front">正面</button>
       <button type="button" data-view="top">俯视控件</button>
       <button type="button" data-view="back">背面镜头</button>
-      <button type="button" data-view="side">侧面</button>
+      <button type="button" data-view="side">侧面接口</button>
     </div>
+    <nav class="tabs" aria-label="页面"><a href="#model" aria-current="page">3D 模型</a><a href="#wiring">电路图</a></nav>
     <p class="hint">拖动控件来操作；拖动空白处旋转，滚轮或双指缩放</p>
   </section>
   <aside class="panel">
     <header>
       <h1>FretCase</h1>
-      <p class="sub">可以操作的原型：箱子上的控件能按、能拖，屏幕和声音跟着变。</p>
+      <p class="sub">打开就能写歌的复古皮箱。模型按采购清单里的零件尺寸搭建；箱上的控件能按、能拖，屏幕和声音跟着变。</p>
     </header>
     <section>
       <h2>怎么玩</h2>
       <ol class="howto">
-        <li>按<b>播放</b>，听这首 16 小节的歌。灯环一颗灯是一小节。</li>
+        <li>按<b>播放</b>，听一首 16 小节的歌。灯环一颗灯是一小节。</li>
         <li>拖<b>唱盘</b>转一圈，在歌里前后移动 4 小节。</li>
-        <li>按<b>换一个</b>，只换唱盘所在那一段的和弦；按<b>撤销</b>退回。</li>
-        <li>上下拖<b>旋钮</b>：明暗切换大小调，简繁换和弦，疏密换节奏，速度改快慢。</li>
+        <li>按<b>换一个</b>，只换唱盘所在的那一段；按<b>撤销</b>退回。</li>
+        <li>上下拖<b>旋钮</b>：明暗、简繁、疏密、速度。</li>
         <li>前后拖<b>推子</b>调每一轨的音量；点<b>彩色方键</b>选中，长按静音。</li>
-        <li>按住<b>红键</b>录音，松开出种子卡；短按是拍照。</li>
-        <li>点屏幕右上角<b>印卡</b>，选风格后打印。</li>
+        <li>按住<b>红键</b>录一段，松开就出三首候选；短按是拍照。</li>
+        <li>点<b>屏幕</b>进入下一步；在“做卡”那一屏点一下，卡片从右侧出卡口出来。</li>
       </ol>
     </section>
     <section>
-      <h2>面板消息（实时）</h2>
-      <p class="note msgnote">每个操作发出的消息，格式和 shared/schema/panel-events.schema.json 一致。</p>
-      <ol class="evlog" id="evlog" aria-live="off"></ol>
-    </section>
-    <section>
-      <h2>箱盖里的屏幕</h2>
-      <div class="seg" role="radiogroup" aria-label="屏幕选项">
-        <input type="radio" name="screen" id="s-pi7" value="pi7"><label for="s-pi7">7 寸触摸屏</label>
-        <input type="radio" name="screen" id="s-mini" value="mini"><label for="s-mini">iPad mini</label>
-        <input type="radio" name="screen" id="s-ipad11" value="ipad11" checked><label for="s-ipad11">iPad 11 寸</label>
-        <input type="radio" name="screen" id="s-pro13" value="pro13"><label for="s-pro13">iPad Pro 13 寸</label>
+      <h2>屏幕（软件真实截图）</h2>
+      <div class="seg" role="radiogroup" aria-label="屏幕">
+        <input type="radio" name="screen" id="v-capture" value="capture" checked><label for="v-capture">采集</label>
+        <input type="radio" name="screen" id="v-pick" value="pick"><label for="v-pick">选一首</label>
+        <input type="radio" name="screen" id="v-shape" value="shape"><label for="v-shape">打磨</label>
+        <input type="radio" name="screen" id="v-tracks" value="tracks"><label for="v-tracks">音轨</label>
+        <input type="radio" name="screen" id="v-lyrics" value="lyrics"><label for="v-lyrics">歌词</label>
+        <input type="radio" name="screen" id="v-card" value="card"><label for="v-card">做卡</label>
       </div>
-      <dl class="spec">
-        <dt>机身外形</dt><dd id="sp-body"></dd>
-        <dt>显示区域</dt><dd id="sp-disp"></dd>
-        <dt>相对 7 寸屏</dt><dd id="sp-ratio"></dd>
-        <dt>占箱盖内宽</dt><dd id="sp-fit"></dd>
-      </dl>
-      <p class="note" id="sp-note"></p>
+      <p class="note">截图来自离线测试：歌词要联网由模型来写，离线时每句先用“啦”占位。</p>
     </section>
     <section>
       <h2>箱盖开合</h2>
@@ -230,19 +238,52 @@ h2 {
         <input type="range" id="lid" min="0" max="115" step="1" value="100" aria-label="箱盖角度">
         <output id="lid-out" for="lid">100°</output>
       </div>
+      <p class="note">合上前卡片架会向后放平。</p>
     </section>
     <section class="toggles">
-      <label for="tg-labels"><input type="checkbox" id="tg-labels"> 显示部件编号</label>
-      <label for="tg-inside"><input type="checkbox" id="tg-inside"> 透视箱底夹层（主机、电池、控制板）</label>
+      <label for="tg-labels"><input type="checkbox" id="tg-labels" checked> 显示部件编号</label>
+      <label for="tg-inside"><input type="checkbox" id="tg-inside"> 透视箱底夹层（主机、充电宝、打印机、控制板）</label>
     </section>
     <section>
-      <h2>部件</h2>
+      <h2>部件，以及要买和要打印的东西</h2>
       <ol class="legend" id="legend"></ol>
+      <p class="note">全箱通用、没有单独列出的：M3 热熔铜螺母、螺丝和铜柱、导线、排针、3D 打印耗材。价格和链接见采购表。</p>
     </section>
-    <p class="foot">箱体按 320 × 240 × 100 毫米（合箱）建模，这是为了放下 11 寸平板和控制面板而取的假设值。iPad 11 寸和 iPad Pro 13 寸的尺寸来自 Apple 规格页，iPad mini 和 7 寸屏是近似值。</p>
+    <section>
+      <h2>面板消息（实时）</h2>
+      <p class="note msgnote">每个操作发出的消息，格式和 shared/schema/panel-events.schema.json 一致。</p>
+      <ol class="evlog" id="evlog" aria-live="off"></ol>
+    </section>
+    <p class="foot">箱体按 320 × 240 × 106 毫米（合箱）建模：箱底内深 76 毫米，才放得下 49 毫米厚的充电宝和面板下约 11 毫米深的控件；箱盖内深约 20 毫米放 iPad。零件尺寸来自厂商规格：iPad 11 寸（A16）248.6 × 179.5 × 7，Instax Link Wide 139 × 127.5 × 33.7，Anker A1695 157 × 54 × 49，Raspberry Pi 5 85 × 56，宽幅相纸 108 × 86。</p>
   </aside>
 </main>
+<section class="wiring" id="wiring-view" aria-label="电路图">
+  <div class="wrap">
+    <div class="bar">
+      <h1>FretCase 电路图</h1>
+      <nav class="tabs" aria-label="页面"><a href="#model">3D 模型</a><a href="#wiring" aria-current="page">电路图</a></nav>
+    </div>
+    <img src="wiring.svg" alt="FretCase 接线图：Teensy 4.1 接编码器、推子、按键和两条灯链；Raspberry Pi 5 接 Teensy、GPS、电源键和拍立得打印机；充电宝给 Pi、iPad 和打印机供电；iPad 经转接头出耳机声音。">
+    <ol class="notes">
+      <li>引脚号和 <code>device/firmware/fretcase_controller/pins.h</code> 一致；改接线时只改那个文件。</li>
+      <li>编码器、按键都接地，用 Teensy 内部上拉；推子两端接 3.3 V 和地，推到顶读到 3.3 V。Teensy 4.1 的引脚不能接 5 V。</li>
+      <li>两条灯链的数据线经 74AHCT125 升到 5 V，再各串一个 330 Ω 电阻；灯的 5 V 和地之间并一个 1000 µF 电容。</li>
+      <li>灯的 5 V 先取自 Teensy 的 USB 5 V（来自 Pi）。Pi 5 用充电宝的 5 V 3 A 供电时，USB 口总共只给 600 mA：上电后实测电流，超过约 0.5 A 就在固件里限亮度，或者改用充电宝 USB-A 口单独给灯供 5 V，并和 Teensy 共地。</li>
+      <li>电源键接 Pi 5 板上的 J2 两个焊盘（焊两针排针）：按一下开机，再按一下正常关机。灯圈接 Pi 的 3.3 V，并在 EEPROM 设 POWER_OFF_ON_HALT=1，关机后才熄灭。</li>
+      <li>iPad 和 Pi 走无线：连同一个手机热点。拍立得打印机走蓝牙，平时由充电宝的 USB-A 口补电。</li>
+      <li>总音量是无源的：Belkin 转接头的耳机输出接双联对数电位器，再到面板耳机口；左右声道各走一联，地线直通。</li>
+    </ol>
+  </div>
+</section>
 
+<script>
+// two views on one page: #model (default) and #wiring
+(function () {
+  function route() { document.body.classList.toggle('show-wiring', location.hash === '#wiring'); }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
@@ -255,14 +296,12 @@ h2 {
   if (!T) { stage.insertAdjacentHTML('beforeend', '<p class="hint" style="top:64px;bottom:auto">三维库没有加载成功，请检查网络后刷新。</p>'); return; }
 
   // ---- dimensions (mm) ----
-  var W = 320, D = 240, HB = 72, HL = 28, WALL = 4, R = 18, RIM = 6, PY = HB - 22;
+  // base 80 + lid 26 = 106 mm closed: the 49 mm power bank and the ~11 mm of switch, fader and
+  // encoder bodies under the panel set the base depth
+  var W = 320, D = 240, HB = 80, HL = 26, WALL = 4, R = 18, RIM = 6, PY = HB - 22;
   var PW = W - 2 * WALL, PD = D - 2 * WALL;
-  var SCREENS = {
-    pi7:    { name: '7 寸触摸屏',     w: 190,   h: 120,   t: 9,   dw: 155,   dh: 87,    tablet: false, approx: true },
-    mini:   { name: 'iPad mini',      w: 195.4, h: 134.8, t: 6.3, dw: 176.2, dh: 115.7, tablet: true,  approx: true },
-    ipad11: { name: 'iPad 11 寸',     w: 248.6, h: 179.5, t: 7.0, dw: 226.5, dh: 157.4, tablet: true,  approx: false },
-    pro13:  { name: 'iPad Pro 13 寸', w: 281.6, h: 215.5, t: 5.1, dw: 264.2, dh: 198.1, tablet: true,  approx: false }
-  };
+  var IPAD = { w: 248.6, h: 179.5, t: 7.0, dw: 226.5, dh: 157.4 };   // iPad 11-inch (A16)
+  var CARD_W = 108, CARD_H = 86, CARD_T = 1.6;                      // instax WIDE print
   var TRACKS = [
     { n: '人声', c: '#e2725b' }, { n: '旋律', c: '#e3a14a' }, { n: '吉他', c: '#49b8b3' },
     { n: '贝斯', c: '#5b8dd6' }, { n: '鼓', c: '#9a7bd1' }, { n: '环境', c: '#7fae6a' }
@@ -375,10 +414,8 @@ h2 {
   var mPanel = std(0x5b3b24, 0.6, 0, { transparent: true, opacity: 1 });
   var mFelt = std(0x1f3d34, 0.98, 0);
   var mCream = std(0xf1e9d6, 0.5, 0);
-  var mLit = std(0xffc463, 0.4, 0, { emissive: new T.Color(0xe08a12), emissiveIntensity: 0.8 });
   var mDark = std(0x1b1e22, 0.5, 0.1);
   var mKnob = std(0x2a211c, 0.4, 0.15);
-  var mCopper = std(0xd0915a, 0.4, 0.3);
   var mGlass = std(0x0c0f12, 0.15, 0.3);
 
   var root = new T.Group();
@@ -442,8 +479,7 @@ h2 {
     label('FretCase', -141, -101, 6.2, 'left', 700);
     ['明暗', '简繁', '疏密', '速度'].forEach(function (s, i) { label(s, KNOB_X[i], -50, 4.6, 'center', 600); });
     TRACKS.forEach(function (t, i) { label(t.n, TRACK_X[i], 51, 4.6, 'center', 600); });
-    label('卡片仓', 15, 73, 4.4, 'center', 600);
-    label('卡片架', 30, 102, 4.4, 'center', 600);
+    label('电量', -2, 110, 3.6, 'center', 600);
     ['采集', '播放', '撤销', '换一个'].forEach(function (s, i) { label(s, ACT_X[i], 95, 4.6, 'center', 600); });
   })();
   var silkPlane = new T.Mesh(new T.PlaneGeometry(PW, PD), new T.MeshBasicMaterial({ map: tex(silk), transparent: true }));
@@ -465,6 +501,11 @@ h2 {
   platter.add(cyl(1.8, 5, mMetal, 0, PY + 8, 0, 16));
   platter.add(cyl(5, 1.2, mMetal, 42, PY + 6.2, 0, 24));
   hit(platter, { type: 'platter' });
+  // printed diffuser ring over the 16 WS2812B pixels
+  var diff = new T.Mesh(new T.RingGeometry(53.5, 60.5, 72), std(0xf6efe0, 0.5, 0, { transparent: true, opacity: 0.9 }));
+  diff.rotation.x = -Math.PI / 2;
+  diff.position.set(PX, PY + 0.2, PZ);
+  base.add(diff);
   var ringMats = [];
   for (var i = 0; i < 16; i++) {
     var th = i / 16 * Math.PI * 2;
@@ -520,78 +561,80 @@ h2 {
     faderCaps.push(cap);
     hit(cap, { type: 'fader', track: i });
   });
-  // card crate: blank and recorded cards stand on edge in a well, tops showing
-  var CX = 74;
-  base.add(box(100, 1.2, 34, mMetal, CX, PY + 0.6, 73));
-  base.add(box(96, 1.4, 30, mDark, CX, PY + 0.7, 73));
-  [0xf1e9d6, 0xf1e9d6, 0xd98a5f, 0xf1e9d6, 0x6f9fb8, 0xf1e9d6, 0xf1e9d6, 0xe3b55a, 0xf1e9d6, 0x7fae6a, 0xf1e9d6, 0xf1e9d6, 0xf1e9d6].forEach(function (col, i) {
-    var h = 17 + (i * 7 % 5);
-    var cd = box(86, h, 0.9, std(col, 0.7), CX + (i % 3 - 1) * 0.8, PY + h / 2, 61.5 + i * 1.9);
-    cd.rotation.x = -0.06;
-    base.add(cd);
-  });
-  // burn slot with the current song's card standing in it, picture facing the user
-  base.add(box(66, 1.2, 9, mMetal, CX, PY + 0.6, 102));
-  base.add(box(60, 1.4, 4, mDark, CX, PY + 0.7, 102));
-  base.add(cyl(2.4, 2, mLit, 114, PY + 1, 102, 16));
-  var art = document.createElement('canvas'); art.width = 688; art.height = 400;
-  (function () {
-    var c = art.getContext('2d');
-    c.fillStyle = '#f3ecdc'; c.fillRect(0, 0, 688, 400);
-    function ridge(pts, fill) {
-      c.fillStyle = fill; c.beginPath(); c.moveTo(0, 232);
-      pts.forEach(function (q) { c.lineTo(q[0], q[1]); });
-      c.lineTo(688, 232); c.closePath(); c.fill();
-    }
-    ridge([[0, 150], [90, 118], [170, 146], [260, 96], [350, 140], [450, 110], [560, 150], [688, 128]], 'rgba(30,30,30,0.14)');
-    ridge([[0, 196], [120, 168], [220, 190], [330, 150], [420, 186], [540, 172], [688, 200]], 'rgba(25,25,25,0.32)');
-    ridge([[0, 232], [40, 204], [130, 188], [210, 214], [260, 232]], 'rgba(15,15,15,0.82)');
-    c.strokeStyle = 'rgba(20,20,20,0.75)'; c.lineWidth = 3;
-    c.beginPath(); c.arc(520, 78, 30, 0, 7); c.stroke();
-    c.strokeStyle = 'rgba(25,25,25,0.4)'; c.lineWidth = 2.5;
-    [[300, 250, 250], [120, 268, 330], [360, 286, 220], [60, 300, 180]].forEach(function (w) {
-      c.beginPath(); c.moveTo(w[0], w[1]); c.quadraticCurveTo(w[0] + w[2] / 2, w[1] - 5, w[0] + w[2], w[1]); c.stroke();
-    });
-    c.fillStyle = '#151515'; c.fillRect(604, 262, 44, 44);
-    c.fillStyle = '#f3ecdc'; c.font = '700 30px ' + CJK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('歌', 626, 285);
-    c.fillStyle = '#151515'; c.font = '700 40px ' + CJK; c.textAlign = 'left'; c.fillText('海边的傍晚', 28, 358);
-    c.fillStyle = '#555'; c.font = '500 24px ' + CJK; c.textAlign = 'right'; c.fillText('2026.11.18', 660, 358);
-  })();
-  var nowCard = new T.Group();
-  nowCard.position.set(CX, PY + 1, 102);
-  nowCard.rotation.x = -0.24;
-  nowCard.add(box(86, 54, 0.9, mCream, 0, 22, 0));
-  var face = new T.Mesh(new T.PlaneGeometry(82, 47.7), new T.MeshBasicMaterial({ map: tex(art) }));
-  face.position.set(0, 22, 0.5);
-  nowCard.add(face);
-  base.add(nowCard);
-  // charging inlet, power toggle and pilot lamp on the right wall
-  base.add(box(2, 9, 15, mMetal, W / 2 + 1, 40, 90));
-  base.add(box(2.4, 3.2, 9, mDark, W / 2 + 1, 40, 90));
-  var nut = cyl(5.5, 2.4, mMetal, W / 2 + 1.2, 40, 10, 24); nut.rotation.z = Math.PI / 2; base.add(nut);
-  var lever = cyl(1.7, 11, mMetal, W / 2 + 6, 43, 10, 12); lever.rotation.z = Math.PI / 2 - 0.5; base.add(lever);
-  var lamp = new T.Mesh(new T.SphereGeometry(3.2, 20, 14), std(0xffb347, 0.3, 0, { emissive: new T.Color(0xe07a10), emissiveIntensity: 0.9 }));
-  lamp.position.set(W / 2 + 1.5, 55, 10); base.add(lamp);
-  // print outlet on the right wall, a fresh card halfway out
-  base.add(box(2, 6, 64, mMetal, W / 2 + 1, 30, -40));
-  base.add(box(2.4, 2, 58, mDark, W / 2 + 1, 30, -40));
-  var strip = box(26, 0.9, 54, mCream, W / 2 - 14, 30, -40);
-  base.add(strip);
-  // headphone jack and volume wheel on the right wall
-  [[6.5, 3, mMetal, 1.5, 64], [2.6, 3.4, mDark, 1.6, 64], [10, 5, mMetal, 2.5, 36]].forEach(function (j) {
-    var m = cyl(j[0], j[1], j[2], W / 2 + j[3], 40, j[4], 32);
-    m.rotation.z = Math.PI / 2;
-    base.add(m);
-  });
+  // card stand: printed instax WIDE cards lean in a groove on a printed plinth; the front one is
+  // the current song. The stand folds flat backwards when the lid closes.
+  var CX = 74, CZ = 104, PLINTH_H = 16;
+  base.add(box(118, PLINTH_H, 16, mTrim, CX, PY + PLINTH_H / 2, CZ + 2));
+  base.add(box(112, 0.6, 3, mDark, CX, PY + PLINTH_H + 0.3, CZ));
+  var cardCv = document.createElement('canvas'); cardCv.width = CARD_W * 10; cardCv.height = CARD_H * 10;
+  var cardTex = tex(cardCv);
+  function drawCardFace(img) {
+    var c = cardCv.getContext('2d');
+    c.fillStyle = '#f6f3ec'; c.fillRect(0, 0, cardCv.width, cardCv.height);
+    // picture area 99 x 62 mm, 6 mm from the top; the print image is cropped at its top
+    if (img) { c.drawImage(img, 0, 840 - 789, 1260, 789, 45, 60, 990, 620); }
+    else { c.fillStyle = '#d9cfbf'; c.fillRect(45, 60, 990, 620); }
+    cardTex.needsUpdate = true;
+  }
+  drawCardFace(null);
+  var rack = new T.Group();
+  rack.position.set(CX, PY + PLINTH_H, CZ);
+  base.add(rack);
+  for (var ci = 3; ci >= 0; ci--) {
+    rack.add(box(CARD_W, CARD_H, CARD_T, std(ci ? 0xebe6dc : 0xf6f3ec, 0.7), 0, CARD_H / 2, -ci * 1.9));
+  }
+  var face = new T.Mesh(new T.PlaneGeometry(CARD_W, CARD_H), new T.MeshBasicMaterial({ map: cardTex }));
+  face.position.set(0, CARD_H / 2, CARD_T / 2 + 0.05);
+  rack.add(face);
+  // window over the power bank's own display
+  base.add(box(28, 1, 15, mMetal, -2, PY + 0.5, 100));
+  base.add(box(23, 1.2, 10, mGlass, -2, PY + 0.6, 100));
+  base.add(box(9, 0.4, 3.2, std(0x7fe0d8, 0.4, 0, { emissive: new T.Color(0x39b8ae), emissiveIntensity: 0.9 }), -6, PY + 1.25, 100));
+  base.add(box(4, 0.4, 3.2, std(0x7fe0d8, 0.4, 0, { emissive: new T.Color(0x39b8ae), emissiveIntensity: 0.5 }), 4, PY + 1.25, 100));
+  // right wall, all below the panel: print outlet, power button, USB-C inlet, volume wheel, headphone jack
+  function onWall(m) { m.rotation.z = Math.PI / 2; base.add(m); return m; }
+  base.add(box(2.2, 9, 120, mMetal, W / 2 + 1.1, 20, -38));
+  base.add(box(2.4, 2.6, 112, mDark, W / 2 + 1.2, 20, -38));
+  var ejectCard = box(CARD_H, 1.2, CARD_W, std(0xf6f3ec, 0.7), W / 2 - 4 - CARD_H / 2, 20, -38);
+  ejectCard.visible = false;
+  base.add(ejectCard);
+  onWall(cyl(9, 2.4, mMetal, W / 2 + 1.2, 40, 46, 40));
+  onWall(cyl(6.3, 2.8, std(0xd9d4c8, 0.3, 0.6), W / 2 + 1.4, 40, 46, 32));
+  var btnRing = new T.Mesh(new T.RingGeometry(6.5, 8.2, 40), std(0xffffff, 0.3, 0, { emissive: new T.Color(0xfff4dc), emissiveIntensity: 0.9 }));
+  btnRing.rotation.y = Math.PI / 2;
+  btnRing.position.set(W / 2 + 2.45, 40, 46);
+  base.add(btnRing);
+  onWall(cyl(7, 2, mMetal, W / 2 + 1, 40, 70, 32));
+  base.add(box(2.2, 3.2, 9, mDark, W / 2 + 1.2, 40, 70));
+  base.add(box(2.2, 10, 26, mDark, W / 2 + 0.4, 22, 48));
+  base.add(cyl(11, 8, std(0xc9a654, 0.45, 0.35), W / 2 - 7, 22, 48, 28));
+  onWall(cyl(15, 2, mDark, W / 2 + 1, 22, 88, 48));
+  onWall(cyl(5, 2.2, mMetal, W / 2 + 1.1, 22, 88, 24));
+  onWall(cyl(3.6, 2.4, mGlass, W / 2 + 1.2, 22, 88, 24));
 
   // internals, shown with the see-through toggle
   var inside = new T.Group();
   inside.visible = false;
   base.add(inside);
-  inside.add(box(85, 17, 56, std(0x2f7d4f, 0.6), -92, WALL + 8.5, -52));
-  inside.add(box(140, 16, 68, std(0x3a3f45, 0.5), 58, WALL + 8, 44));
-  inside.add(box(72, 6, 42, std(0x2b5fa8, 0.6), -84, WALL + 3, 42));
-  inside.add(box(36, 4, 3, mCopper, -30, WALL + 3, 42));
+  // instax Link Wide lying flat, film slot facing the print outlet (139 x 127.5 x 33.7)
+  inside.add(box(127.5, 33.7, 139, std(0x8c8279, 0.55), 86, WALL + 16.85, -38));
+  inside.add(box(1.2, 2.6, 112, mDark, 150.2, 20, -38));
+  inside.add(cyl(1.6, 1, std(0x9cf0a0, 0.4, 0, { emissive: new T.Color(0x3cc85a), emissiveIntensity: 0.9 }), 120, WALL + 34.2, 24, 12));
+  // Anker A1695 power bank (157 x 54 x 49); its display sits under the window in the panel
+  inside.add(box(157, 49, 54, std(0x26292d, 0.5, 0.1), 58.5, WALL + 24.5, 85));
+  inside.add(box(20, 0.4, 8, std(0x7fe0d8, 0.4, 0, { emissive: new T.Color(0x39b8ae), emissiveIntensity: 0.8 }), -2, WALL + 49.2, 100));
+  // Raspberry Pi 5 (85 x 56) with the active cooler, on standoffs
+  inside.add(box(85, 1.6, 56, std(0x2f7d4f, 0.6), -107.5, WALL + 5, -80));
+  inside.add(box(44, 8, 44, std(0x2a2d31, 0.4, 0.4), -116, WALL + 10.6, -80));
+  inside.add(box(20, 15, 50, std(0xb9bcc0, 0.4, 0.6), -75, WALL + 13.3, -80));
+  // control board: Teensy 4.1, 74AHCT125 and the LED capacitor on a half-size Perma-Proto
+  inside.add(box(81, 1.6, 51, std(0x3f8f5a, 0.6), -109.5, WALL + 5, -14));
+  inside.add(box(61, 1.6, 18, std(0x1f5c3a, 0.6), -116, WALL + 8, -18));
+  inside.add(box(10, 1.4, 10, mDark, -112, WALL + 9.4, -18));
+  inside.add(box(19, 4, 7, mDark, -80, WALL + 7.8, 0));
+  inside.add(cyl(5, 12, std(0x22344f, 0.5), -80, WALL + 11.8, -28, 20));
+  // optional USB GPS puck
+  inside.add(box(49, 16, 38, std(0x111315, 0.5), -40, WALL + 8, -5));
 
   // handle, tags, latches, hinges
   var hc = new T.CatmullRomCurve3([
@@ -650,6 +693,28 @@ h2 {
   var camGroup = new T.Group();      // outside face
   lid.add(screenGroup);
   lid.add(camGroup);
+  // Belkin audio + charge adapter on the iPad's USB-C port
+  lid.add(box(13, 5, 30, mDark, IPAD.w / 2 + 9, 3, D / 2));
+  // brass lid stays, one per side, redrawn from their two pivots every frame
+  var stays = [-1, 1].map(function (sx) {
+    var st = { m: new T.Mesh(new T.CylinderGeometry(1.6, 1.6, 1, 10), mMetal), a: new T.Object3D(), b: new T.Vector3(sx * (W / 2 - 9), HB - 12, -D / 2 + 48) };
+    st.a.position.set(sx * (W / 2 - 9), 3, 52);
+    lid.add(st.a);
+    root.add(st.m);
+    return st;
+  });
+  var stayA = new T.Vector3(), stayDir = new T.Vector3(), UP = new T.Vector3(0, 1, 0);
+  function updateStays() {
+    lid.updateMatrixWorld(true);
+    stays.forEach(function (st) {
+      st.a.getWorldPosition(stayA); root.worldToLocal(stayA);
+      stayDir.subVectors(stayA, st.b);
+      var len = stayDir.length();
+      st.m.position.addVectors(stayA, st.b).multiplyScalar(0.5);
+      st.m.scale.set(1, len, 1);
+      st.m.quaternion.setFromUnitVectors(UP, stayDir.normalize());
+    });
+  }
 
 
   function clearGroup(g) {
@@ -665,10 +730,10 @@ h2 {
   var camAnchor = new T.Object3D();
   lid.add(camAnchor);
 
-  function setScreen(key) {
-    var sc = SCREENS[key];
+  function buildScreen() {
+    var sc = IPAD;
     clearGroup(screenGroup); clearGroup(camGroup);
-    var body = slab(sc.w, sc.h, sc.tablet ? 11 : 3, sc.t, sc.tablet ? mGlass : mDark);
+    var body = slab(sc.w, sc.h, 11, sc.t, mGlass);
     body.position.set(0, RIM - 1.4, D / 2);
     screenGroup.add(body);
     var cv = document.createElement('canvas');
@@ -681,44 +746,19 @@ h2 {
     screenGroup.add(disp);
     scr = { cv: cv, tex: dtex, mesh: disp };
     drawScreen(cv);
-    var cx, cz;
-    if (sc.tablet) {
-      cx = sc.w / 2 - 14; cz = D / 2 + sc.h / 2 - 14;
-      screenGroup.add(cyl(1.6, 0.4, mDark, 0, RIM - 1.5, D / 2 + sc.h / 2 - 5, 16));
-    } else {
-      cx = 0; cz = D / 2 + 86;
-      [-126, 126].forEach(function (x) {
-        screenGroup.add(cyl(23, 1.2, mMetal, x, RIM - 0.9, D / 2, 40));
-        screenGroup.add(cyl(20.5, 1.4, mDark, x, RIM - 1.1, D / 2, 40));
-      });
-      screenGroup.add(cyl(2.4, 0.8, mDark, 0, RIM - 0.9, D / 2 - 78, 16));
-    }
-    // lens opening in the outer shell, with a sliding cover drawn open
+    // front camera above the display; the rear lens sits in a corner of the body
+    var cx = sc.w / 2 - 14, cz = D / 2 + sc.h / 2 - 14;
+    screenGroup.add(cyl(1.6, 0.4, mDark, 0, RIM - 1.5, D / 2 + sc.h / 2 - 5, 16));
+    // lens opening in the outer shell, flared, with a sliding cover drawn open
     camGroup.add(cyl(11, 1.2, mMetal, cx, HL + 0.6, cz, 40));
     camGroup.add(cyl(8.2, 1.5, mGlass, cx, HL + 0.7, cz, 40));
     camGroup.add(cyl(3.4, 1.7, std(0x23395a, 0.1, 0.6), cx, HL + 0.75, cz, 24));
-    var dir = cx > 0 ? -1 : 1;
-    camGroup.add(box(74, 1.2, 2, mMetal, cx + dir * 22, HL + 0.6, cz - 15));
-    camGroup.add(box(74, 1.2, 2, mMetal, cx + dir * 22, HL + 0.6, cz + 15));
-    camGroup.add(box(30, 2.2, 28, mShellDark, cx + dir * 40, HL + 1.1, cz));
+    camGroup.add(box(74, 1.2, 2, mMetal, cx - 22, HL + 0.6, cz - 15));
+    camGroup.add(box(74, 1.2, 2, mMetal, cx - 22, HL + 0.6, cz + 15));
+    camGroup.add(box(30, 2.2, 28, mShellDark, cx - 40, HL + 1.1, cz));
     camAnchor.position.set(cx, HL + 2, cz);
-
-    var ratio = (sc.dw * sc.dh) / (SCREENS.pi7.dw * SCREENS.pi7.dh);
-    var ap = sc.approx ? '约 ' : '';
-    document.getElementById('sp-body').textContent = ap + sc.w + ' × ' + sc.h + ' × ' + sc.t;
-    document.getElementById('sp-disp').textContent = '约 ' + Math.round(sc.dw) + ' × ' + Math.round(sc.dh);
-    document.getElementById('sp-ratio').textContent = key === 'pi7' ? '基准' : ratio.toFixed(1) + ' 倍面积';
-    document.getElementById('sp-fit').textContent = Math.round(sc.w / PW * 100) + '%';
-    var side = Math.round((PW - sc.w) / 2);
-    var note = {
-      pi7: '文档里的原方案。摄像头模块装在箱盖背面正中，麦克风和扬声器要另配。',
-      mini: '比 7 寸屏略大。镜头在机身一角，箱盖背面的开孔跟着偏到角上。',
-      ipad11: '镜头在机身一角，箱盖背面的开孔跟着偏到角上。两侧各留约 ' + side + ' 毫米做固定卡扣。',
-      pro13: '几乎占满箱盖，两侧只剩约 ' + side + ' 毫米。再大就要加宽箱体。'
-    };
-    document.getElementById('sp-note').textContent = note[key];
     root.traverse(function (n) { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-    silkPlane.castShadow = false; woodPlane.castShadow = false;
+    silkPlane.castShadow = false; woodPlane.castShadow = false; face.castShadow = false;
   }
 
   // ---- numbered markers ----
@@ -730,47 +770,67 @@ h2 {
     return o;
   }
   camAnchor.userData.n = new T.Vector3(0, 1, 0);
+  // buy / print name the rows of the purchase sheet and of its 3D-print sheet
   var PARTS = [
-    { t: '屏幕', d: '种子卡、谱面、改音符、卡片预览；上方的前置镜头用来扫卡片背面的二维码', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0) },
-    { t: '摄像头与滑盖', d: '在箱盖背面，开箱后朝向景物；滑盖关上就拍不了', a: camAnchor },
-    { t: '唱盘与灯环', d: '转动唱盘在歌里前后移动，灯环一圈是整首歌', a: anchor(base, PX + 30, PY + 9, PZ - 30, 0, 1, 0) },
-    { t: '采集、播放、撤销、换一个', d: '红键按住哼唱或录音；不满意就换一个，后悔了就撤销', a: anchor(base, -84, PY + 10, 78, 0, 1, 0) },
-    { t: '四个旋钮', d: '明暗、简繁、疏密、速度', a: anchor(base, 74, PY + 19, -70, 0, 1, 0) },
-    { t: '六路小调音台', d: '每条音轨一个彩色方键和一个推子：方键选中或静音，推子调这一轨的音量', a: anchor(base, 74, PY + 12, -8, 0, 1, 0) },
-    { t: '卡片仓', d: '空白硬卡和印好的卡竖着插在里面，像翻唱片箱一样翻', a: anchor(base, CX - 34, PY + 24, 72, 0, 1, 0) },
-    { t: '卡片架', d: '当前这首歌的卡立在这里当封面：正面是水墨画，背面是二维码', a: anchor(base, CX + 36, PY + 44, 96, 0, 0, 1) },
-    { t: '出卡口', d: '在箱子右侧，热敏打印机出一条不干胶：前半段是画，后半段是二维码', a: anchor(base, W / 2 + 18, 33, -40, 1, 0, 0) },
-    { t: '耳机口与总音量', d: '在箱子右侧；公共场合用耳机听，滚轮调总音量', a: anchor(base, W / 2 + 6, 40, 50, 1, 0, 0) },
-    { t: '充电口与电源开关', d: '一个 USB-C 口给整只箱子充电，iPad 也从里面的电池补电；拨杆开关旁边是电源指示灯', a: anchor(base, W / 2 + 8, 40, 92, 1, 0, 0) },
-    { t: '提手与行李牌', d: '皮革提手，行李牌上写去过的地方', a: anchor(base, -24, HB - 22, D / 2 + 28, 0, 0, 1) }
+    { t: '屏幕：iPad 11 寸', d: '装在箱盖里，显示软件的六屏；前置镜头扫卡片上的二维码', buy: 'iPad 11 寸（已有就不买）、Belkin 音频 + 充电转接头', print: 'iPad 箱盖框', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0), view: 'front' },
+    { t: '后置镜头开孔与滑盖', d: '在箱盖背面一角，开孔向外扩；滑盖合上就拍不了', print: '后置镜头开孔环和滑盖', a: camAnchor, view: 'back' },
+    { t: '唱盘与灯环', d: '转动唱盘在歌里前后移动；16 颗灯一圈是整首歌', buy: '旋转编码器 ×1（可再买一个无格的比手感）、转盘轴承、WS2812B 灯珠 ×16', print: '唱盘和轴心连接件、灯环座和柔光圈', a: anchor(base, PX + 30, PY + 9, PZ - 30, 0, 1, 0), view: 'top' },
+    { t: '采集、播放、撤销、换一个', d: '红键按住哼唱或录音，短按拍照；不满意就换一个，后悔了就撤销', buy: '机械轴 ×4、NeoKey 轴座小板 ×4', print: '圆形功能键帽 ×4、键轴定位板', a: anchor(base, -84, PY + 10, 78, 0, 1, 0), view: 'top' },
+    { t: '四个旋钮', d: '明暗、简繁、疏密、速度', buy: '旋转编码器 ×4', print: '旋钮帽 ×4', a: anchor(base, 74, PY + 19, -70, 0, 1, 0), view: 'top' },
+    { t: '六路小调音台', d: '每条音轨一个彩色方键和一个推子：方键选中或静音，推子调这一轨的音量', buy: '直滑电位器 ×6、机械轴 ×6、NeoKey 轴座小板 ×6、半透明键帽', print: '推子帽 ×6、键轴定位板', a: anchor(base, 74, PY + 12, -8, 0, 1, 0), view: 'top' },
+    { t: '卡片架', d: '印好的宽幅相纸斜插在这里，最前面一张是当前这首歌；合箱前向后放平', buy: 'Instax Wide 相纸', print: '卡片架和卡片仓', a: anchor(base, CX + 40, PY + PLINTH_H + 70, CZ - 20, 0, 0, 1), view: 'front' },
+    { t: '出卡口', d: '在箱子右侧，拍立得打印机从这里吐出卡片', buy: 'Instax Link Wide', print: '出卡口框', a: anchor(base, W / 2 + 6, 20, -38, 1, 0, 0), view: 'side' },
+    { t: '耳机口与总音量', d: '在箱子右侧；滚轮调耳机的总音量', buy: '3.5 mm 面板耳机延长线、10k 双联电位器、3.5 mm 音频线', print: '侧面接口板、音量滚轮', a: anchor(base, W / 2 + 6, 22, 68, 1, 0, 0), view: 'side' },
+    { t: '充电口与电源键', d: '一个 USB-C 口给整只箱子充电；金属按钮按一下开机、再按一下关机，灯圈亮着就是开着', buy: 'USB-C 面板延长线、16 mm 金属按钮、65W 充电器（已有就不买）', print: '侧面接口板', a: anchor(base, W / 2 + 6, 40, 58, 1, 0, 0), view: 'side' },
+    { t: '电量小窗', d: '透过它看充电宝自带的电量显示', print: '电量小窗框', a: anchor(base, -2, PY + 3, 100, 0, 1, 0), view: 'top' },
+    { t: '控制面板', d: '所有控件装在一块打印的底板上，表面可以贴胡桃木木皮', buy: '胡桃木木皮（可选）', print: '控制面板底板', a: anchor(base, -10, PY + 1, -100, 0, 1, 0), view: 'top' },
+    { t: '箱体、提手与箱盖撑', d: '复古棕色皮箱；两根箱盖撑让箱盖停在约 100°', buy: '复古皮箱、箱盖撑', a: anchor(base, -24, HB - 22, D / 2 + 28, 0, 0, 1), view: 'front' },
+    { t: '主机：Raspberry Pi 5', d: '跑后端、读控制板、用蓝牙连打印机', buy: 'Pi 5、主动散热器、时钟电池、microSD 卡', print: '箱底夹层托架', a: anchor(inside, -107, WALL + 20, -80, 0, 1, 0), inside: true },
+    { t: '控制板：Teensy 4.1', d: '读所有控件、点亮两条灯链，用 USB 接 Pi；接线见电路图', buy: 'Teensy 4.1、74AHCT125、洞洞板、USB 数据线、330 Ω 电阻和电容', print: '箱底夹层托架', a: anchor(inside, -112, WALL + 12, -14, 0, 1, 0), inside: true },
+    { t: '充电宝', d: '给 Pi、iPad 和打印机供电，可以边充边放', buy: 'Anker 25K 充电宝、USB-A 转 USB-C 短线', print: '箱底夹层托架', a: anchor(inside, 58, WALL + 50, 85, 0, 1, 0), inside: true },
+    { t: '拍立得打印机', d: '平放在箱底，出纸口对着右侧的出卡口', buy: 'Instax Link Wide、相纸', print: '箱底夹层托架、出卡口框', a: anchor(inside, 86, WALL + 35, -38, 0, 1, 0), inside: true },
+    { t: 'GPS（可选）', d: '给卡片提供城市；不装就让用户说一句地名', buy: 'VK-162 USB GPS', a: anchor(inside, -40, WALL + 17, -5, 0, 1, 0), inside: true }
   ];
   var markerBox = document.getElementById('markers');
   var legend = document.getElementById('legend');
   PARTS.forEach(function (p, i) {
     var m = document.createElement('div');
     m.className = 'marker'; m.textContent = String(i + 1);
+    if (p.inside) { m.style.background = 'var(--warm)'; }
     markerBox.appendChild(m); p.el = m;
     var li = document.createElement('li');
+    if (p.inside) { li.className = 'in'; }
     var b = document.createElement('button');
     b.type = 'button';
     b.innerHTML = '<span class="n">' + (i + 1) + '</span><span><span class="t"></span><span class="d"></span></span>';
     b.querySelector('.t').textContent = p.t;
     b.querySelector('.d').textContent = p.d;
+    [['买', p.buy], ['印', p.print]].forEach(function (row) {
+      if (!row[1]) { return; }
+      var line = document.createElement('span'); line.className = 'm';
+      var tag = document.createElement('b'); tag.textContent = row[0];
+      line.appendChild(tag); line.appendChild(document.createTextNode(row[1]));
+      b.querySelector('.d').parentNode.appendChild(line);
+    });
     function on() { m.classList.add('hot'); }
     function off() { m.classList.remove('hot'); }
     b.addEventListener('mouseenter', on); b.addEventListener('mouseleave', off);
     b.addEventListener('focus', on); b.addEventListener('blur', off);
-    b.addEventListener('click', function () { flyTo(i === 1 ? 'back' : i >= 8 && i <= 10 ? 'side' : i === 0 || i === 11 ? 'front' : 'top'); });
+    b.addEventListener('click', function () {
+      if (p.inside && !tgInside.checked) { tgInside.checked = true; setInside(true); }
+      if (!tgLabels.checked) { tgLabels.checked = true; markerBox.style.display = ''; }
+      flyTo(p.view || 'top');
+    });
     li.appendChild(b); legend.appendChild(li);
   });
 
   // ---- views ----
   var VIEWS = {
-    operate: { p: [0, 600, 760], t: [0, 118, -50] },
-    front: { p: [370, 350, 720], t: [0, 112, -30] },
-    top:   { p: [0, 760, 250],   t: [0, 50, 10] },
-    back:  { p: [-430, 340, -820], t: [0, 125, -80] },
-    side:  { p: [760, 210, 40],  t: [0, 120, -40] }
+    operate: { p: [0, 620, 780], t: [0, 126, -50] },
+    front: { p: [370, 360, 740], t: [0, 120, -30] },
+    top:   { p: [0, 780, 260],   t: [0, 58, 10] },
+    back:  { p: [-430, 350, -820], t: [0, 133, -80] },
+    side:  { p: [640, 170, 160], t: [110, 45, 10] }
   };
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var fly = null;
@@ -794,27 +854,25 @@ h2 {
     if (reduce) { lidNow = lidTarget; }
   });
   Array.prototype.forEach.call(document.querySelectorAll('input[name="screen"]'), function (r) {
-    r.addEventListener('change', function () { if (r.checked) { setScreen(r.value); } });
+    r.addEventListener('change', function () { if (r.checked) { showView(r.value); } });
   });
   var tgLabels = document.getElementById('tg-labels'), tgInside = document.getElementById('tg-inside');
+  markerBox.style.display = tgLabels.checked ? '' : 'none';
   tgLabels.addEventListener('change', function () { markerBox.style.display = tgLabels.checked ? '' : 'none'; });
-  tgInside.addEventListener('change', function () {
-    inside.visible = tgInside.checked;
-    mPanel.opacity = tgInside.checked ? 0.16 : 1;
-    mPanel.depthWrite = !tgInside.checked;
-    mPanel.needsUpdate = true;
-    woodMat.opacity = tgInside.checked ? 0.16 : 1;
-    woodMat.depthWrite = !tgInside.checked;
-    woodMat.needsUpdate = true;
-  });
+  function setInside(on) {
+    inside.visible = on;
+    woodPlane.visible = !on;
+    mPanel.opacity = on ? 0.12 : 1; mPanel.depthWrite = !on; mPanel.needsUpdate = true;
+  }
+  tgInside.addEventListener('change', function () { setInside(tgInside.checked); });
 
   // =====================================================================
   // ---- prototype: song, sound, panel interaction ----
   // =====================================================================
   var KNOB_NAMES = { brightness: '明暗', complexity: '简繁', density: '疏密', tempo: '速度' };
-  var LANE_NAMES = ['基础', '进阶', '色彩'];
-  var LEVEL_NAMES = ['入门', '进阶', '挑战'];
-  var SECTION_DEF = [{ label: '开头', start: 0 }, { label: '展开', start: 4 }, { label: '高潮', start: 8 }, { label: '结尾', start: 12 }];
+  var LANE_NAMES = ['简单', '适中', '丰富'];
+  var LEVEL_NAMES = ['稀疏', '适中', '密集'];
+  var SECTION_DEF = [{ label: '开头', start: 0 }, { label: '主歌', start: 4 }, { label: '副歌', start: 8 }, { label: '结尾', start: 12 }];
   var BARS = 16, STEPS = 16;
   var NOTE_PC = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
   var MAJOR_MAP = { I: ['D', ''], ii: ['E', 'm'], iii: ['F#', 'm'], IV: ['G', ''], iv: ['G', 'm'], V: ['A', ''], vi: ['B', 'm'] };
@@ -850,12 +908,10 @@ h2 {
     playing: false,
     step: 0,
     posBar: 0,
-    view: 'song',
+    view: 'capture',
     recording: false, recStart: 0,
     toast: null,
     flash: 0,
-    cardStyle: 'ink',
-    title: '海边的傍晚',
     printed: 0
   };
   var history = [];
@@ -1125,9 +1181,9 @@ h2 {
       if (id === 'brightness') { applyTone(); }
       if (level(S.knobs[id]) !== oldLevel || isDark() !== oldDark) {
         computeSong();
-        if (id === 'complexity') { toast('和弦：' + LANE_NAMES[level(S.knobs.complexity)]); }
-        if (id === 'density') { toast('节奏：' + LEVEL_NAMES[level(S.knobs.density)]); }
-        if (id === 'brightness') { toast(isDark() ? '转暗：b 小调' : '转亮：D 大调'); }
+        if (id === 'complexity') { toast('简繁：' + LANE_NAMES[level(S.knobs.complexity)]); }
+        if (id === 'density') { toast('疏密：' + LEVEL_NAMES[level(S.knobs.density)]); }
+        if (id === 'brightness') { toast(isDark() ? '明暗：偏暗' : '明暗：偏亮'); }
       }
     }
     syncKnobs();
@@ -1139,117 +1195,62 @@ h2 {
     });
   }
   function startRecording() {
-    S.recording = true; S.recStart = performance.now(); S.view = 'record';
+    showView('capture');
+    S.recording = true; S.recStart = performance.now();
     lightKey('capture', 'blink');
   }
   function stopRecording() {
-    S.recording = false; S.view = 'seed';
+    S.recording = false;
     lightKey('capture', 'off');
-  }
-  function takePhoto() { S.flash = performance.now(); toast('拍了一张照片（箱盖背面的镜头）'); }
-  function generateFromSeed() {
     var before = snapshot();
     S.takes = [Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3)];
-    pushHistory('生成新歌', before);
+    pushHistory('做成歌', before);
     computeSong();
-    S.view = 'song';
-    toast('按种子卡生成了新的一版');
+    showView('pick');
+    toast('出了三首候选，挑最像今天的一首');
   }
+  function takePhoto() { showView('capture'); S.flash = performance.now(); toast('拍了一张（箱盖背面的镜头，最多 9 张）'); }
 
   computeSong();
 
-  // ---- screen ----
-  var scr = null, regions = [];
-  function chip(c, x, y, text, u, fill, ink) {
-    c.font = '500 ' + (2.5 * u) + 'px ' + CJK;
-    var tw = c.measureText(text).width + 3 * u;
-    c.fillStyle = fill; roundRect(c, x, y - 2.6 * u, tw, 5.2 * u, 1 * u); c.fill();
-    c.fillStyle = ink; c.textAlign = 'left'; c.fillText(text, x + 1.5 * u, y);
-    return tw;
+  // ---- screen: real screenshots of the app, with the prototype's overlays on top ----
+  var scr = null;
+  var VIEW_ORDER = ['capture', 'pick', 'shape', 'tracks', 'lyrics', 'card'];
+  var VIEW_NAMES = { capture: '采集', pick: '选一首', shape: '打磨', tracks: '音轨', lyrics: '歌词', card: '做卡' };
+  // a page opened from file:// cannot hand local images to WebGL; it shows the screen names instead
+  var canLoad = location.protocol !== 'file:';
+  function loadImg(src, done) {
+    if (!canLoad) { return null; }
+    var im = new Image();
+    im.onload = function () { im.ok = true; if (done) { done(im); } };
+    im.src = src;
+    return im;
   }
+  var shots = {};
+  VIEW_ORDER.forEach(function (v) { shots[v] = loadImg('screens/' + v + '.jpg'); });
+  loadImg('screens/card-print.jpg', drawCardFace);
   function roundRect(c, x, y, w, h, r) {
     c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
     c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
   }
-  function button(c, x, y, w, h, text, u, action, primary) {
-    c.fillStyle = primary ? '#e3a14a' : '#22363e'; roundRect(c, x, y, w, h, 1.2 * u); c.fill();
-    c.fillStyle = primary ? '#201305' : '#e9f1f3'; c.font = '600 ' + (2.7 * u) + 'px ' + CJK; c.textAlign = 'center';
-    c.fillText(text, x + w / 2, y + h / 2);
-    regions.push({ x: x, y: y, w: w, h: h, action: action });
+  function showView(v) {
+    S.view = v;
+    var r = document.getElementById('v-' + v);
+    if (r) { r.checked = true; }
   }
-
-  function drawCardArt(c, w, h, style, title, dateText) {
-    c.save();
-    c.fillStyle = '#f3ecdc'; c.fillRect(0, 0, w, h);
-    var sx = w / 688, sy = h / 400;
-    c.scale(sx, sy);
-    function ridge(pts, fill) { c.fillStyle = fill; c.beginPath(); c.moveTo(0, 232); pts.forEach(function (q) { c.lineTo(q[0], q[1]); }); c.lineTo(688, 232); c.closePath(); c.fill(); }
-    var far = [[0, 150], [90, 118], [170, 146], [260, 96], [350, 140], [450, 110], [560, 150], [688, 128]];
-    var mid = [[0, 196], [120, 168], [220, 190], [330, 150], [420, 186], [540, 172], [688, 200]];
-    var near = [[0, 232], [40, 204], [130, 188], [210, 214], [260, 232]];
-    if (style === 'comic') {
-      c.fillStyle = '#151515';
-      for (var y = 20; y < 232; y += 14) { for (var x = (y / 14) % 2 ? 7 : 0; x < 688; x += 14) { c.beginPath(); c.arc(x, y, 1.2 + (y / 232) * 1.8, 0, 7); c.fill(); } }
-      c.lineWidth = 5; c.strokeStyle = '#151515'; c.fillStyle = '#f3ecdc';
-      [far, mid].forEach(function (pts) { c.beginPath(); c.moveTo(0, 232); pts.forEach(function (q) { c.lineTo(q[0], q[1]); }); c.lineTo(688, 232); c.closePath(); c.fill(); c.stroke(); });
-      c.fillStyle = '#151515'; ridge(near, '#151515');
-      c.beginPath(); c.arc(520, 78, 32, 0, 7); c.fillStyle = '#f3ecdc'; c.fill(); c.stroke();
-      for (var r = 0; r < 12; r++) { var a = r / 12 * Math.PI * 2; c.beginPath(); c.moveTo(520 + Math.cos(a) * 44, 78 + Math.sin(a) * 44); c.lineTo(520 + Math.cos(a) * 60, 78 + Math.sin(a) * 60); c.stroke(); }
-      c.lineWidth = 4;
-      [[300, 254, 250], [120, 272, 330], [360, 292, 220]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 10, wv[0] + wv[2], wv[1]); c.stroke(); });
-    } else if (style === 'xieyi') {
-      c.strokeStyle = 'rgba(20,20,20,0.85)'; c.lineCap = 'round';
-      c.lineWidth = 9; c.beginPath(); c.moveTo(40, 210); c.quadraticCurveTo(140, 150, 230, 205); c.stroke();
-      c.lineWidth = 4; c.beginPath(); c.moveTo(260, 160); c.quadraticCurveTo(360, 110, 470, 165); c.stroke();
-      c.fillStyle = 'rgba(25,25,25,0.12)'; c.beginPath(); c.ellipse(380, 175, 260, 24, 0, 0, 7); c.fill();
-      c.fillStyle = '#9b2a1a'; c.beginPath(); c.arc(540, 82, 22, 0, 7); c.fill();
-      c.lineWidth = 2.5; c.strokeStyle = 'rgba(20,20,20,0.5)';
-      [[120, 266, 160], [380, 286, 200]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 6, wv[0] + wv[2], wv[1]); c.stroke(); });
-      c.fillStyle = '#9b2a1a'; c.fillRect(612, 250, 34, 34);
-      c.fillStyle = '#f3ecdc'; c.font = '700 22px ' + CJK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('歌', 629, 268);
-    } else {
-      ridge(far, 'rgba(30,30,30,0.14)'); ridge(mid, 'rgba(25,25,25,0.32)'); ridge(near, 'rgba(15,15,15,0.82)');
-      c.strokeStyle = 'rgba(20,20,20,0.75)'; c.lineWidth = 3; c.beginPath(); c.arc(520, 78, 30, 0, 7); c.stroke();
-      c.strokeStyle = 'rgba(25,25,25,0.4)'; c.lineWidth = 2.5;
-      [[300, 250, 250], [120, 268, 330], [360, 286, 220], [60, 300, 180]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 5, wv[0] + wv[2], wv[1]); c.stroke(); });
-      c.fillStyle = '#151515'; c.fillRect(604, 262, 44, 44);
-      c.fillStyle = '#f3ecdc'; c.font = '700 30px ' + CJK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('歌', 626, 285);
-    }
-    c.fillStyle = '#f1e9d6'; c.fillRect(0, 318, 688, 82);
-    c.textBaseline = 'middle';
-    c.fillStyle = '#151515'; c.font = '700 40px ' + CJK; c.textAlign = 'left'; c.fillText(title, 28, 358);
-    c.fillStyle = '#555'; c.font = '500 24px ' + CJK; c.textAlign = 'right'; c.fillText(dateText, 660, 358);
-    c.restore();
-  }
-  function drawQr(c, x, y, size, seedText) {
-    var n = 25, cell = size / n, hsh = 0;
-    for (var i = 0; i < seedText.length; i++) { hsh = (hsh * 31 + seedText.charCodeAt(i)) >>> 0; }
-    c.fillStyle = '#f3ecdc'; c.fillRect(x - cell, y - cell, size + 2 * cell, size + 2 * cell);
-    c.fillStyle = '#151515';
-    function finder(fx, fy) {
-      c.fillRect(x + fx * cell, y + fy * cell, 7 * cell, 7 * cell);
-      c.fillStyle = '#f3ecdc'; c.fillRect(x + (fx + 1) * cell, y + (fy + 1) * cell, 5 * cell, 5 * cell);
-      c.fillStyle = '#151515'; c.fillRect(x + (fx + 2) * cell, y + (fy + 2) * cell, 3 * cell, 3 * cell);
-    }
-    for (var r = 0; r < n; r++) {
-      for (var q = 0; q < n; q++) {
-        if ((r < 8 && q < 8) || (r < 8 && q > n - 9) || (r > n - 9 && q < 8)) { continue; }
-        hsh = (hsh * 1103515245 + 12345) >>> 0;
-        if ((hsh >>> 16) & 1) { c.fillRect(x + q * cell, y + r * cell, cell + 0.5, cell + 0.5); }
-      }
-    }
-    finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
-  }
-
   function drawScreen(cv) {
     var w = cv.width, h = cv.height, c = cv.getContext('2d'), u = w / 100, now = performance.now();
-    regions = [];
-    c.fillStyle = '#0f1b20'; c.fillRect(0, 0, w, h);
     c.textBaseline = 'middle';
-    if (S.view === 'seed') { drawSeed(c, w, h, u); }
-    else if (S.view === 'card') { drawCardView(c, w, h, u); }
-    else { drawSong(c, w, h, u); }
-    if (S.view === 'record') {
+    var im = shots[S.view];
+    if (im && im.ok) { c.drawImage(im, 0, 0, w, h); }
+    else {
+      c.fillStyle = '#1c1611'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#e8d9b8'; c.textAlign = 'center'; c.font = '700 ' + (5 * u) + 'px ' + CJK;
+      c.fillText(VIEW_NAMES[S.view], w / 2, h * 0.45);
+      c.font = '500 ' + (2.4 * u) + 'px ' + CJK; c.fillStyle = '#a99a80';
+      c.fillText(canLoad ? '截图加载中' : '用本地网页服务器打开才能看到截图', w / 2, h * 0.56);
+    }
+    if (S.recording) {
       c.fillStyle = 'rgba(80,10,6,0.82)'; c.fillRect(0, 0, w, h);
       var secs = (now - S.recStart) / 1000;
       c.fillStyle = '#ffd9cf'; c.textAlign = 'center'; c.font = '700 ' + (6 * u) + 'px ' + CJK;
@@ -1269,172 +1270,30 @@ h2 {
     var fl = now - S.flash;
     if (fl < 350) { c.fillStyle = 'rgba(255,255,255,' + (1 - fl / 350) + ')'; c.fillRect(0, 0, w, h); }
   }
-
-  function drawSong(c, w, h, u) {
-    var dark = isDark(), cx = level(S.knobs.complexity), dl = level(S.knobs.density);
-    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (4 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(S.title, 4 * u, 6.5 * u);
-    c.font = '700 ' + (4 * u) + 'px ' + CJK;
-    var x = 4 * u + c.measureText(S.title).width + 3 * u;
-    [dark ? 'b 小调' : 'D 大调', S.knobs.tempo + ' 拍/分', '和弦：' + LANE_NAMES[cx], '节奏：' + LEVEL_NAMES[dl]].forEach(function (t) {
-      x += chip(c, x, 6.5 * u, t, u, '#1f3a42', '#9fd8d3') + 1.4 * u;
-    });
-    button(c, w - 16 * u, 3.4 * u, 12 * u, 6.2 * u, '印卡', u, 'openCard', true);
-
-    var L = 13 * u, R = w - 3 * u, bw = (R - L) / BARS, top = 13 * u;
-    var curBar = Math.floor(S.posBar) % BARS, curSec = sectionOf(curBar);
-    SECTION_DEF.forEach(function (d, i) {
-      var sx = L + d.start * bw;
-      c.fillStyle = i === curSec ? '#2c4a52' : '#16272e'; c.fillRect(sx + 0.3 * u, top, 4 * bw - 0.6 * u, 4.4 * u);
-      c.fillStyle = i === curSec ? '#e9f1f3' : '#92a6ae'; c.font = '600 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'left';
-      c.fillText(d.label + '  第 ' + (S.takes[i] + 1) + ' 版', sx + 1.4 * u, top + 2.2 * u);
-    });
-    var ctop = top + 5.2 * u;
-    song.forEach(function (b, i) {
-      var bx = L + i * bw;
-      c.fillStyle = i === curBar ? '#e3a14a' : '#1b2f37'; c.fillRect(bx + 0.2 * u, ctop, bw - 0.4 * u, 5 * u);
-      c.fillStyle = i === curBar ? '#201305' : '#e9f1f3'; c.textAlign = 'center';
-      var fs = 2.1 * u;
-      c.font = '600 ' + fs + 'px ' + CJK;
-      while (fs > 1.2 * u && c.measureText(b.chord.sym).width > bw - 0.8 * u) { fs -= 0.1 * u; c.font = '600 ' + fs + 'px ' + CJK; }
-      c.fillText(b.chord.sym, bx + bw / 2, ctop + 2.5 * u);
-    });
-    var rowsTop = ctop + 6.6 * u, avail = h - rowsTop - 2.5 * u, rh = avail / 6;
-    TRACKS.forEach(function (t, r) {
-      var y = rowsTop + r * rh, alpha = S.muted[r] ? 0.22 : 1;
-      if (r === S.selected) { c.strokeStyle = t.c; c.lineWidth = 0.35 * u; roundRect(c, 1.2 * u, y + 0.15 * u, w - 2.6 * u, rh - 0.3 * u, 0.8 * u); c.stroke(); }
-      c.globalAlpha = alpha;
-      c.fillStyle = '#c4d2d7'; c.font = '600 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(t.n, 2.6 * u, y + rh * 0.38);
-      c.fillStyle = '#2a3c43'; c.fillRect(2.6 * u, y + rh * 0.66, 8 * u, 0.7 * u);
-      c.fillStyle = t.c; c.fillRect(2.6 * u, y + rh * 0.66, 8 * u * S.vol[r], 0.7 * u);
-      c.fillStyle = t.c;
-      var lane = { y: y + rh * 0.12, h: rh * 0.76 };
-      song.forEach(function (b, bi) {
-        var bx = L + bi * bw, sw = bw / STEPS, id = TRACK_IDS[r];
-        if (id === 'melody' || id === 'vocal') {
-          b.ev[id].forEach(function (n) {
-            var py = lane.y + lane.h * (1 - (n.m - 64) / 22);
-            c.fillRect(bx + n.s * sw, py - 0.5 * u, Math.max(n.len * sw - 0.25 * u, 0.4 * u), 1.0 * u);
-          });
-          if (id === 'vocal') {
-            c.fillStyle = '#e9f1f3'; c.font = '500 ' + (1.7 * u) + 'px ' + CJK; c.textAlign = 'left';
-            var li = 0;
-            for (var k = 0; k < bi; k++) { li += song[k].ev.vocal.length; }
-            b.ev.vocal.forEach(function (n, ni) { var ch = LYRICS[(li + ni) % LYRICS.length]; c.fillText(ch, bx + n.s * sw + 0.2 * u, lane.y + lane.h * 0.9); });
-            c.fillStyle = t.c;
-          }
-        } else if (id === 'guitar') {
-          b.ev.guitar.forEach(function (n) {
-            if (n.chord) { c.fillRect(bx + n.s * sw, lane.y + lane.h * (n.dir > 0 ? 0.15 : 0.45), Math.max(n.len * sw - 0.3 * u, 0.5 * u), lane.h * 0.4); }
-            else { var py = lane.y + lane.h * (1 - (n.m - 40) / 36); c.fillRect(bx + n.s * sw, py - 0.4 * u, n.len * sw - 0.2 * u, 0.8 * u); }
-          });
-        } else if (id === 'bass') {
-          b.ev.bass.forEach(function (n) { var py = lane.y + lane.h * (1 - (n.m - 28) / 30); c.fillRect(bx + n.s * sw, py - 0.6 * u, n.len * sw - 0.25 * u, 1.2 * u); });
-        } else if (id === 'drums') {
-          b.ev.drums.forEach(function (n) {
-            var py = lane.y + lane.h * (n.d === 'k' ? 0.8 : n.d === 's' ? 0.5 : 0.2);
-            c.beginPath(); c.arc(bx + n.s * sw + sw / 2, py, (n.d === 'h' ? 0.35 : 0.6) * u, 0, 7); c.fill();
-          });
-        } else {
-          c.beginPath();
-          for (var px = 0; px <= bw; px += 2) {
-            var gx = bx + px, amp = 0.32 + 0.18 * Math.sin((bi * bw + px) / (bw * 0.9));
-            c.lineTo(gx, lane.y + lane.h * (0.5 - amp * 0.5 * Math.sin((bi * bw + px) / (bw * 0.33))));
-          }
-          for (var px2 = bw; px2 >= 0; px2 -= 2) {
-            var gx2 = bx + px2, amp2 = 0.32 + 0.18 * Math.sin((bi * bw + px2) / (bw * 0.9));
-            c.lineTo(gx2, lane.y + lane.h * (0.5 + amp2 * 0.5));
-          }
-          c.globalAlpha = alpha * 0.5; c.fill(); c.globalAlpha = alpha;
-        }
-      });
-      if (S.muted[r]) { c.globalAlpha = 1; c.fillStyle = '#e9f1f3'; c.font = '600 ' + (2.2 * u) + 'px ' + CJK; c.textAlign = 'right'; c.fillText('静音', R - 1 * u, y + rh / 2); }
-      c.globalAlpha = 1;
-    });
-    var phx = L + (S.posBar % BARS) * bw;
-    c.fillStyle = '#ffc463'; c.fillRect(phx - 0.15 * u, ctop - 0.5 * u, 0.3 * u, h - ctop - 1.5 * u);
-  }
-
-  function drawSeed(c, w, h, u) {
-    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (5 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText('种子卡', 5 * u, 8 * u);
-    c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.6 * u) + 'px ' + CJK; c.fillText('设备从你的哼唱、海浪声和照片里读出了这些，每一项都可以改', 5 * u, 14 * u);
-    var rows = [
-      ['调', isDark() ? 'b 小调' : 'D 大调', '哼唱的音落在 D 大调的音阶上'],
-      ['速度', S.knobs.tempo + ' 拍/分', '海浪大约每 0.7 秒一次'],
-      ['情绪', isDark() ? '安静偏冷' : '平静偏暖', '照片以暖色为主，亮度中等'],
-      ['旋律动机', '8 小节', '来自刚才的哼唱，已对齐到拍子上'],
-      ['音色', '尼龙吉他 · 钢琴 · 刷子鼓', '海边、傍晚，选了偏柔和的乐器']
-    ];
-    rows.forEach(function (r, i) {
-      var y = 20 * u + i * 7.4 * u;
-      c.fillStyle = '#16272e'; roundRect(c, 5 * u, y - 3.1 * u, w - 10 * u, 6.2 * u, 1 * u); c.fill();
-      c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.5 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(r[0], 7 * u, y);
-      c.fillStyle = '#e9f1f3'; c.font = '700 ' + (3 * u) + 'px ' + CJK; c.fillText(r[1], 20 * u, y);
-      c.fillStyle = '#9fd8d3'; c.font = '500 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'right'; c.fillText(r[2], w - 7 * u, y);
-    });
-    button(c, w - 40 * u, h - 13 * u, 35 * u, 7 * u, '用这张种子卡生成', u, 'generate', true);
-    button(c, 5 * u, h - 13 * u, 14 * u, 7 * u, '返回', u, 'back', false);
-  }
-
-  function drawCardView(c, w, h, u) {
-    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (4.4 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText('卡片预览', 5 * u, 7 * u);
-    var styles = [['ink', '水墨'], ['comic', '漫画'], ['xieyi', '写意']], sx = 30 * u;
-    styles.forEach(function (s) {
-      var on = S.cardStyle === s[0];
-      c.fillStyle = on ? '#e3a14a' : '#22363e'; roundRect(c, sx, 3.6 * u, 11 * u, 6 * u, 1.2 * u); c.fill();
-      c.fillStyle = on ? '#201305' : '#e9f1f3'; c.font = '600 ' + (2.6 * u) + 'px ' + CJK; c.textAlign = 'center'; c.fillText(s[1], sx + 5.5 * u, 6.6 * u);
-      regions.push({ x: sx, y: 3.6 * u, w: 11 * u, h: 6 * u, action: 'style:' + s[0] });
-      sx += 12.5 * u;
-    });
-    var cw = 44 * u, chh = cw * 400 / 688, top = 14 * u;
-    c.save(); c.translate(5 * u, top); drawCardArt(c, cw, chh, S.cardStyle, S.title, '2026.11.19'); c.restore();
-    c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.textAlign = 'center'; c.fillText('正面', 5 * u + cw / 2, top + chh + 3 * u);
-    var bx = 53 * u;
-    c.fillStyle = '#f3ecdc'; c.fillRect(bx, top, cw, chh);
-    drawQr(c, bx + 3 * u, top + 3 * u, chh - 6 * u, S.title + S.cardStyle);
-    c.fillStyle = '#151515'; c.textAlign = 'left'; c.font = '700 ' + (3 * u) + 'px ' + CJK; c.fillText(S.title, bx + chh, top + 6 * u);
-    c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.fillStyle = '#444';
-    c.fillText('里斯本', bx + chh, top + 11 * u); c.fillText('2026.11.19', bx + chh, top + 15 * u);
-    c.fillText('扫码听这首歌', bx + chh, top + 21 * u);
-    c.fillStyle = '#92a6ae'; c.textAlign = 'center'; c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.fillText('背面（二维码为示意）', bx + cw / 2, top + chh + 3 * u);
-    button(c, w - 30 * u, h - 13 * u, 25 * u, 7 * u, '打印', u, 'print', true);
-    button(c, 5 * u, h - 13 * u, 14 * u, 7 * u, '返回', u, 'back', false);
-  }
-
-  function screenTap(uv) {
-    if (!uv || !scr) { return; }
-    var px = uv.x * scr.cv.width, py = (1 - uv.y) * scr.cv.height;
-    for (var i = regions.length - 1; i >= 0; i--) {
-      var r = regions[i];
-      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { runAction(r.action); return; }
-    }
+  function screenTap() {
+    if (S.view === 'card') { startPrint(); return; }
+    showView(VIEW_ORDER[VIEW_ORDER.indexOf(S.view) + 1]);
+    toast('下一步：' + VIEW_NAMES[S.view]);
   }
   function runAction(a) {
-    if (a === 'openCard') { S.view = 'card'; }
-    else if (a === 'back') { S.view = 'song'; }
-    else if (a === 'generate') { generateFromSeed(); }
-    else if (a === 'print') { startPrint(); }
-    else if (a.indexOf('style:') === 0) { S.cardStyle = a.slice(6); }
+    if (a === 'print') { startPrint(); }
+    else if (VIEW_NAMES[a]) { showView(a); }
   }
 
   // ---- printing ----
   var printing = null;
   function startPrint() {
-    S.view = 'song';
-    printing = { start: performance.now(), swapped: false };
-    toast('正在打印：' + S.title);
+    if (printing) { return; }
+    printing = { start: performance.now(), done: false };
+    toast('正在打印（实际约 15 秒）');
   }
   function updatePrint(now) {
     if (!printing) { return; }
     var t = (now - printing.start) / 1000;
-    var out = t < 1.8 ? t / 1.8 : t < 3.4 ? 1 : Math.max(0, 1 - (t - 3.4) / 0.6);
-    strip.position.x = W / 2 - 14 + out * 27;
-    if (t > 3.4 && !printing.swapped) {
-      printing.swapped = true;
-      drawCardArt(art.getContext('2d'), art.width, art.height, S.cardStyle, S.title, '2026.11.19');
-      face.material.map.needsUpdate = true;
-      toast('卡片已经立在卡片架上');
-    }
-    if (t > 4.0) { printing = null; }
+    ejectCard.visible = t < 4;
+    ejectCard.position.x = W / 2 - 4 - CARD_H / 2 + Math.min(1, t / 2.2) * 58;
+    if (t >= 4 && !printing.done) { printing.done = true; S.printed++; toast('印好了，插到卡片架上'); }
+    if (t > 4.5) { printing = null; }
   }
 
   // ---- pointer interaction ----
@@ -1524,7 +1383,7 @@ h2 {
     else if (ctrl.type === 'platter') { drag.angle = platterAngle(ev); }
     else if (ctrl.type === 'knob') { drag.before = snapshot(); }
     else if (ctrl.type === 'fader') { var v = faderValueAt(ev); if (v != null) { setFader(ctrl.track, v); } }
-    else if (ctrl.type === 'screen') { screenTap(h.uv); drag = null; controls.enabled = true; }
+    else if (ctrl.type === 'screen') { screenTap(); drag = null; controls.enabled = true; }
   }, true);
 
   window.addEventListener('pointermove', function (ev) {
@@ -1590,7 +1449,7 @@ h2 {
   window.__state = function () { return { posBar: Math.round(S.posBar * 100) / 100, takes: S.takes, knobs: S.knobs, vol: S.vol, muted: S.muted, playing: S.playing, view: S.view, history: history.length, chords: song.map(function (b) { return b.chord.sym; }).join(' ') }; };
   window.__action = runAction;
 
-  setScreen('ipad11');
+  buildScreen();
 
   // ---- loop ----
   var vw = 0, vh = 0;
@@ -1606,9 +1465,13 @@ h2 {
   var v3 = new T.Vector3(), c3 = new T.Vector3(), caster = new T.Raycaster();
   function ease(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
   function frame() {
+    if (document.body.classList.contains('show-wiring')) { requestAnimationFrame(frame); return; }
     resize();
     if (Math.abs(lidNow - lidTarget) > 0.05) { lidNow += (lidTarget - lidNow) * 0.16; } else { lidNow = lidTarget; }
     lid.rotation.x = -lidNow * Math.PI / 180;
+    updateStays();
+    var openK = Math.max(0, Math.min(1, (lidNow - 25) / 45));
+    rack.rotation.x = -(Math.PI / 2 - openK * (Math.PI / 2 - 18 * Math.PI / 180));
     if (fly) {
       fly.k = Math.min(1, fly.k + 0.035);
       var e = ease(fly.k);
@@ -1627,9 +1490,9 @@ h2 {
         var dist = c3.length();
         caster.set(camera.position, c3.normalize());
         caster.far = Math.max(dist - 7, 1);
-        var facing = caster.intersectObject(root, true).length === 0;
+        var facing = p.inside || caster.intersectObject(root, true).length === 0;
         v3.project(camera);
-        var show = v3.z < 1 && v3.z > -1;
+        var show = v3.z < 1 && v3.z > -1 && (!p.inside || inside.visible);
         p.el.style.display = show ? '' : 'none';
         p.el.style.left = ((v3.x * 0.5 + 0.5) * vw) + 'px';
         p.el.style.top = ((-v3.y * 0.5 + 0.5) * vh) + 'px';
