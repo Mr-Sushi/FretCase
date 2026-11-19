@@ -31,7 +31,7 @@ def test_error_shape_for_unknown_song_and_bad_body(client):
 def test_create_list_get(api):
     song = api.song()
     assert song["revision"] == 0 and song["bars"] == 16
-    assert song["card"]["style"] == "text" and song["card"]["showPhoto"] is False
+    assert song["card"]["style"] == "text" and song["card"]["showPhoto"] is True
     listed = api.c.get("/api/songs").json()["songs"]
     assert [s["id"] for s in listed] == [song["id"]]
     assert api.c.get(f"/api/songs/{song['id']}").json()["song"] == song
@@ -264,7 +264,7 @@ def test_location_study_log_and_shutdown(make_client):
     assert client.get("/api/location").json() == {"city": None, "source": "none"}
     assert client.put("/api/location", json={"city": "Lisbon"}).json() == {"city": "Lisbon", "source": "manual"}
     song = api.song()
-    assert song["card"]["city"] == "Lisbon" and song["card"]["showCity"] is False
+    assert song["card"]["city"] == "Lisbon" and song["card"]["showCity"] is True
     # a typed place applies to one song
     assert client.get("/api/location").json()["city"] is None
     assert client.put("/api/location", json={"city": ""}).status_code == 400

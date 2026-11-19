@@ -203,7 +203,7 @@ def create_app(
     def default_card(seed: Dict[str, Any], now: str) -> Dict[str, Any]:
         """xieyi with photos, text without; the cover is the first photo; every photo is shown on the song page."""
         photos = [i["assetId"] for i in seed["inputs"] if i["kind"] == "photo"]
-        card: Dict[str, Any] = {"style": "xieyi" if photos else "text", "showPhoto": False, "showCity": False, "capturedAt": now}
+        card: Dict[str, Any] = {"style": "xieyi" if photos else "text", "showPhoto": True, "showCity": True, "capturedAt": now}
         if photos:
             card["photoAssetIds"] = photos
             card["coverAssetId"] = photos[0]
@@ -301,7 +301,7 @@ def create_app(
         return changed(song_id, body.baseRevision, names, apply)
 
     def set_card(song: Dict[str, Any], op: Any) -> Dict[str, Any]:
-        card = song.setdefault("card", {"style": "text", "showPhoto": False, "showCity": False})
+        card = song.setdefault("card", {"style": "text", "showPhoto": True, "showCity": True})
         sent = op.model_fields_set - {"op"}
         for field in sent:
             value = getattr(op, field)
@@ -493,7 +493,7 @@ def create_app(
         base = share_base(request)
 
         def apply(song: Dict[str, Any], meta: Dict[str, Any]) -> Dict[str, Any]:
-            card = song.setdefault("card", {"style": "text", "showPhoto": False, "showCity": False})
+            card = song.setdefault("card", {"style": "text", "showPhoto": True, "showCity": True})
             cover_path = None
             if card["style"] != "text":
                 if not card.get("coverAssetId"):

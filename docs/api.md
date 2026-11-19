@@ -293,7 +293,7 @@ What the song page shows, with nothing private:
 }
 ```
 
-`city` only when `showCity`; `photos` only when `showPhoto` (in `photoAssetIds` order, else an empty list); `card` only after a print or preview. `song` is the full song for playback with `seed` and `provenance` removed and `assets` limited to those the page uses (photos, ambience clips, vocal render). `GET /api/share/{shareId}/assets/{assetId}` serves only those assets. `404` for an unknown share.
+`city` only when `showCity`; `photos` only when `showPhoto` (in `photoAssetIds` order, else an empty list). New songs start with `showCity` and `showPhoto` true (the city level is the agreed default); the user can turn either off on the card screen; `card` only after a print or preview. `song` is the full song for playback with `seed` and `provenance` removed and `assets` limited to those the page uses (photos, ambience clips, vocal render). `GET /api/share/{shareId}/assets/{assetId}` serves only those assets. `404` for an unknown share.
 
 ## Location
 
