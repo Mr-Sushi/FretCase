@@ -2,7 +2,7 @@ import asyncio
 
 import mido
 
-from conftest import assert_all_valid, wait_for
+from helpers import assert_all_valid, wait_for
 
 
 def cc(control, value):
@@ -218,7 +218,7 @@ async def test_reconnects_when_the_server_goes_silent(server, midi, mapping):
 
 
 async def test_waits_for_a_server_that_is_not_up_yet(midi, mapping):
-    from conftest import FakeServer
+    from helpers import FakeServer
     from fretcase_bridge.bridge import Bridge
 
     s = FakeServer()
