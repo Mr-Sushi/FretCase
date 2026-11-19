@@ -48,4 +48,6 @@ class Settings:
     text_model_url: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_URL"))
     text_model_key: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_KEY"))
     text_model_name: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_NAME"))
+    # "anthropic" | "openai"; None picks by the key (sk-ant-... is Anthropic)
+    text_model_api: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_API"))
     drafts_ttl_hours: float = 24.0

@@ -388,6 +388,86 @@ def test_the_text_model_adapter_speaks_the_messages_format(monkeypatch):
         AnthropicTextModel(None, None, None).complete("s", "p")
 
 
+def test_the_openai_adapter_speaks_the_chat_completions_format(monkeypatch):
+    from fretcase_server.adapters import OpenAITextModel
+
+    sent = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"role": "assistant", "content": "好"}}]}).encode()
+
+    def fake_urlopen(request, timeout):
+        sent.append(dict(url=request.full_url, headers=dict(request.header_items()), body=json.loads(request.data), timeout=timeout))
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    model = OpenAITextModel(None, "sk-proj-secret", None)
+    assert model.configured and model.name == "gpt-5-mini"
+    assert model.complete("sys", "hi", timeout=20.0) == "好"
+    first = sent[0]
+    assert first["url"] == "https://api.openai.com/v1/chat/completions" and first["timeout"] == 20.0
+    assert first["headers"]["Authorization"] == "Bearer sk-proj-secret"
+    assert first["body"]["messages"] == [{"role": "system", "content": "sys"}, {"role": "user", "content": "hi"}]
+    assert first["body"]["reasoning_effort"] == "low" and "max_tokens" not in first["body"]
+    # a non-reasoning model on a compatible service gets max_tokens and no reasoning_effort
+    OpenAITextModel("https://llm.example/v1/", "k", "qwen-plus").complete("s", "p", max_tokens=900)
+    assert sent[1]["url"] == "https://llm.example/v1/chat/completions"
+    assert sent[1]["body"]["max_tokens"] == 900 and "reasoning_effort" not in sent[1]["body"]
+
+
+def test_the_openai_adapter_reports_why_a_call_failed(monkeypatch):
+    import io
+    import urllib.error
+
+    from fretcase_server.adapters import ModelError, OpenAITextModel
+
+    def refuse(code, body):
+        def fake_urlopen(request, timeout):
+            raise urllib.error.HTTPError(request.full_url, code, "no", {}, io.BytesIO(body.encode()))
+        return fake_urlopen
+
+    model = OpenAITextModel(None, "sk-proj-x", "gpt-unknown")
+    for code, reason in ((401, "auth"), (429, "rate_limited"), (404, "unreachable")):
+        monkeypatch.setattr("urllib.request.urlopen", refuse(code, '{"error": {"code": "model_not_found"}}'))
+        with pytest.raises(ModelError) as caught:
+            model.complete("s", "p")
+        assert caught.value.reason == reason and "model_not_found" in str(caught.value)
+
+    class Empty:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b'{"choices": []}'
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda request, timeout: Empty())
+    with pytest.raises(ModelError) as caught:
+        model.complete("s", "p")
+    assert caught.value.reason == "bad_answer"
+
+
+def test_the_text_model_api_is_picked_by_setting_or_by_key():
+    from fretcase_server.adapters import AnthropicTextModel, OpenAITextModel, make_text_model
+
+    assert type(make_text_model(None, None, "sk-ant-abc", None)) is AnthropicTextModel
+    assert type(make_text_model(None, None, "sk-proj-abc", None)) is OpenAITextModel
+    assert type(make_text_model("anthropic", None, "sk-proj-abc", None)) is AnthropicTextModel
+    assert type(make_text_model("OpenAI", None, "sk-ant-abc", None)) is OpenAITextModel
+    assert not make_text_model(None, None, None, None).configured
+    with pytest.raises(ValueError):
+        make_text_model("gemini", None, "k", None)
+
+
 # ----------------------------------------------------------------------------------------------- song page
 
 

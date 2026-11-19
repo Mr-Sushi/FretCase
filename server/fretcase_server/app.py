@@ -26,7 +26,7 @@ from fretcase_engine.generate import CannotApply
 from fretcase_engine.rhythm import load_presets
 from fretcase_engine.song_model import Note, Song as SongModel, VocalNote
 from fretcase_server import cards, hum, lyrics, seed_analysis
-from fretcase_server.adapters import Adapters, AnthropicTextModel, Offline, call_with_timeout
+from fretcase_server.adapters import Adapters, Offline, call_with_timeout, make_text_model
 from fretcase_server.config import VERSION, Settings
 from fretcase_server.errors import ApiError, cannot_apply, invalid_request, not_found, not_implemented, offline_unavailable
 from fretcase_server.panel import PanelHub
@@ -81,7 +81,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     adapters = adapters or Adapters(
-        text_model=AnthropicTextModel(settings.text_model_url, settings.text_model_key, settings.text_model_name),
+        text_model=make_text_model(settings.text_model_api, settings.text_model_url, settings.text_model_key, settings.text_model_name),
         timeout_s=settings.http_timeout_s,
     )
     store = Store(settings.data_dir, drafts_ttl_hours=settings.drafts_ttl_hours, **({"clock": clock} if clock else {}))

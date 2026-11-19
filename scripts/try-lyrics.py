@@ -3,8 +3,9 @@
     uv run python scripts/try-lyrics.py "海边的傍晚，风很大，有点想家"
 
 Needs FRETCASE_TEXT_MODEL_KEY, in the environment or in the gitignored .env at the repository root
-(FRETCASE_TEXT_MODEL_NAME and FRETCASE_TEXT_MODEL_URL are optional). Prints the lines it gets, their lengths
-against the notes, how long each call took, and three other wordings for one chorus line.
+(FRETCASE_TEXT_MODEL_API, FRETCASE_TEXT_MODEL_NAME and FRETCASE_TEXT_MODEL_URL are optional; an OpenAI key works too).
+First makes one direct call to show which model answers, or the service's own error. Then prints the lines it gets,
+their lengths against the notes, how long each call took, and three other wordings for one chorus line.
 """
 from __future__ import annotations
 
@@ -40,6 +41,17 @@ def main() -> int:
         if not settings.text_model_key:
             print("No FRETCASE_TEXT_MODEL_KEY in the environment or in .env; nothing to try.")
             return 2
+        from fretcase_server.adapters import ModelError, make_text_model
+
+        model = make_text_model(settings.text_model_api, settings.text_model_url, settings.text_model_key, settings.text_model_name)
+        print(f"model: {type(model).__name__} {model.name} at {model.endpoint()}")
+        started = time.monotonic()
+        try:
+            said = model.complete("Answer in one word.", "Say OK.", max_tokens=20, timeout=30.0)
+            print(f"direct call answered in {time.monotonic() - started:.1f} s: {said.strip()[:40]!r}")
+        except ModelError as exc:
+            print(f"direct call failed ({exc.reason}): {exc}")
+            return 1
         client = TestClient(create_app(settings))
         health = client.get("/health").json()
         print(f"model configured: {health['lyrics']}, online: {health['online']}")
