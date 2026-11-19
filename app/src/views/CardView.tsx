@@ -106,7 +106,7 @@ export function CardView() {
           </div>
           <div className="printbox">
             <button type="button" className="gobtn" disabled={busy || out || offline} onClick={() => void c.printCard()}>印出来</button>
-            <div className="muted13 center">{out ? '相纸用完了，换一盒再印' : offline ? '打印机没连上：打开打印机，靠近箱子' : '约 15 秒，从箱子侧面的出卡口出来'}</div>
+            <div className="muted13 center">{out ? '相纸用完了，换一盒再印' : offline ? '打印机没连上：打开打印机，靠近箱子' : '约 15 秒，从箱子侧面的出卡口出来；也可以按住箱子上的红键约 1 秒'}</div>
           </div>
         </aside>
       </main>

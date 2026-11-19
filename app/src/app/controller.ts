@@ -791,6 +791,9 @@ export class Controller {
       case 'another': void this.another(i.section, i.track); return
       case 'pick.more': void this.moreCandidates({ again: true }); return
       case 'pick.focus': this.focusCandidate(i.index); return
+      case 'pick.choose': if (s.view === 'pick') void this.chooseCandidate(i.index); return
+      case 'card.print': if (s.view === 'card' && !s.cardBusy) void this.printCard(); return
+      case 'card.printHint': if (s.view === 'card') this.toast('按住红键约 1 秒，就会印出来', 'info'); return
       case 'region.section': {
         const sec = s.song?.sections[i.index]
         if (sec) this.selectSection(sec.id, s.looping)

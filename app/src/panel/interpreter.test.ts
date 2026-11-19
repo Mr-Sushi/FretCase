@@ -235,6 +235,34 @@ describe('screens', () => {
     expect(out).toEqual([{ type: 'card.style', index: 2 }, { type: 'card.style', index: 0 }])
   })
 
+  it('pick: the capture key chooses the song in focus', () => {
+    const { out, send, state } = setup(null, 'pick')
+    state.focus = 2
+    press(send, 'capture')
+    expect(out).toEqual([{ type: 'pick.choose', index: 2 }])
+  })
+
+  it('card: the capture key prints only when held for a second', () => {
+    const { out, send } = setup(null, 'card')
+    press(send, 'capture')
+    expect(out).toEqual([{ type: 'card.printHint' }])
+    out.length = 0
+    send('key', { id: 'capture', action: 'down' }, 1000)
+    vi.advanceTimersByTime(700)
+    expect(out).toEqual([]) // past the 600 ms long press, but not yet a print, and no recording
+    vi.advanceTimersByTime(300)
+    expect(out).toEqual([{ type: 'card.print' }])
+    send('key', { id: 'capture', action: 'up' }, 2500)
+    expect(out).toEqual([{ type: 'card.print' }])
+  })
+
+  it('card: a hold the panel measured as a second prints even if the timer ran late', () => {
+    const { out, send } = setup(null, 'card')
+    send('key', { id: 'capture', action: 'down' }, 0)
+    send('key', { id: 'capture', action: 'up' }, 1100)
+    expect(out).toEqual([{ type: 'card.print' }])
+  })
+
   it('capture: short press is a photo, hold is a hum', () => {
     const { out, send } = setup(null, 'capture')
     press(send, 'capture')

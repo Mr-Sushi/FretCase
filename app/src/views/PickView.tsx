@@ -22,7 +22,7 @@ export function PickView() {
         <div className="pick-head">
           <div>
             <h1>听听这三首，挑最像今天的</h1>
-            <div className="lead">三首都用了你收集的东西，只是编法不同。转唱盘在三首之间切换。</div>
+            <div className="lead">三首都用了你收集的东西，只是编法不同。转唱盘在三首之间切换，按红键选定。</div>
           </div>
           <div role="group" aria-label="时段" className="seg timeseg">
             {TIMES.map((t) => (

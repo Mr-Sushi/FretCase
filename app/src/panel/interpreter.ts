@@ -22,6 +22,9 @@ export type Intent =
   | { type: 'region.section'; index: number }
   | { type: 'region.param'; param: 'complexity' | 'intensity'; value: number }
   | { type: 'card.style'; index: number }
+  | { type: 'pick.choose'; index: number }
+  | { type: 'card.print' }
+  | { type: 'card.printHint' }
 
 /** The part of the app state the interpretation needs. Read at the moment of use. */
 export interface PanelContext {
@@ -51,6 +54,8 @@ export interface InterpreterOptions {
   detentsPerStep: number
   /** Tempo knob: quarter notes per minute per detent. Not specified by docs/api.md. */
   tempoStep: number
+  /** On the card screen the capture key prints only when held this long: a print uses film and cannot be undone. */
+  printHoldMs: number
 }
 
 export const DEFAULT_OPTIONS: InterpreterOptions = {
@@ -61,6 +66,7 @@ export const DEFAULT_OPTIONS: InterpreterOptions = {
   knobStep: 0.02,
   tempoStep: 1,
   detentsPerStep: 4,
+  printHoldMs: 1000,
 }
 
 interface Msg { type: string; t?: number; payload?: Record<string, unknown> }
@@ -75,7 +81,7 @@ export class PanelInterpreter {
   private stepAcc = 0
   private lastScreen = ''
   private position = 0 // in bars, fractional; one detent moves 1/detentsPerBar
-  private downAt = new Map<KeyId, { t: number; timer: ReturnType<typeof setTimeout>; long: boolean }>()
+  private downAt = new Map<KeyId, { t: number; timer: ReturnType<typeof setTimeout>; long: boolean; print?: boolean }>()
   private faderTimers = new Map<TrackId, { timer: ReturnType<typeof setTimeout>; value: number }>()
   private knobTimers = new Map<KnobId, { timer: ReturnType<typeof setTimeout>; value: number }>()
   private opts: InterpreterOptions
@@ -195,6 +201,12 @@ export class PanelInterpreter {
     if (action === 'down') {
       const old = this.downAt.get(id)
       if (old) clearTimeout(old.timer)
+      if (id === 'capture' && this.ctx.screen() === 'card') {
+        // The capture key confirms the print, and only when held: a print uses film and cannot be undone.
+        const rec: { t: number; long: boolean; print: boolean; timer: ReturnType<typeof setTimeout> } = { t, long: false, print: true, timer: setTimeout(() => this.printHold(rec), this.opts.printHoldMs) }
+        this.downAt.set(id, rec)
+        return
+      }
       const rec = { t, long: false, timer: setTimeout(() => this.longPress(id, rec), this.opts.longPressMs) }
       this.downAt.set(id, rec)
       return
@@ -203,6 +215,11 @@ export class PanelInterpreter {
     if (!rec) return // an up without a down (e.g. held before connecting)
     clearTimeout(rec.timer)
     this.downAt.delete(id)
+    if (rec.print) {
+      if (!rec.long && t - rec.t >= this.opts.printHoldMs) this.printHold(rec)
+      if (!rec.long) this.emit({ type: 'card.printHint' })
+      return
+    }
     // The panel's clock decides if the timer was late: a press the panel measured as long is long.
     if (!rec.long && t - rec.t >= this.opts.longPressMs) this.longPress(id, rec)
     if (rec.long) {
@@ -210,6 +227,12 @@ export class PanelInterpreter {
       return
     }
     this.shortPress(id)
+  }
+
+  private printHold(rec: { long: boolean }) {
+    if (rec.long) return
+    rec.long = true
+    this.emit({ type: 'card.print' })
   }
 
   private longPress(id: KeyId, rec: { long: boolean }) {
@@ -223,7 +246,10 @@ export class PanelInterpreter {
 
   private shortPress(id: KeyId) {
     switch (id) {
-      case 'capture': this.emit({ type: 'photo' }); return
+      case 'capture':
+        // Where nothing is captured, the capture key confirms: on the pick screen it chooses the song in focus.
+        if (this.ctx.screen() === 'pick') { this.emit({ type: 'pick.choose', index: this.ctx.focus() }); return }
+        this.emit({ type: 'photo' }); return
       case 'play': this.emit({ type: 'play.toggle' }); return
       case 'undo': this.emit({ type: 'undo' }); return
       case 'another': {
