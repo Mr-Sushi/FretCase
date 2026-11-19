@@ -1,0 +1,921 @@
+{
+  "schemaVersion": "1.0",
+  "id": "song-hai-bian-01",
+  "revision": 3,
+  "createdAt": "2026-11-18T18:02:11Z",
+  "updatedAt": "2026-11-18T18:09:40Z",
+  "title": "海边的傍晚",
+  "key": {
+    "tonic": "D",
+    "mode": "major"
+  },
+  "meter": {
+    "numerator": 4,
+    "denominator": 4
+  },
+  "tempo": 84,
+  "bars": 16,
+  "capo": null,
+  "controls": {
+    "brightness": 0.62,
+    "complexity": 0.4,
+    "density": 0.3
+  },
+  "seed": {
+    "inputs": [
+      {
+        "kind": "hum",
+        "assetId": "a-hum-01"
+      },
+      {
+        "kind": "sound",
+        "assetId": "a-waves-01"
+      },
+      {
+        "kind": "photo",
+        "assetId": "a-photo-01"
+      }
+    ],
+    "key": {
+      "tonic": "D",
+      "mode": "major"
+    },
+    "tempo": 84,
+    "meter": {
+      "numerator": 4,
+      "denominator": 4
+    },
+    "mood": "平静偏暖",
+    "motif": [
+      {
+        "start": 0,
+        "duration": 480,
+        "pitch": 74,
+        "velocity": 96
+      },
+      {
+        "start": 480,
+        "duration": 480,
+        "pitch": 76,
+        "velocity": 96
+      },
+      {
+        "start": 960,
+        "duration": 960,
+        "pitch": 78,
+        "velocity": 96
+      },
+      {
+        "start": 1920,
+        "duration": 480,
+        "pitch": 76,
+        "velocity": 96
+      },
+      {
+        "start": 2400,
+        "duration": 480,
+        "pitch": 74,
+        "velocity": 96
+      },
+      {
+        "start": 2880,
+        "duration": 960,
+        "pitch": 71,
+        "velocity": 96
+      }
+    ],
+    "instruments": {
+      "guitar": "nylon",
+      "melody": "piano",
+      "drums": "brush-kit"
+    },
+    "reasons": [
+      {
+        "field": "key",
+        "text": "哼唱的音落在 D 大调上"
+      },
+      {
+        "field": "tempo",
+        "text": "海浪大约每 0.7 秒一次，取 84 拍每分"
+      },
+      {
+        "field": "mood",
+        "text": "画面以暖色为主，亮度中等"
+      }
+    ],
+    "source": "offline"
+  },
+  "sections": [
+    {
+      "id": "s-intro",
+      "label": "开头",
+      "startBar": 0,
+      "endBar": 4
+    },
+    {
+      "id": "s-verse",
+      "label": "展开",
+      "startBar": 4,
+      "endBar": 8
+    },
+    {
+      "id": "s-chorus",
+      "label": "高潮",
+      "startBar": 8,
+      "endBar": 12
+    },
+    {
+      "id": "s-outro",
+      "label": "结尾",
+      "startBar": 12,
+      "endBar": 16
+    }
+  ],
+  "harmony": [
+    {
+      "start": 0,
+      "duration": 1920,
+      "symbol": "D",
+      "roman": "I",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          -1,
+          0,
+          2,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          0,
+          0,
+          1,
+          3,
+          2
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 1920,
+      "duration": 1920,
+      "symbol": "D",
+      "roman": "I",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          -1,
+          0,
+          2,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          0,
+          0,
+          1,
+          3,
+          2
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 3840,
+      "duration": 1920,
+      "symbol": "Bm",
+      "roman": "vi",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          2,
+          4,
+          4,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          1,
+          3,
+          4,
+          2,
+          1
+        ],
+        "barres": [
+          2
+        ],
+        "baseFret": 2,
+        "difficulty": 0.72
+      }
+    },
+    {
+      "start": 5760,
+      "duration": 1920,
+      "symbol": "Bm",
+      "roman": "vi",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          2,
+          4,
+          4,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          1,
+          3,
+          4,
+          2,
+          1
+        ],
+        "barres": [
+          2
+        ],
+        "baseFret": 2,
+        "difficulty": 0.72
+      }
+    },
+    {
+      "start": 7680,
+      "duration": 1920,
+      "symbol": "G",
+      "roman": "IV",
+      "function": "PD",
+      "voicing": {
+        "frets": [
+          3,
+          2,
+          0,
+          0,
+          0,
+          3
+        ],
+        "fingers": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          3
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 9600,
+      "duration": 1920,
+      "symbol": "G",
+      "roman": "IV",
+      "function": "PD",
+      "voicing": {
+        "frets": [
+          3,
+          2,
+          0,
+          0,
+          0,
+          3
+        ],
+        "fingers": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          3
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 11520,
+      "duration": 1920,
+      "symbol": "A",
+      "roman": "V",
+      "function": "D",
+      "voicing": {
+        "frets": [
+          -1,
+          0,
+          2,
+          2,
+          2,
+          0
+        ],
+        "fingers": [
+          0,
+          0,
+          1,
+          2,
+          3,
+          0
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.18
+      }
+    },
+    {
+      "start": 13440,
+      "duration": 1920,
+      "symbol": "A",
+      "roman": "V",
+      "function": "D",
+      "voicing": {
+        "frets": [
+          -1,
+          0,
+          2,
+          2,
+          2,
+          0
+        ],
+        "fingers": [
+          0,
+          0,
+          1,
+          2,
+          3,
+          0
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.18
+      }
+    },
+    {
+      "start": 15360,
+      "duration": 1920,
+      "symbol": "D",
+      "roman": "I",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          -1,
+          0,
+          2,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          0,
+          0,
+          1,
+          3,
+          2
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 17280,
+      "duration": 1920,
+      "symbol": "F#m",
+      "roman": "iii",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          2,
+          4,
+          4,
+          2,
+          2,
+          2
+        ],
+        "fingers": [
+          1,
+          3,
+          4,
+          1,
+          1,
+          1
+        ],
+        "barres": [
+          2
+        ],
+        "baseFret": 2,
+        "difficulty": 0.78
+      }
+    },
+    {
+      "start": 19200,
+      "duration": 1920,
+      "symbol": "G",
+      "roman": "IV",
+      "function": "PD",
+      "voicing": {
+        "frets": [
+          3,
+          2,
+          0,
+          0,
+          0,
+          3
+        ],
+        "fingers": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          3
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 21120,
+      "duration": 1920,
+      "symbol": "A",
+      "roman": "V",
+      "function": "D",
+      "voicing": {
+        "frets": [
+          -1,
+          0,
+          2,
+          2,
+          2,
+          0
+        ],
+        "fingers": [
+          0,
+          0,
+          1,
+          2,
+          3,
+          0
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.18
+      }
+    },
+    {
+      "start": 23040,
+      "duration": 1920,
+      "symbol": "Em",
+      "roman": "ii",
+      "function": "PD",
+      "voicing": {
+        "frets": [
+          0,
+          2,
+          2,
+          0,
+          0,
+          0
+        ],
+        "fingers": [
+          0,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.12
+      }
+    },
+    {
+      "start": 24960,
+      "duration": 1920,
+      "symbol": "G",
+      "roman": "IV",
+      "function": "PD",
+      "voicing": {
+        "frets": [
+          3,
+          2,
+          0,
+          0,
+          0,
+          3
+        ],
+        "fingers": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          3
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    },
+    {
+      "start": 26880,
+      "duration": 1920,
+      "symbol": "A",
+      "roman": "V",
+      "function": "D",
+      "voicing": {
+        "frets": [
+          -1,
+          0,
+          2,
+          2,
+          2,
+          0
+        ],
+        "fingers": [
+          0,
+          0,
+          1,
+          2,
+          3,
+          0
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.18
+      }
+    },
+    {
+      "start": 28800,
+      "duration": 1920,
+      "symbol": "D",
+      "roman": "I",
+      "function": "T",
+      "voicing": {
+        "frets": [
+          -1,
+          -1,
+          0,
+          2,
+          3,
+          2
+        ],
+        "fingers": [
+          0,
+          0,
+          0,
+          1,
+          3,
+          2
+        ],
+        "barres": [],
+        "baseFret": 0,
+        "difficulty": 0.2
+      }
+    }
+  ],
+  "tracks": {
+    "vocal": {
+      "instrument": "synth-female",
+      "volume": 0.8,
+      "muted": false,
+      "source": "none",
+      "notes": [
+        {
+          "start": 0,
+          "duration": 480,
+          "pitch": 74,
+          "velocity": 96,
+          "lyric": "海"
+        },
+        {
+          "start": 480,
+          "duration": 480,
+          "pitch": 76,
+          "velocity": 96,
+          "lyric": "风"
+        },
+        {
+          "start": 960,
+          "duration": 960,
+          "pitch": 78,
+          "velocity": 96,
+          "lyric": "吹"
+        },
+        {
+          "start": 1920,
+          "duration": 480,
+          "pitch": 76,
+          "velocity": 96,
+          "lyric": "过"
+        },
+        {
+          "start": 2400,
+          "duration": 480,
+          "pitch": 74,
+          "velocity": 96,
+          "lyric": "傍"
+        },
+        {
+          "start": 2880,
+          "duration": 960,
+          "pitch": 71,
+          "velocity": 96,
+          "lyric": "晚",
+          "lineEnd": true
+        }
+      ]
+    },
+    "melody": {
+      "instrument": "piano",
+      "volume": 0.8,
+      "muted": false,
+      "notes": [
+        {
+          "start": 0,
+          "duration": 480,
+          "pitch": 74,
+          "velocity": 96
+        },
+        {
+          "start": 480,
+          "duration": 480,
+          "pitch": 76,
+          "velocity": 96
+        },
+        {
+          "start": 960,
+          "duration": 960,
+          "pitch": 78,
+          "velocity": 96
+        },
+        {
+          "start": 1920,
+          "duration": 480,
+          "pitch": 76,
+          "velocity": 96
+        },
+        {
+          "start": 2400,
+          "duration": 480,
+          "pitch": 74,
+          "velocity": 96
+        },
+        {
+          "start": 2880,
+          "duration": 960,
+          "pitch": 71,
+          "velocity": 96
+        }
+      ]
+    },
+    "guitar": {
+      "instrument": "nylon",
+      "volume": 0.8,
+      "muted": false,
+      "rhythm": {
+        "family": "arpeggio",
+        "presetId": "t321t321"
+      },
+      "notes": [
+        {
+          "start": 0,
+          "duration": 240,
+          "pitch": 50
+        },
+        {
+          "start": 0,
+          "duration": 240,
+          "pitch": 57
+        },
+        {
+          "start": 0,
+          "duration": 240,
+          "pitch": 62
+        },
+        {
+          "start": 0,
+          "duration": 240,
+          "pitch": 66
+        }
+      ]
+    },
+    "bass": {
+      "instrument": "finger-bass",
+      "volume": 0.7,
+      "muted": false,
+      "notes": [
+        {
+          "start": 0,
+          "duration": 960,
+          "pitch": 38
+        },
+        {
+          "start": 1920,
+          "duration": 960,
+          "pitch": 38
+        },
+        {
+          "start": 3840,
+          "duration": 960,
+          "pitch": 35
+        },
+        {
+          "start": 5760,
+          "duration": 960,
+          "pitch": 35
+        },
+        {
+          "start": 7680,
+          "duration": 960,
+          "pitch": 43
+        },
+        {
+          "start": 9600,
+          "duration": 960,
+          "pitch": 43
+        },
+        {
+          "start": 11520,
+          "duration": 960,
+          "pitch": 45
+        },
+        {
+          "start": 13440,
+          "duration": 960,
+          "pitch": 45
+        },
+        {
+          "start": 15360,
+          "duration": 960,
+          "pitch": 38
+        },
+        {
+          "start": 17280,
+          "duration": 960,
+          "pitch": 42
+        },
+        {
+          "start": 19200,
+          "duration": 960,
+          "pitch": 43
+        },
+        {
+          "start": 21120,
+          "duration": 960,
+          "pitch": 45
+        },
+        {
+          "start": 23040,
+          "duration": 960,
+          "pitch": 40
+        },
+        {
+          "start": 24960,
+          "duration": 960,
+          "pitch": 43
+        },
+        {
+          "start": 26880,
+          "duration": 960,
+          "pitch": 45
+        },
+        {
+          "start": 28800,
+          "duration": 960,
+          "pitch": 38
+        }
+      ]
+    },
+    "drums": {
+      "instrument": "brush-kit",
+      "volume": 0.45,
+      "muted": false,
+      "notes": [
+        {
+          "start": 0,
+          "duration": 120,
+          "pitch": 36,
+          "velocity": 80
+        },
+        {
+          "start": 480,
+          "duration": 120,
+          "pitch": 38,
+          "velocity": 80
+        },
+        {
+          "start": 960,
+          "duration": 120,
+          "pitch": 36,
+          "velocity": 80
+        },
+        {
+          "start": 1440,
+          "duration": 120,
+          "pitch": 38,
+          "velocity": 80
+        },
+        {
+          "start": 1920,
+          "duration": 120,
+          "pitch": 36,
+          "velocity": 80
+        },
+        {
+          "start": 2400,
+          "duration": 120,
+          "pitch": 38,
+          "velocity": 80
+        },
+        {
+          "start": 2880,
+          "duration": 120,
+          "pitch": 36,
+          "velocity": 80
+        },
+        {
+          "start": 3360,
+          "duration": 120,
+          "pitch": 38,
+          "velocity": 80
+        }
+      ]
+    },
+    "ambience": {
+      "instrument": "recording",
+      "volume": 0.5,
+      "muted": false,
+      "clips": [
+        {
+          "assetId": "a-waves-01",
+          "start": 0,
+          "duration": 30720,
+          "loop": true,
+          "gain": 0.8
+        }
+      ]
+    }
+  },
+  "locks": [
+    {
+      "track": "melody"
+    },
+    {
+      "section": "s-intro",
+      "track": "guitar"
+    }
+  ],
+  "assets": [
+    {
+      "id": "a-hum-01",
+      "role": "hum",
+      "mime": "audio/webm",
+      "durationSec": 9.4
+    },
+    {
+      "id": "a-waves-01",
+      "role": "ambience",
+      "mime": "audio/webm",
+      "durationSec": 10.2
+    },
+    {
+      "id": "a-photo-01",
+      "role": "photo",
+      "mime": "image/jpeg",
+      "width": 4032,
+      "height": 3024
+    }
+  ],
+  "card": {
+    "style": "ink",
+    "line": "海风把傍晚吹进歌里",
+    "photoAssetId": "a-photo-01",
+    "showPhoto": true,
+    "city": "Lisbon",
+    "showCity": true,
+    "capturedAt": "2026-11-18T18:01:30Z",
+    "share": {
+      "shareId": "k3Hq9xV2mPzT",
+      "url": "https://fretcase.example/s/k3Hq9xV2mPzT",
+      "state": "reserved"
+    }
+  },
+  "provenance": {
+    "engine": "0.1.0",
+    "harmonySource": "library"
+  }
+}

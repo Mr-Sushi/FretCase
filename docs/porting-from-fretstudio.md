@@ -42,7 +42,8 @@ FretCase 只用 FretStudio 的一部分。移植时以 FretStudio 本地工作�
 
 | FretStudio 文件 | 处理 |
 | --- | --- |
-| `client/src/lib/rhythmDifficulty.ts`、`rhythmPresets.ts`、`rhythmRealization.ts` | 搬过来，对应"疏密"旋钮 |
+| `client/src/lib/rhythmPresets.ts`、`rhythmDifficulty.ts` | 已导出为 `shared/data/rhythm-presets.json`（30 个节奏型，每个带难度级别和理由），不再搬 TypeScript 源文件。吉他音符由后端按这份数据生成 |
+| `client/src/lib/rhythmRealization.ts` | 后端参考它把节奏型展开成音符，用 Python 重写 |
 | `client/src/lib/capo.ts`、`startKeys.ts`、`numberedDegrees.ts` | 搬过来 |
 | `client/src/lib/usePlayback.ts` | 只作参考，播放改用 Tone.js |
 

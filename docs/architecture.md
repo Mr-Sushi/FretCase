@@ -52,6 +52,7 @@
 | 哼唱转谱 | Basic Pitch（Spotify，Apache-2.0）后接量化 | FretStudio 已有音频转 MIDI 的工作进程，可参考；在 Pi 上的速度要实测 |
 | 打印 | python-escpos 驱动 58 毫米热敏打印机 | 新增 |
 | 二维码 | 服务端 `qrcode` 生成，前端 `jsQR` 或 BarcodeDetector 识别 | 新增 |
+| 节奏型 | 共用 JSON 数据，后端展开成吉他音符 | FretStudio 的节奏型写在前端 TypeScript 里，后端拿不到 |
 | 模型调用 | 统一适配层，每类调用（和声候选、种子卡解析、写词、风格化、歌声合成、整曲渲染）一个接口，可换供应商；全部带超时并落回离线路径 | FretStudio 默认绑定 gpt-4o |
 
 ## 离线与联网
@@ -66,10 +67,15 @@
 | 卡片风格化 | 图像生成模型 | 本地滤镜 |
 | 歌曲页 | 上传并生效 | 排队，联网后上传 |
 
-## 第 0 步要定的三份接口
+## 共用接口（第 0 步，已完成）
 
-1. `shared/schema/song.schema.json`：歌曲模型。
-2. `shared/schema/panel-events.schema.json`：唱盘、旋钮、推子、按键、灯环的 WebSocket 消息。
-3. `docs/api.md`：新增 HTTP 接口列表。
+| 文件 | 内容 |
+| --- | --- |
+| `shared/schema/song.schema.json` | 歌曲模型：时间用整数 tick（每四分音符 480），音高用 MIDI 编号；六轨、段落、和弦与指法、锁定、种子卡、卡片 |
+| `shared/schema/panel-events.schema.json` | 面板 WebSocket 消息：面板只报原始动作（唱盘、旋钮、推子、按键），app 决定含义并回发灯光 |
+| `docs/api.md` | HTTP 接口：歌曲只经服务器修改，每次修改返回整首歌；用 revision 防止冲突；需要联网但没网时返回 503 |
+| `shared/data/rhythm-presets.json` | 从 FretStudio 导出的 30 个节奏型及难度级别，前后端共用 |
+| `shared/schema/examples/` | 示例歌曲和示例消息（含应被拒绝的） |
+| `shared/schema/tests/` | 校验 schema 本身有效、示例符合 schema、示例满足 schema 表达不了的规则 |
 
-三个并行代理只按这三份接口对接，不读彼此的实现。
+三个并行代理只按这些接口对接，不读彼此的实现。要改接口，先改这里并让测试通过，再通知其他代理。

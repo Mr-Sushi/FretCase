@@ -1,0 +1,158 @@
+[
+  {
+    "v": 1,
+    "type": "hello",
+    "seq": 0,
+    "t": 1000,
+    "payload": {
+      "role": "panel",
+      "name": "bridge",
+      "firmware": "0.1.0"
+    }
+  },
+  {
+    "v": 1,
+    "type": "snapshot",
+    "seq": 1,
+    "t": 1004,
+    "payload": {
+      "faders": {
+        "vocal": 0.8,
+        "melody": 0.8,
+        "guitar": 0.8,
+        "bass": 0.7,
+        "drums": 0.45,
+        "ambience": 0.5
+      },
+      "keysDown": []
+    }
+  },
+  {
+    "v": 1,
+    "type": "platter.turn",
+    "seq": 2,
+    "t": 2210,
+    "payload": {
+      "delta": 3
+    }
+  },
+  {
+    "v": 1,
+    "type": "knob.turn",
+    "seq": 3,
+    "t": 2500,
+    "payload": {
+      "knob": "complexity",
+      "delta": -2
+    }
+  },
+  {
+    "v": 1,
+    "type": "fader.move",
+    "seq": 4,
+    "t": 2720,
+    "payload": {
+      "track": "drums",
+      "value": 0.31
+    }
+  },
+  {
+    "v": 1,
+    "type": "key",
+    "seq": 5,
+    "t": 3000,
+    "payload": {
+      "id": "capture",
+      "action": "down"
+    }
+  },
+  {
+    "v": 1,
+    "type": "key",
+    "seq": 6,
+    "t": 9100,
+    "payload": {
+      "id": "capture",
+      "action": "up"
+    }
+  },
+  {
+    "v": 1,
+    "type": "key",
+    "seq": 7,
+    "t": 9400,
+    "payload": {
+      "id": "track.guitar",
+      "action": "down"
+    }
+  },
+  {
+    "v": 1,
+    "type": "ring.set",
+    "seq": 12,
+    "t": 5000,
+    "payload": {
+      "pixels": [
+        "#e08a12",
+        "#3a2a1c",
+        "#3a2a1c",
+        "#3a2a1c",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "brightness": 0.5
+    }
+  },
+  {
+    "v": 1,
+    "type": "key.light",
+    "seq": 13,
+    "t": 5001,
+    "payload": {
+      "id": "capture",
+      "mode": "blink"
+    }
+  },
+  {
+    "v": 1,
+    "type": "peer.status",
+    "seq": 0,
+    "t": 10,
+    "payload": {
+      "panel": true,
+      "app": true
+    }
+  },
+  {
+    "v": 1,
+    "type": "ping",
+    "seq": 20,
+    "t": 12000
+  },
+  {
+    "v": 1,
+    "type": "pong",
+    "seq": 21,
+    "t": 12003
+  },
+  {
+    "v": 1,
+    "type": "error",
+    "seq": 1,
+    "t": 20,
+    "payload": {
+      "code": "role_taken",
+      "message": "An app is already connected"
+    }
+  }
+]

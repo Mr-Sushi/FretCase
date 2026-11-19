@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Mr-Sushi/FretCase/shared/schema/panel-events.schema.json",
+  "title": "PanelMessage",
+  "description": "Messages on the panel WebSocket (wss://<pi>/ws/panel). The server is a relay: a panel (the hardware bridge or the on-screen simulator) and the app both connect, and every message from one side is forwarded to the other. The panel reports raw physical actions only; the app decides what they mean (short or long press, which bar the platter is on) and sends back the lights it wants.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": ["v", "type", "seq", "t"],
+  "properties": {
+    "v": { "const": 1, "description": "Protocol version." },
+    "type": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 0, "description": "Per sender, increasing by one. A gap means messages were lost." },
+    "t": { "type": "integer", "minimum": 0, "description": "Sender's monotonic clock in milliseconds. Used to time long presses; do not compare across senders." }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/snapshot" },
+    { "$ref": "#/$defs/platterTurn" },
+    { "$ref": "#/$defs/knobTurn" },
+    { "$ref": "#/$defs/faderMove" },
+    { "$ref": "#/$defs/key" },
+    { "$ref": "#/$defs/ringSet" },
+    { "$ref": "#/$defs/keyLight" },
+    { "$ref": "#/$defs/peerStatus" },
+    { "$ref": "#/$defs/ping" },
+    { "$ref": "#/$defs/pong" },
+    { "$ref": "#/$defs/error" }
+  ],
+  "$defs": {
+    "trackId": { "type": "string", "enum": ["vocal", "melody", "guitar", "bass", "drums", "ambience"] },
+    "knobId": { "type": "string", "enum": ["brightness", "complexity", "density", "tempo"] },
+    "keyId": {
+      "type": "string",
+      "enum": ["capture", "play", "undo", "another", "track.vocal", "track.melody", "track.guitar", "track.bass", "track.drums", "track.ambience"],
+      "description": "Every physical key. The six track keys are the coloured square keys of the mixer."
+    },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+
+    "hello": {
+      "description": "First message from either side after connecting.",
+      "properties": {
+        "type": { "const": "hello" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "name"],
+          "properties": {
+            "role": { "type": "string", "enum": ["panel", "app"] },
+            "name": { "type": "string", "maxLength": 40, "description": "e.g. bridge, simulator, ipad." },
+            "firmware": { "type": "string", "description": "Panel only, when known." }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "snapshot": {
+      "description": "Panel to app. Absolute positions of the controls that have one, sent after hello and whenever the app connects. Faders are not motorised, so the app must take their positions from here.",
+      "properties": {
+        "type": { "const": "snapshot" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["faders", "keysDown"],
+          "properties": {
+            "faders": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["vocal", "melody", "guitar", "bass", "drums", "ambience"],
+              "properties": {
+                "vocal": { "type": "number", "minimum": 0, "maximum": 1 },
+                "melody": { "type": "number", "minimum": 0, "maximum": 1 },
+                "guitar": { "type": "number", "minimum": 0, "maximum": 1 },
+                "bass": { "type": "number", "minimum": 0, "maximum": 1 },
+                "drums": { "type": "number", "minimum": 0, "maximum": 1 },
+                "ambience": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            },
+            "keysDown": { "type": "array", "items": { "$ref": "#/$defs/keyId" }, "uniqueItems": true }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "platterTurn": {
+      "description": "Panel to app. The jog platter turned. Detents are summed by the panel and sent at most every 20 ms.",
+      "properties": {
+        "type": { "const": "platter.turn" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["delta"],
+          "properties": {
+            "delta": { "type": "integer", "minimum": -64, "maximum": 64, "not": { "const": 0 }, "description": "Detents since the last message. Positive is clockwise, i.e. forward in the song." }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "knobTurn": {
+      "description": "Panel to app. A feel knob or the tempo knob turned. Rotary encoders, so only the change is known.",
+      "properties": {
+        "type": { "const": "knob.turn" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["knob", "delta"],
+          "properties": {
+            "knob": { "$ref": "#/$defs/knobId" },
+            "delta": { "type": "integer", "minimum": -32, "maximum": 32, "not": { "const": 0 } }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "faderMove": {
+      "description": "Panel to app. A track fader moved. The panel filters noise and sends only changes of at least 0.01, at most every 20 ms per fader.",
+      "properties": {
+        "type": { "const": "fader.move" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["track", "value"],
+          "properties": {
+            "track": { "$ref": "#/$defs/trackId" },
+            "value": { "type": "number", "minimum": 0, "maximum": 1, "description": "0 is the bottom (silent), 1 the top." }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "key": {
+      "description": "Panel to app. A key went down or up. The app measures press length from t: 600 ms or more is a long press (record while held, or mute a track).",
+      "properties": {
+        "type": { "const": "key" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "action"],
+          "properties": {
+            "id": { "$ref": "#/$defs/keyId" },
+            "action": { "type": "string", "enum": ["down", "up"] }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "ringSet": {
+      "description": "App to panel. Colours of the 16 lights around the platter, clockwise from the top. The panel shows exactly these until the next ringSet.",
+      "properties": {
+        "type": { "const": "ring.set" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pixels"],
+          "properties": {
+            "pixels": {
+              "type": "array",
+              "minItems": 16,
+              "maxItems": 16,
+              "items": { "oneOf": [{ "$ref": "#/$defs/color" }, { "type": "null", "description": "Off." }] }
+            },
+            "brightness": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.6 }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "keyLight": {
+      "description": "App to panel. Light of one key.",
+      "properties": {
+        "type": { "const": "key.light" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "mode"],
+          "properties": {
+            "id": { "$ref": "#/$defs/keyId" },
+            "mode": { "type": "string", "enum": ["off", "on", "blink", "pulse"], "description": "blink: recording or waiting. pulse: busy, e.g. generating." },
+            "color": { "$ref": "#/$defs/color", "description": "Ignored by keys with a fixed colour." }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "peerStatus": {
+      "description": "Server to both sides. Whether the other side is connected. Sent on every connect and disconnect.",
+      "properties": {
+        "type": { "const": "peer.status" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["panel", "app"],
+          "properties": {
+            "panel": { "type": "boolean" },
+            "app": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["payload"]
+    },
+    "ping": {
+      "description": "Either side, every 2 s. No pong within 5 s means the link is down: reconnect.",
+      "properties": { "type": { "const": "ping" } }
+    },
+    "pong": {
+      "properties": { "type": { "const": "pong" } }
+    },
+    "error": {
+      "description": "Server to the sender of a message it could not accept.",
+      "properties": {
+        "type": { "const": "error" },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string", "enum": ["invalid_message", "unsupported_version", "role_taken"] },
+            "message": { "type": "string" },
+            "seq": { "type": "integer", "minimum": 0, "description": "seq of the rejected message, when known." }
+          }
+        }
+      },
+      "required": ["payload"]
+    }
+  }
+}

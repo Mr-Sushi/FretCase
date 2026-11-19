@@ -1,0 +1,85 @@
+[
+  {
+    "why": "fader beyond range",
+    "msg": {
+      "v": 1,
+      "type": "fader.move",
+      "seq": 1,
+      "t": 1,
+      "payload": {
+        "track": "drums",
+        "value": 1.5
+      }
+    }
+  },
+  {
+    "why": "unknown type",
+    "msg": {
+      "v": 1,
+      "type": "platter.spin",
+      "seq": 1,
+      "t": 1,
+      "payload": {
+        "delta": 1
+      }
+    }
+  },
+  {
+    "why": "zero platter delta",
+    "msg": {
+      "v": 1,
+      "type": "platter.turn",
+      "seq": 1,
+      "t": 1,
+      "payload": {
+        "delta": 0
+      }
+    }
+  },
+  {
+    "why": "ping must not carry a payload",
+    "msg": {
+      "v": 1,
+      "type": "ping",
+      "seq": 1,
+      "t": 1,
+      "payload": {}
+    }
+  },
+  {
+    "why": "ring needs 16 pixels",
+    "msg": {
+      "v": 1,
+      "type": "ring.set",
+      "seq": 1,
+      "t": 1,
+      "payload": {
+        "pixels": [
+          "#ffffff"
+        ]
+      }
+    }
+  },
+  {
+    "why": "unknown key",
+    "msg": {
+      "v": 1,
+      "type": "key",
+      "seq": 1,
+      "t": 1,
+      "payload": {
+        "id": "scale.1",
+        "action": "down"
+      }
+    }
+  },
+  {
+    "why": "wrong protocol version",
+    "msg": {
+      "v": 2,
+      "type": "ping",
+      "seq": 1,
+      "t": 1
+    }
+  }
+]
