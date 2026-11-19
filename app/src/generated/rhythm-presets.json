@@ -1,0 +1,492 @@
+{
+  "source": "FretStudio client/src/lib/rhythmPresets.ts and rhythmDifficulty.ts (working tree, 2026-11-19)",
+  "presets": [
+    {
+      "family": "strumming",
+      "id": "two_four_basic",
+      "label": "2/4 Basic: ↓ ↓",
+      "description": "Two downstrokes per bar (beats 1 and 2).",
+      "subdivisions": 4,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "-"
+      ],
+      "meter": "2/4",
+      "level": "start",
+      "levelReason": "Only downstrokes on the beat"
+    },
+    {
+      "family": "strumming",
+      "id": "waltz_basic",
+      "label": "3/4 Waltz: ↓ ↓ ↓",
+      "description": "Three downstrokes per bar (beats 1, 2, 3).",
+      "subdivisions": 6,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "-",
+        "D",
+        "-"
+      ],
+      "meter": "3/4",
+      "level": "start",
+      "levelReason": "Only downstrokes on the beat"
+    },
+    {
+      "family": "strumming",
+      "id": "ddudud",
+      "label": "↓ ↓ ↑ ↑ ↓ ↑",
+      "description": "Slow ballad groove from common teaching sheets.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "U",
+        "-",
+        "U",
+        "D",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Off-beat upstrokes and a skipped beat"
+    },
+    {
+      "family": "strumming",
+      "id": "dduud",
+      "label": "↓ ↓ ↑ ↑ ↓ ·",
+      "description": "Stable groove for slow practice.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "U",
+        "-",
+        "U",
+        "D",
+        "-"
+      ],
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Off-beat upstrokes and a skipped beat"
+    },
+    {
+      "family": "strumming",
+      "id": "dudududu",
+      "label": "↓ ↑ ↓ ↑ ↓ ↑ ↓ ↑",
+      "description": "Even eighth-note strum for timing control.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "U",
+        "D",
+        "U",
+        "D",
+        "U",
+        "D",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Down-up on every half beat"
+    },
+    {
+      "family": "strumming",
+      "id": "ddxuduxu",
+      "label": "↓ ↓ × ↑ ↓ ↑ × ↑",
+      "description": "Adds muted hits (X) for rhythmic accents.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "X",
+        "U",
+        "D",
+        "U",
+        "X",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Muted hits and busy strumming"
+    },
+    {
+      "family": "strumming",
+      "id": "common_downup_push",
+      "label": "↓ ↓↑ ↓ ↓↑",
+      "description": "Most-used 4/4 push pattern from beginner rhythm drills.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "U",
+        "D",
+        "-",
+        "D",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Adds off-beat upstrokes"
+    },
+    {
+      "family": "strumming",
+      "id": "cut_backbeat",
+      "label": "↓ ×↑ · ↑ ×↑",
+      "description": "Muted-cut groove for lively sections.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "X",
+        "U",
+        "-",
+        "U",
+        "X",
+        "U",
+        "-"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Muted hits and strokes against the beat"
+    },
+    {
+      "family": "strumming",
+      "id": "cut_pop_4",
+      "label": "↓ × ↑ ↓ ↑ × ↑",
+      "description": "Cut-accent pop rhythm (C = cut mute).",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "C",
+        "U",
+        "D",
+        "U",
+        "C",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Muted hits and busy strumming"
+    },
+    {
+      "family": "strumming",
+      "id": "slap_pop_4",
+      "label": "↓ ↑ ● ↑ ↓ ↑ ● ↑",
+      "description": "Slap-accent groove (P = slap/percussive hit).",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "U",
+        "P",
+        "U",
+        "D",
+        "U",
+        "P",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Slap hits and busy strumming"
+    },
+    {
+      "family": "strumming",
+      "id": "d_d_d_d_4",
+      "label": "↓ (quarters)",
+      "description": "All downstrokes on beats. Good for timing.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "-",
+        "D",
+        "-",
+        "D",
+        "-"
+      ],
+      "meter": "4/4",
+      "level": "start",
+      "levelReason": "Only downstrokes on the beat"
+    },
+    {
+      "family": "strumming",
+      "id": "ballad_soft",
+      "label": "↓ ↓ ↑ · ↑ ↓ ↑",
+      "description": "Soft ballad feel (rest on one off-beat).",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "D",
+        "U",
+        "-",
+        "U",
+        "D",
+        "U",
+        "-"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Upstrokes on the beat, against the usual down-up motion"
+    },
+    {
+      "family": "strumming",
+      "id": "pop_chop",
+      "label": "↓ × ↑ · ↑ × ↑",
+      "description": "Pop chop: percussive mute (X) on the backbeat.",
+      "subdivisions": 8,
+      "steps": [
+        "D",
+        "-",
+        "X",
+        "U",
+        "-",
+        "U",
+        "X",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Muted hits and syncopation"
+    },
+    {
+      "family": "strumming",
+      "id": "driving_triplet_12",
+      "label": "Triplet Drive (12)",
+      "description": "High-energy 4/4 triplet strum with backbeat accents.",
+      "subdivisions": 12,
+      "steps": [
+        "D",
+        "-",
+        "U",
+        "D",
+        "U",
+        "-",
+        "D",
+        "-",
+        "U",
+        "D",
+        "U",
+        "-"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Triplet feel: three strokes per beat"
+    },
+    {
+      "family": "strumming",
+      "id": "chop_triplet_12",
+      "label": "Triplet Chop (12)",
+      "description": "Triplet groove with muted chop hits (X).",
+      "subdivisions": 12,
+      "steps": [
+        "D",
+        "-",
+        "X",
+        "U",
+        "-",
+        "U",
+        "D",
+        "-",
+        "X",
+        "U",
+        "-",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Muted hits and triplet feel"
+    },
+    {
+      "family": "strumming",
+      "id": "surge_triplet_12",
+      "label": "Triplet Surge (12)",
+      "description": "Dense rising section pattern with strong motion.",
+      "subdivisions": 12,
+      "steps": [
+        "D",
+        "-",
+        "D",
+        "U",
+        "D",
+        "U",
+        "D",
+        "-",
+        "D",
+        "U",
+        "D",
+        "U"
+      ],
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Triplet feel and strokes against the beat"
+    },
+    {
+      "family": "strumming",
+      "id": "six_eight_sway",
+      "label": "↓ · ↑ ↓ · ↑",
+      "description": "6/8 sway (two pulses).",
+      "subdivisions": 6,
+      "steps": [
+        "D",
+        "-",
+        "U",
+        "D",
+        "-",
+        "U"
+      ],
+      "meter": "6/8",
+      "level": "next",
+      "levelReason": "Adds off-beat upstrokes"
+    },
+    {
+      "family": "arpeggio",
+      "id": "two_four_arp_basic",
+      "label": "2/4: T 3 2 1",
+      "description": "Simple 2/4 arpeggio (one bar loop).",
+      "subdivisions": 4,
+      "picking": "T 3 2 1",
+      "meter": "2/4",
+      "level": "start",
+      "levelReason": "Thumb + 3 fingers in order, no crossing back"
+    },
+    {
+      "family": "arpeggio",
+      "id": "waltz_arp_basic",
+      "label": "3/4: T 3 2 T 3 2",
+      "description": "Simple waltz arpeggio (teaching staple).",
+      "subdivisions": 6,
+      "picking": "T 3 2 T 3 2",
+      "meter": "3/4",
+      "level": "start",
+      "levelReason": "Thumb + 2 fingers in order, no crossing back"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t3231323",
+      "label": "T3231323",
+      "description": "Thumb bass + upper-string loop for folk picking.",
+      "subdivisions": 8,
+      "picking": "T3231323",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Fingers cross back and forth over 3 strings"
+    },
+    {
+      "family": "arpeggio",
+      "id": "s53215321",
+      "label": "5 3 2 1 5 3 2 1",
+      "description": "Classic calm 4/4 broken-chord pattern.",
+      "subdivisions": 8,
+      "picking": "5 3 2 1 5 3 2 1",
+      "meter": "4/4",
+      "level": "start",
+      "levelReason": "Thumb + 3 fingers in order, no crossing back"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t1213121",
+      "label": "T1213121",
+      "description": "Simple broken-chord flow for beginners.",
+      "subdivisions": 8,
+      "picking": "T1213121",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Fingers cross back and forth over 3 strings"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t3121312",
+      "label": "T3121312",
+      "description": "Alternating inner-voice shape with steady bass.",
+      "subdivisions": 8,
+      "picking": "T3121312",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Fingers cross back and forth over 3 strings"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t321t321",
+      "label": "T 3 2 1 T 3 2 1",
+      "description": "Calm 4/4 arpeggio loop (teaching staple).",
+      "subdivisions": 8,
+      "picking": "T 3 2 1 T 3 2 1",
+      "meter": "4/4",
+      "level": "start",
+      "levelReason": "Thumb + 3 fingers in order, no crossing back"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t3_12_3",
+      "label": "T 3 12 3 (x2)",
+      "description": "Common 4/4 arpeggio with a two-note pinch (12).",
+      "subdivisions": 8,
+      "picking": "T 3 12 3 T 3 12 3",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Adds pinches: two strings plucked together"
+    },
+    {
+      "family": "arpeggio",
+      "id": "t321_323",
+      "label": "T 3 2 1 - 3 2 3",
+      "description": "Arpeggio with a mid-bar rest for space.",
+      "subdivisions": 8,
+      "picking": "T 3 2 1 - 3 2 3",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Fingers cross back and forth over 3 strings, with a rest"
+    },
+    {
+      "family": "arpeggio",
+      "id": "s53231323",
+      "label": "5 3 2 3 1 3 2 3",
+      "description": "Warm lyrical arpeggio used in many pop ballads.",
+      "subdivisions": 8,
+      "picking": "5 3 2 3 1 3 2 3",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Fingers cross back and forth over 3 strings"
+    },
+    {
+      "family": "arpeggio",
+      "id": "triplet_t321",
+      "label": "Triplet T321 x4",
+      "description": "12-subdivision arpeggio with clear triplet feel.",
+      "subdivisions": 12,
+      "picking": "T 3 2 T 3 2 T 3 2 T 3 2",
+      "meter": "4/4",
+      "level": "next",
+      "levelReason": "Triplet feel: three notes per beat"
+    },
+    {
+      "family": "arpeggio",
+      "id": "triplet_532132",
+      "label": "Triplet 5 3 2 1 3 2",
+      "description": "Triplet rolling arpeggio from textbook fingerstyle drills.",
+      "subdivisions": 12,
+      "picking": "5 3 2 1 3 2 5 3 2 1 3 2",
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Triplet feel and fingers crossing back"
+    },
+    {
+      "family": "arpeggio",
+      "id": "triplet_t32_12",
+      "label": "Triplet + Pinch",
+      "description": "Triplet arpeggio with pinch (12) accents.",
+      "subdivisions": 12,
+      "picking": "T 3 2 T 12 2 T 3 2 T 12 2",
+      "meter": "4/4",
+      "level": "challenge",
+      "levelReason": "Triplet feel and pinches"
+    }
+  ]
+}
