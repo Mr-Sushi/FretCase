@@ -65,8 +65,9 @@ export class PanelClient {
     ws.onopen = () => {
       this.attempts = 0
       this.lastRx = Date.now()
-      this.setStatus({ connected: true, panel: this.status.panel })
+      // hello must be the first frame: setStatus triggers the light sync.
       this.send({ type: 'hello', payload: { role: 'app', name: this.name } })
+      this.setStatus({ connected: true, panel: this.status.panel })
       this.pingTimer = setInterval(() => {
         if (Date.now() - this.lastRx > 5000) { ws.close(); return }
         this.send({ type: 'ping' })

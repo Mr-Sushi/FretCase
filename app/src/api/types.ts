@@ -56,7 +56,7 @@ export interface Api {
   cardPreview(id: string, baseRevision: number): Promise<Song>
   cardPrint(id: string, baseRevision: number): Promise<Song>
   resolveShare(shareId: string): Promise<string>
-  getLocation(): Promise<{ city: string; source: 'gps' | 'manual' | 'none' }>
+  getLocation(): Promise<{ city: string | null; source: 'gps' | 'manual' | 'none' }>
   putLocation(city: string): Promise<void>
   studyLog(events: { at: string; type: string; detail?: unknown }[]): Promise<void>
 }

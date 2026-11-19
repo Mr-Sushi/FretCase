@@ -19,7 +19,11 @@ export class HttpApi implements Api {
         body: form ?? (body !== undefined ? JSON.stringify(body) : undefined),
       })
       const text = await res.text()
-      const json = text ? JSON.parse(text) : {}
+      let json: any = {}
+      try { json = text ? JSON.parse(text) : {} } catch {
+        // A plain-text or HTML body (a crash page, a proxy error) still means the server answered.
+        throw new ApiError('http_error', `服务器出错（${res.status}）`, res.status)
+      }
       if (!res.ok) {
         const e = json.error ?? {}
         throw new ApiError(e.code ?? 'http_error', e.message ?? `HTTP ${res.status}`, res.status, e.song, e.detail)
@@ -62,7 +66,7 @@ export class HttpApi implements Api {
   async cardPreview(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/preview`, { baseRevision }, undefined, 30000)).song }
   async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 30000)).song }
   async resolveShare(shareId: string) { return (await this.request<{ songId: string }>('GET', `/api/share/${encodeURIComponent(shareId)}`)).songId }
-  getLocation() { return this.request<{ city: string; source: 'gps' | 'manual' | 'none' }>('GET', '/api/location') }
+  getLocation() { return this.request<{ city: string | null; source: 'gps' | 'manual' | 'none' }>('GET', '/api/location') }
   async putLocation(city: string) { await this.request('PUT', '/api/location', { city }) }
   async studyLog(events: { at: string; type: string; detail?: unknown }[]) { await this.request('POST', '/api/study/log', { events }) }
 }

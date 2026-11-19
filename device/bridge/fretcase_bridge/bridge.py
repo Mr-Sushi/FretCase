@@ -66,6 +66,10 @@ class Bridge:
 
         # Controller state, kept even while the link is down so a snapshot is always possible.
         self.faders: dict[str, float] = {t: self.mapping.fader_default for t in TRACKS}
+        # Faders whose real position the controller has reported. The app takes fader
+        # positions from the snapshot as truth, so no snapshot goes out until all are known.
+        self.faders_known: set[str] = set()
+        self._snapshot_waiting = False
         self.keys_down: set[str] = set()
         self.firmware: Optional[str] = None
         self.ring_cache: Optional[tuple[list[Optional[str]], float]] = None
@@ -103,7 +107,12 @@ class Bridge:
             return
         if isinstance(event, FaderValue):
             self.faders[event.track] = event.value
-            if self._connected:
+            self.faders_known.add(event.track)
+            if self._connected and self._snapshot_waiting and self.all_faders_known():
+                self._snapshot_waiting = False
+                self._out.put_nowait(("snapshot", self.snapshot_payload(), self.now_ms()))
+                self._fader_sent = dict(self.faders)
+            elif self._connected:
                 self._fader_pending[event.track] = event.value
         elif isinstance(event, KeyChange):
             was_down = event.id in self.keys_down
@@ -197,6 +206,20 @@ class Bridge:
             await ws.send(json.dumps(msg, separators=(",", ":")))
             return True
 
+    def all_faders_known(self) -> bool:
+        return len(self.faders_known) == len(TRACKS)
+
+    async def _send_snapshot_if_known(self, ws) -> None:
+        """Send a snapshot now, or as soon as the controller has reported every fader."""
+        if self.all_faders_known():
+            self._snapshot_waiting = False
+            await self._send(ws, "snapshot", self.snapshot_payload())
+            # The snapshot is what the app now knows; later fader moves are relative to it.
+            self._fader_sent = dict(self.faders)
+        else:
+            self._snapshot_waiting = True
+            self._fader_sent = {t: self.faders[t] for t in self.faders_known}
+
     def snapshot_payload(self) -> dict[str, Any]:
         return {
             "faders": {t: self.faders[t] for t in TRACKS},
@@ -207,9 +230,7 @@ class Bridge:
         hello: dict[str, Any] = {"role": "panel", "name": self.name}
         hello["firmware"] = self.firmware or f"bridge-{__version__}"
         await self._send(ws, "hello", hello)
-        await self._send(ws, "snapshot", self.snapshot_payload())
-        # The snapshot is what the app now knows; later fader moves are relative to it.
-        self._fader_sent = dict(self.faders)
+        await self._send_snapshot_if_known(ws)
 
     async def _handle_incoming(self, ws, raw: str | bytes) -> None:
         self._last_rx = self._clock()
@@ -237,8 +258,7 @@ class Bridge:
         elif type_ == "peer.status":
             app = payload["app"]
             if app and self._app_present is False:
-                await self._send(ws, "snapshot", self.snapshot_payload())
-                self._fader_sent = dict(self.faders)
+                await self._send_snapshot_if_known(ws)
             self._app_present = app
         elif type_ == "error":
             log.warning("server error: %s %s", payload.get("code"), payload.get("message"))

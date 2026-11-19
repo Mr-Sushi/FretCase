@@ -8,17 +8,26 @@ from typing import Any, Callable
 import mido
 from websockets.asyncio.server import serve
 
+from fretcase_bridge.mapping import Mapping
 from fretcase_bridge.schema import errors_for, get_validator
 
 
 class FakeMidi:
-    """Stands in for the controller's USB MIDI port."""
+    """Stands in for the controller's USB MIDI port.
 
-    def __init__(self) -> None:
+    Like the firmware, it answers a fader dump request with one CC per fader, unless
+    ``answer_dump`` is False.
+    """
+
+    FADER_CCS = (21, 22, 23, 24, 25, 26)
+
+    def __init__(self, answer_dump: bool = True, fader_value: int = 102) -> None:
         self.on_open = None
         self.sent: list[mido.Message] = []
         self._q: asyncio.Queue[mido.Message] = asyncio.Queue()
         self.closed = False
+        self.answer_dump = answer_dump
+        self.fader_value = fader_value
 
     async def receive(self) -> mido.Message:
         return await self._q.get()
@@ -28,6 +37,9 @@ class FakeMidi:
 
     def send(self, msg: mido.Message) -> None:
         self.sent.append(msg)
+        if self.answer_dump and msg == Mapping.default().encode_dump_request():
+            for cc in self.FADER_CCS:
+                self.inject(mido.Message("control_change", control=cc, value=self.fader_value))
 
     def close(self) -> None:
         self.closed = True

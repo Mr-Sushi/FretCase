@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from fretcase_engine.song_model import Section, SeedCard, SeedInput
 
@@ -71,11 +71,25 @@ class Lock(_Op):
     track: Optional[TrackName] = None
     section: Optional[str] = None
 
+    @model_validator(mode="after")
+    def _needs_a_target(self):
+        # The schema's lock has minProperties: 1, so an empty one is a malformed request (400).
+        if self.track is None and self.section is None:
+            raise ValueError("lock needs a track, a section, or both")
+        return self
+
 
 class Unlock(_Op):
     op: Literal["unlock"]
     track: Optional[TrackName] = None
     section: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _needs_a_target(self):
+        # The schema's lock has minProperties: 1, so an empty one is a malformed request (400).
+        if self.track is None and self.section is None:
+            raise ValueError("unlock needs a track, a section, or both")
+        return self
 
 
 class SetSections(_Op):
@@ -150,7 +164,7 @@ class LocationRequest(BaseModel):
 class StudyEvent(BaseModel):
     at: str
     type: str
-    detail: Optional[Dict[str, Any]] = None
+    detail: Any = None  # any JSON value; docs/api.md gives it no type
 
 
 class StudyLogRequest(BaseModel):

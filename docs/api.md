@@ -214,7 +214,7 @@ QR codes encode the song page URL, `https://<song-page-host>/s/{shareId}`. The a
 
 ### `GET /api/location`
 
-`{ "city": "Newcastle upon Tyne", "source": "gps" | "manual" | "none" }`. GPS coordinates are turned into a city name online; offline the server keeps the coordinates and fills in the city later. The server never returns coordinates to the app.
+`{ "city": "Newcastle upon Tyne", "source": "gps" | "manual" | "none" }`. GPS coordinates are turned into a city name online; offline the server keeps the coordinates and fills in the city later. The server never returns coordinates to the app. `city` is `null` when no place is known (no GPS fix and nothing typed or said), with `source: "none"`.
 
 ### `PUT /api/location`
 
@@ -228,7 +228,7 @@ Called by the power switch service before power is cut, and by the app's shutdow
 
 ### `POST /api/study/log`
 
-`{ "events": [ { "at", "type", "detail" } ] }`. The app logs panel and screen actions here (as FretStudio's study log does) for later analysis.
+`{ "events": [ { "at", "type", "detail" } ] }`. `detail` is optional and may be any JSON value. The app logs panel and screen actions here (as FretStudio's study log does) for later analysis.
 
 ## Panel WebSocket
 

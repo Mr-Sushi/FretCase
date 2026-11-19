@@ -275,3 +275,16 @@ def test_a_panel_can_reconnect_after_it_drops(client):
         with client.websocket_connect("/ws/panel") as panel:
             panel.send_text(json.dumps(hello("panel")))
             assert recv(panel)["payload"]["panel"] is True
+
+
+def test_study_log_accepts_any_json_detail(client):
+    events = [
+        {"at": "2026-11-19T10:00:00Z", "type": "view", "detail": "card"},
+        {"at": "2026-11-19T10:00:01Z", "type": "song.create", "detail": "song-1"},
+        {"at": "2026-11-19T10:00:02Z", "type": "knob", "detail": 0.6},
+        {"at": "2026-11-19T10:00:03Z", "type": "edit", "detail": {"op": "setTempo"}},
+        {"at": "2026-11-19T10:00:04Z", "type": "play"},
+    ]
+    r = client.post("/api/study/log", json={"events": events})
+    assert r.status_code < 300, r.text
+

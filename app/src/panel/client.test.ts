@@ -40,6 +40,17 @@ describe('PanelClient', () => {
     expect((ws().sent[0].payload as { role: string }).role).toBe('app')
   })
 
+  it('sends hello before anything the connected status triggers', () => {
+    const msgs: unknown[] = []
+    let c: PanelClient
+    // Like the controller: on connect it syncs the lights straight away.
+    c = new PanelClient('ws://x/ws/panel', (m) => msgs.push(m), (s) => { if (s.connected) c.setRing(Array(16).fill('#112233')) }, FakeWS as unknown as typeof WebSocket)
+    c.start()
+    const ws = FakeWS.all.at(-1)!
+    ws.open()
+    expect(ws.sent.map((m) => m.type)).toEqual(['hello', 'ring.set'])
+  })
+
   it('forwards panel messages, answers ping, tracks peer.status, ignores garbage', () => {
     const { ws, msgs, statuses } = client()
     ws().open()

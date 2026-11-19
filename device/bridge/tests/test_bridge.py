@@ -2,7 +2,8 @@ import asyncio
 
 import mido
 
-from helpers import assert_all_valid, wait_for
+from fretcase_bridge.bridge import Bridge
+from helpers import FakeMidi, assert_all_valid, wait_for
 
 
 def cc(control, value):
@@ -263,6 +264,27 @@ async def test_firmware_version_is_reported_in_hello(server, midi, mapping):
     try:
         await wait_for(lambda: server.of_type("hello"))
         assert server.of_type("hello")[0]["payload"]["firmware"] == "0.1.7"
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_no_snapshot_until_the_controller_reports_every_fader(server, mapping):
+    """The app takes snapshot faders as truth, so the bridge must not report defaults."""
+    midi = FakeMidi(answer_dump=False)
+    bridge = Bridge(server.url, midi, mapping, flush_interval=0.01, ping_interval=0.1,
+                    link_timeout=0.35, reconnect_delays=(0.05, 0.1))
+    task = asyncio.create_task(bridge.run())
+    try:
+        await wait_for(lambda: server.of_type("hello") and bridge._connected)
+        await asyncio.sleep(0.1)
+        assert server.of_type("snapshot") == []
+        for i, cc_number in enumerate(FakeMidi.FADER_CCS):
+            midi.inject(cc(cc_number, 38 if i == 4 else 102))
+        await wait_for(lambda: server.of_type("snapshot"))
+        snap = server.of_type("snapshot")[0]["payload"]
+        assert snap["faders"]["drums"] == round(38 / 127, 4)
+        assert_all_valid(server.received)
     finally:
         task.cancel()
         await asyncio.gather(task, return_exceptions=True)

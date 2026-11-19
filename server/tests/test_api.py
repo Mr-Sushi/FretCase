@@ -153,7 +153,7 @@ def test_lock_unlock_and_sections(api):
     out = api.edit(out, {"op": "unlock", "track": "vocal"})
     assert {"track": "vocal"} not in out["locks"] and len(out["locks"]) == 2
     assert api.edit(out, {"op": "unlock", "track": "vocal"}, expect=422)["code"] == "cannot_apply"
-    assert api.edit(out, {"op": "lock"}, expect=422)["code"] == "cannot_apply"
+    assert api.edit(out, {"op": "lock"}, expect=400)["code"] == "invalid_request"  # lock has minProperties: 1
     new_sections = [{"id": "s-first", "label": "前", "startBar": 0, "endBar": 10}, {"id": "s-second", "label": "后", "startBar": 10, "endBar": 16}]
     out = api.edit(out, {"op": "setSections", "sections": new_sections})
     assert [s["id"] for s in out["sections"]] == ["s-first", "s-second"]

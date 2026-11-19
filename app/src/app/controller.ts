@@ -65,7 +65,7 @@ export class Controller {
     this.logTimer = setInterval(() => void this.flushLog(), 5000)
     await this.refreshHealth()
     try { store.set({ catalog: await api.catalog() }) } catch { /* the app still works with defaults */ }
-    try { const loc = await api.getLocation(); store.set({ city: loc.city }) } catch { /* optional */ }
+    try { const loc = await api.getLocation(); store.set({ city: loc.city ?? '' }) } catch { /* optional */ }
     await this.refreshSongs()
   }
 
@@ -118,8 +118,10 @@ export class Controller {
         case 'offline_unavailable': this.toast('这一步需要联网，现在没有网络', 'error'); return
         case 'network': this.toast('连不上服务器', 'error'); this.store.set({ serverOnline: false }); return
         case 'timeout': this.toast('服务器没有及时响应', 'error'); return
-        case 'cannot_apply': this.toast(e.message || '这一步做不了', 'error'); return
-        default: this.toast(e.message || '出错了', 'error'); return
+        // Server messages are English and meant for logs, so the toast stays in Chinese.
+        case 'cannot_apply': console.warn(e.message); this.toast('这一步现在做不了', 'error'); return
+        case 'not_implemented': console.warn(e.message); this.toast('这个功能还没做好', 'error'); return
+        default: console.warn(e.code, e.message); this.toast('出错了', 'error'); return
       }
     }
     this.toast('出错了', 'error')
