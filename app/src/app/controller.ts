@@ -44,7 +44,6 @@ export class Controller {
   private lastRing = ''
   private previewTimer: ReturnType<typeof setTimeout> | null = null
   private snippetEnd: number | null = null
-  private regionTimers = new Map<string, ReturnType<typeof setTimeout>>()
   interpreter: PanelInterpreter
   panel: PanelLike | null = null
   /** Registered by the capture view while the rear camera is open. */
@@ -90,7 +89,6 @@ export class Controller {
   dispose() {
     if (this.logTimer) clearInterval(this.logTimer)
     if (this.previewTimer) clearTimeout(this.previewTimer)
-    for (const t of this.regionTimers.values()) clearTimeout(t)
     this.interpreter.dispose()
   }
 
@@ -309,20 +307,6 @@ export class Controller {
   previewMaster(volume: number) {
     const song = this.store.state.song
     if (song) this.audio?.setMaster?.(volume, song.master.space)
-  }
-
-  /** The panel's two knobs on the track screen: debounced like the feel knobs (400 ms). */
-  setRegionDebounced(track: TrackId, section: string, patch: { complexity?: number; intensity?: number }) {
-    const key = `${track}:${section}`
-    const old = this.regionTimers.get(key)
-    if (old) clearTimeout(old)
-    pending.set(key, { ...(pending.get(key) ?? {}), ...patch })
-    this.regionTimers.set(key, setTimeout(() => {
-      this.regionTimers.delete(key)
-      const p = pending.get(key)
-      pending.delete(key)
-      if (p) void this.setRegion(track, section, p)
-    }, 400))
   }
 
   toggleLock(track?: TrackId, section?: string) {
@@ -769,7 +753,7 @@ export class Controller {
       }
       case 'region.param': {
         if (!s.song || !s.selectedTrack || !s.editSection) return
-        this.setRegionDebounced(s.selectedTrack, s.editSection, { [i.param]: i.value })
+        void this.setRegion(s.selectedTrack, s.editSection, { [i.param]: i.value }) // already debounced by the interpreter (400 ms)
         return
       }
       case 'card.style': {
@@ -798,5 +782,4 @@ export class Controller {
   }
 }
 
-const pending = new Map<string, { complexity?: number; intensity?: number }>()
 export { CARD_STYLE_ORDER }

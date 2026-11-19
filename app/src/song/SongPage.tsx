@@ -24,10 +24,10 @@ export function SongPage() {
   }, [api, shareId])
   if (load.state === 'loading') return <div className="sp-wrap"><div className="sp-msg">正在打开…</div></div>
   if (load.state === 'error') return <div className="sp-wrap"><div className="sp-msg">{load.text}</div></div>
-  return <Ready page={load.page} song={load.song} shareId={shareId!} assetUrl={(id) => (mock ? api.assetUrl(id) : `/api/share/${encodeURIComponent(shareId!)}/assets/${encodeURIComponent(id)}`)} />
+  return <Ready page={load.page} song={load.song} assetUrl={(id) => (mock ? api.assetUrl(id) : `/api/share/${encodeURIComponent(shareId!)}/assets/${encodeURIComponent(id)}`)} />
 }
 
-function Ready({ page, song, shareId, assetUrl }: { page: SharePage; song: Song; shareId: string; assetUrl: (id: string) => string }) {
+function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl: (id: string) => string }) {
   const model: PageModel = useMemo(() => buildModel(page, song), [page, song])
   const [tick, setTick] = useState(0)
   const [playing, setPlaying] = useState(false)
