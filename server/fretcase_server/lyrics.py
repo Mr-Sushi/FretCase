@@ -52,8 +52,11 @@ def _parse_json(text: str) -> Any:
 
 def _ask(adapters: Adapters, prompt: str, timeout: float) -> Any:
     """One model call. Offline -> 503; any failure (timeout, HTTP error, unreadable answer) -> 503."""
+    from fretcase_server.adapters import _POOL
+
     try:
-        text = adapters.text_model.complete(SYSTEM, prompt, timeout=timeout)
+        future = _POOL.submit(adapters.text_model.complete, SYSTEM, prompt, timeout=timeout)
+        text = future.result(timeout=timeout + 1.0)  # a hard bound on top of the socket timeout
         return _parse_json(text)
     except Offline as exc:
         raise offline_unavailable("Writing lyrics") from exc
