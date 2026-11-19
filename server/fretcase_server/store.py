@@ -45,9 +45,10 @@ def _read_json(path: Path) -> Any:
 
 
 class Store:
-    def __init__(self, root: Path, clock: Callable[[], str] = utc_now):
+    def __init__(self, root: Path, clock: Callable[[], str] = utc_now, drafts_ttl_hours: float = 24.0):
         self.root = Path(root)
         self.clock = clock
+        self.drafts_ttl_hours = drafts_ttl_hours
         self.lock = threading.RLock()
         for sub in ("songs", "assets", "shares", "study", "prints"):
             (self.root / sub).mkdir(parents=True, exist_ok=True)
@@ -63,7 +64,11 @@ class Store:
         path = self.song_dir(song_id) / "song.json"
         if "/" in song_id or "\\" in song_id or not path.exists():
             raise not_found("song")
-        return _read_json(path)
+        song = _read_json(path)
+        if self.is_draft(song) and self._age_hours(song) > self.drafts_ttl_hours:
+            self.delete_song(song_id)
+            raise not_found("song")
+        return song
 
     def load_meta(self, song_id: str) -> Dict[str, Any]:
         path = self.song_dir(song_id) / "meta.json"
@@ -71,19 +76,60 @@ class Store:
             return _read_json(path)
         return {"history": [], "undo": [], "takes": {}, "preview": None}
 
-    def create_song(self, song: Dict[str, Any], action: str = "create") -> None:
+    def create_song(self, song: Dict[str, Any], action: str = "create", meta_extra: Optional[Dict[str, Any]] = None) -> None:
         with self.lock:
             d = self.song_dir(song["id"])
             _write_json(d / "song.json", song)
             _write_json(d / "revisions" / f"{song['revision']}.json", song)
-            _write_json(d / "meta.json", {"history": [{"revision": song["revision"], "at": song["updatedAt"], "action": action}], "undo": [], "takes": {}, "preview": None})
+            _write_json(d / "meta.json", {"history": [{"revision": song["revision"], "at": song["updatedAt"], "action": action}], "undo": [], "takes": {}, "preview": None, **(meta_extra or {})})
+
+    # ---------------------------------------------------------------- drafts (candidates)
+    @staticmethod
+    def is_draft(song: Dict[str, Any]) -> bool:
+        return bool(song.get("candidate")) and not song["candidate"].get("chosen")
+
+    def _age_hours(self, song: Dict[str, Any]) -> float:
+        def parse(text: str) -> datetime:
+            return datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+        return (parse(self.clock()) - parse(song["createdAt"])).total_seconds() / 3600.0
+
+    def delete_song(self, song_id: str) -> None:
+        import shutil
+
+        with self.lock:
+            if "/" not in song_id and "\\" not in song_id and self.song_dir(song_id).exists():
+                shutil.rmtree(self.song_dir(song_id))
+
+    def purge_drafts(self, ttl_hours: float = 24.0) -> None:
+        """Delete drafts that were not chosen within ``ttl_hours``."""
+        with self.lock:
+            for d in list((self.root / "songs").iterdir()):
+                path = d / "song.json"
+                if path.exists():
+                    song = _read_json(path)
+                    if self.is_draft(song) and self._age_hours(song) > ttl_hours:
+                        self.delete_song(d.name)
+
+    def drafts_of_group(self, group_id: str) -> List[Dict[str, Any]]:
+        out = []
+        for d in (self.root / "songs").iterdir():
+            path = d / "song.json"
+            if path.exists():
+                song = _read_json(path)
+                if (song.get("candidate") or {}).get("groupId") == group_id:
+                    out.append(song)
+        return sorted(out, key=lambda s: s["candidate"]["index"])
 
     def list_songs(self) -> List[Dict[str, Any]]:
+        self.purge_drafts(self.drafts_ttl_hours)
         rows = []
         for d in (self.root / "songs").iterdir():
             path = d / "song.json"
             if path.exists():
                 song = _read_json(path)
+                if self.is_draft(song):
+                    continue
                 row = {"id": song["id"], "title": song["title"], "updatedAt": song["updatedAt"]}
                 if song.get("card"):
                     row["card"] = song["card"]

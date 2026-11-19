@@ -107,10 +107,51 @@ class SetCard(_Op):
     style: Optional[Literal["ink", "comic", "xieyi", "original", "text"]] = None
     line: Optional[Annotated[str, Field(max_length=60)]] = None
     message: Optional[Annotated[str, Field(max_length=500)]] = None
-    photoAssetId: Optional[str] = None
+    photoAssetIds: Optional[Annotated[List[str], Field(max_length=9)]] = None
+    coverAssetId: Optional[str] = None
     showPhoto: Optional[bool] = None
     city: Optional[Annotated[str, Field(max_length=60)]] = None
     showCity: Optional[bool] = None
+
+
+class SetRegion(_Op):
+    op: Literal["setRegion"]
+    track: TrackName
+    section: str
+    play: Optional[bool] = None
+    complexity: Optional[Unit] = None
+    intensity: Optional[Unit] = None
+    style: Optional[Annotated[str, Field(max_length=32)]] = None
+
+
+class CopyRegion(_Op):
+    op: Literal["copyRegion"]
+    track: TrackName
+    section: str
+
+
+class SetLead(_Op):
+    op: Literal["setLead"]
+    section: str
+    track: Optional[Literal["vocal", "melody", "guitar"]] = None
+
+
+class ShiftRegister(_Op):
+    op: Literal["shiftRegister"]
+    track: TrackName
+    section: str
+    direction: Literal["up", "down"]
+
+
+class RevertMelody(_Op):
+    op: Literal["revertMelody"]
+    section: str
+
+
+class SetMaster(_Op):
+    op: Literal["setMaster"]
+    volume: Optional[Unit] = None
+    space: Optional[Literal["dry", "room", "hall"]] = None
 
 
 class SetVocalTake(_Op):
@@ -119,7 +160,7 @@ class SetVocalTake(_Op):
 
 
 Op = Annotated[
-    Union[SetControl, SetTempo, SetTrackVolume, SetTrackMute, SetInstrument, ReplaceNotes, SetLyrics, SetRhythm, Lock, Unlock, SetSections, SetTitle, SetCard, SetVocalTake],
+    Union[SetControl, SetTempo, SetTrackVolume, SetTrackMute, SetInstrument, ReplaceNotes, SetLyrics, SetRhythm, Lock, Unlock, SetSections, SetTitle, SetCard, SetRegion, CopyRegion, SetLead, ShiftRegister, RevertMelody, SetMaster, SetVocalTake],
     Field(discriminator="op"),
 ]
 
@@ -143,6 +184,35 @@ class AnotherRequest(RevisionRequest):
 class RehumRequest(RevisionRequest):
     section: str
     assetId: str
+
+
+class CandidatesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    seed: SeedCard
+    bars: Optional[Annotated[int, Field(ge=1, le=64)]] = None
+    timeOfDay: Optional[Literal["day", "dusk", "night"]] = None
+    previousGroupId: Optional[str] = None
+
+
+class LyricsRequest(RevisionRequest):
+    sections: Optional[List[str]] = None
+    keep: Optional[Dict[str, List[int]]] = None
+    themes: Annotated[List[Annotated[str, Field(max_length=30)]], Field(max_length=12)] = []
+    tone: Literal["plain", "subtle", "playful"] = "plain"
+    rhyme: bool = True
+
+
+class AlternativesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    section: str
+    line: Annotated[int, Field(ge=0)]
+    themes: Annotated[List[Annotated[str, Field(max_length=30)]], Field(max_length=12)] = []
+    tone: Literal["plain", "subtle", "playful"] = "plain"
+    rhyme: bool = True
+
+
+class ChooseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 class CreateSongRequest(BaseModel):

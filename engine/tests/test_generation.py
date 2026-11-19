@@ -110,7 +110,7 @@ def test_short_motif_makes_an_eight_bar_song():
 
 def test_default_sections_and_mix(song_cache):
     song = song_cache()
-    assert [s["label"] for s in song["sections"]] == ["开头", "展开", "高潮", "结尾"]
+    assert [s["label"] for s in song["sections"]] == ["开头", "主歌", "副歌", "结尾"]
     assert [(s["startBar"], s["endBar"]) for s in song["sections"]] == [(0, 4), (4, 8), (8, 12), (12, 16)]
     assert song["controls"] == {"brightness": 0.5, "complexity": 0.5, "density": 0.5}
     assert song["locks"] == []
@@ -130,9 +130,10 @@ def test_ambience_clip_comes_from_a_sound_input():
     seed["inputs"].append({"kind": "sound", "assetId": "a-waves-01"})
     assets = [{"id": "a-waves-01", "role": "ambience", "mime": "audio/webm", "durationSec": 10.2}]
     song = generate_song(seed, "song-test-0004", NOW, assets=assets)
-    clip = song["tracks"]["ambience"]["clips"][0]
-    assert clip["assetId"] == "a-waves-01" and clip["loop"] and clip["start"] == 0
-    assert clip["duration"] == song["bars"] * bar_ticks(song["meter"])
+    clips = song["tracks"]["ambience"]["clips"]  # one clip per section whose ambience region plays
+    assert all(c["assetId"] == "a-waves-01" and c["loop"] for c in clips) and clips[0]["start"] == 0
+    assert sum(c["duration"] for c in clips) == song["bars"] * bar_ticks(song["meter"])
+    assert all(r["play"] for r in song["tracks"]["ambience"]["regions"])
     assert song["assets"] == assets
 
 

@@ -7,6 +7,10 @@ from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootMo
 from enum import IntEnum, StrEnum
 
 
+class Id(RootModel[str]):
+    root: Annotated[str, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")]
+
+
 class TrackId(StrEnum):
     vocal = "vocal"
     melody = "melody"
@@ -91,6 +95,12 @@ class Controls(BaseModel):
     ]
 
 
+class Lead(StrEnum):
+    vocal = "vocal"
+    melody = "melody"
+    guitar = "guitar"
+
+
 class Section(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -104,6 +114,12 @@ class Section(BaseModel):
     ]
     startBar: Annotated[int, Field(ge=0)]
     endBar: Annotated[int, Field(description="Exclusive.", ge=1)]
+    lead: Annotated[
+        Lead | None,
+        Field(
+            description="Who carries this section. The server gives the lead more presence and the others less, unless their regions are locked."
+        ),
+    ] = None
 
 
 class Fret(RootModel[int]):
@@ -173,7 +189,7 @@ class Note(BaseModel):
     pitch: Annotated[
         int,
         Field(
-            description="MIDI note. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...).",
+            description="Sounding MIDI note, so a guitar note with a capo is the shape pitch plus the capo fret. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...).",
             ge=0,
             le=127,
         ),
@@ -186,21 +202,6 @@ class NoteFields(BaseModel):
     duration: Annotated[int, Field(ge=1)]
     pitch: Annotated[int, Field(ge=0, le=127)]
     velocity: Annotated[int | None, Field(ge=1, le=127)] = 90
-
-
-class Mix(BaseModel):
-    instrument: Annotated[
-        str, Field(description="Instrument id from GET /api/catalog for this track.")
-    ]
-    volume: Annotated[float, Field(description="Fader position.", ge=0.0, le=1.0)]
-    muted: bool
-
-
-class NoteTrack(Mix):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    notes: list[Note]
 
 
 class Source(StrEnum):
@@ -224,19 +225,6 @@ class Rhythm(BaseModel):
     ]
 
 
-class GuitarTrack(Mix):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    rhythm: Rhythm
-    notes: Annotated[
-        list[Note],
-        Field(
-            description="Realised by the server from harmony, voicings and rhythm, so the app only plays notes."
-        ),
-    ]
-
-
 class Clip(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -249,13 +237,6 @@ class Clip(BaseModel):
     ] = 0
     loop: bool
     gain: Annotated[float | None, Field(ge=0.0, le=1.0)] = 1
-
-
-class AmbienceTrack(Mix):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    clips: list[Clip]
 
 
 class Lock(BaseModel):
@@ -272,8 +253,6 @@ class Role(StrEnum):
     photo = "photo"
     vocal_take = "vocal_take"
     vocal_render = "vocal_render"
-    card_front = "card_front"
-    card_back = "card_back"
     card_print = "card_print"
 
 
@@ -339,7 +318,14 @@ class SeedCard(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    inputs: Annotated[list[SeedInput], Field(min_length=1)]
+    inputs: Annotated[
+        list[SeedInput],
+        Field(
+            description="What was captured: any mix of up to 9 photos, hums, sounds and text. With no photo, a text input is expected (the card then uses style text).",
+            max_length=16,
+            min_length=1,
+        ),
+    ]
     key: Key
     tempo: Annotated[float, Field(ge=40.0, le=220.0)]
     meter: Meter | None = None
@@ -405,7 +391,7 @@ class Card(BaseModel):
     line: Annotated[
         str | None,
         Field(
-            description="A sentence about the song, printed when there is no photo and shown on the song page.",
+            description="A sentence about the song, printed under the title in the card's paper strip (and large on the picture area with style text), and shown on the song page.",
             max_length=60,
         ),
     ] = None
@@ -416,21 +402,38 @@ class Card(BaseModel):
             max_length=500,
         ),
     ] = None
-    photoAssetId: Annotated[str | None, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")] = (
-        None
-    )
+    photoAssetIds: Annotated[
+        list[Id] | None,
+        Field(
+            description="Photos shown on the song page, in order. Defaults to every photo input.",
+            max_length=9,
+        ),
+    ] = None
+    coverAssetId: Annotated[
+        str | None,
+        Field(
+            description="The photo printed on the card. One of photoAssetIds. Absent with style text.",
+            pattern="^[a-z0-9][a-z0-9-]{5,63}$",
+        ),
+    ] = None
     showPhoto: Annotated[
-        bool, Field(description="Whether the real photo appears on the song page.")
+        bool, Field(description="Whether the real photos appear on the song page.")
     ]
     city: Annotated[str | None, Field(max_length=60)] = None
-    showCity: bool
+    showCity: Annotated[
+        bool,
+        Field(
+            description="Whether the city is printed on the card and shown on the song page."
+        ),
+    ]
     capturedAt: AwareDatetime | None = None
-    frontAssetId: Annotated[str | None, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")] = (
-        None
-    )
-    backAssetId: Annotated[str | None, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")] = (
-        None
-    )
+    frontAssetId: Annotated[
+        str | None,
+        Field(
+            description="The print image from the last preview: 1260 x 840 px for the Instax Wide image area. Cleared by any card change.",
+            pattern="^[a-z0-9][a-z0-9-]{5,63}$",
+        ),
+    ] = None
     share: Share | None = None
     printedAt: AwareDatetime | None = None
 
@@ -449,6 +452,107 @@ class Provenance(BaseModel):
     harmonySource: HarmonySource | None = None
 
 
+class Region(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    section: Annotated[str, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")]
+    play: Annotated[
+        bool,
+        Field(
+            description="False: the track is silent in this section and has no notes there."
+        ),
+    ]
+    complexity: Annotated[
+        float,
+        Field(
+            description="Simple (0) to complex (1): more notes, fills, ornaments.",
+            ge=0.0,
+            le=1.0,
+        ),
+    ]
+    intensity: Annotated[
+        float,
+        Field(description="Soft (0) to loud (1): velocity and energy.", ge=0.0, le=1.0),
+    ]
+    style: Annotated[
+        str,
+        Field(
+            description="Playing style id for this track from GET /api/catalog, e.g. strum, arpeggio, brush.",
+            max_length=32,
+        ),
+    ]
+
+
+class Space(StrEnum):
+    dry = "dry"
+    room = "room"
+    hall = "hall"
+
+
+class Master(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    volume: Annotated[float, Field(ge=0.0, le=1.0)]
+    space: Annotated[
+        Space, Field(description="Reverb amount for the whole song: 干净, 房间, 大厅.")
+    ]
+
+
+class Tag(RootModel[str]):
+    root: Annotated[str, Field(max_length=8)]
+
+
+class TimeOfDay(StrEnum):
+    day = "day"
+    dusk = "dusk"
+    night = "night"
+
+
+class Parts(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    level: Annotated[
+        float,
+        Field(
+            description="How much this track plays overall, for the bars on the pick screen.",
+            ge=0.0,
+            le=1.0,
+        ),
+    ]
+    sound: Annotated[
+        str, Field(description="Short label, e.g. 木吉他扫弦.", max_length=16)
+    ]
+
+
+class Candidate(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    groupId: Annotated[str, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")]
+    index: Annotated[int, Field(ge=0, le=2)]
+    name: Annotated[
+        str,
+        Field(
+            description="A plain name for the arrangement, e.g. 黄昏民谣.",
+            max_length=12,
+        ),
+    ]
+    tags: Annotated[list[Tag], Field(max_length=4)]
+    why: Annotated[
+        str,
+        Field(
+            description="One sentence linking the arrangement to the captured inputs.",
+            max_length=80,
+        ),
+    ]
+    timeOfDay: TimeOfDay | None = None
+    parts: dict[TrackId, Parts]
+    chosen: bool | None = False
+
+
 class VocalNote(NoteFields):
     model_config = ConfigDict(
         extra="forbid",
@@ -463,6 +567,28 @@ class VocalNote(NoteFields):
     lineEnd: Annotated[
         bool | None, Field(description="True on the last note of a lyric line.")
     ] = False
+
+
+class Mix(BaseModel):
+    instrument: Annotated[
+        str,
+        Field(
+            description="Sound id from GET /api/catalog for this track (e.g. steel, nylon, synth-female)."
+        ),
+    ]
+    volume: Annotated[float, Field(description="Fader position.", ge=0.0, le=1.0)]
+    muted: bool
+    regions: Annotated[
+        list[Region],
+        Field(description="Exactly one region per section, in section order."),
+    ]
+
+
+class NoteTrack(Mix):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    notes: list[Note]
 
 
 class VocalTrack(Mix):
@@ -485,6 +611,26 @@ class VocalTrack(Mix):
     ] = None
 
 
+class GuitarTrack(Mix):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    rhythm: Rhythm
+    notes: Annotated[
+        list[Note],
+        Field(
+            description="Realised by the server from harmony, voicings and rhythm, so the app only plays notes."
+        ),
+    ]
+
+
+class AmbienceTrack(Mix):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    clips: list[Clip]
+
+
 class Tracks(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -501,7 +647,7 @@ class Song(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    schemaVersion: Literal["1.0"]
+    schemaVersion: Literal["2.0"]
     id: Annotated[str, Field(pattern="^[a-z0-9][a-z0-9-]{5,63}$")]
     revision: Annotated[
         int,
@@ -513,6 +659,7 @@ class Song(BaseModel):
     createdAt: AwareDatetime
     updatedAt: AwareDatetime
     title: Annotated[str, Field(max_length=80)]
+    candidate: Candidate | None = None
     key: Key
     meter: Meter
     tempo: Annotated[
@@ -539,6 +686,7 @@ class Song(BaseModel):
         ),
     ]
     tracks: Tracks
+    master: Master
     locks: Annotated[
         list[Lock],
         Field(

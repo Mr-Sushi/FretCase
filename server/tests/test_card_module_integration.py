@@ -32,6 +32,8 @@ def load_real_card_module():
 def real_api(make_client):
     pytest.importorskip("qrcode")
     module = load_real_card_module()
+    if "print_png" not in getattr(getattr(module, "CardImages", None), "__dataclass_fields__", {}):
+        pytest.skip("device/card is not at card module version 2 yet")
     try:
         module.render_card(module.CardInput(title="试", style="text", share_url="https://x.example/s/a", date_text="2026.11.19"))
     except OSError as exc:  # no CJK font on this machine
@@ -46,13 +48,12 @@ def test_preview_and_print_with_the_real_card_module(real_api, style):
     song = real_api.song()
     if style != "text":
         photo = real_api.upload(png_bytes(size=(320, 240)), "photo", name="p.png", mime="image/png")
-        song = real_api.edit(song, {"op": "setCard", "style": style, "photoAssetId": photo["id"], "showPhoto": True})
+        song = real_api.edit(song, {"op": "setCard", "style": style, "photoAssetIds": [photo["id"]], "showPhoto": True})
     else:
         song = real_api.edit(song, {"op": "setCard", "style": "text", "line": "海风把傍晚吹进歌里"})
     previewed = real_api.post(song, "card/preview")
-    for key in ("frontAssetId", "backAssetId"):
-        r = real_api.c.get(f"/api/assets/{previewed['card'][key]}")
-        assert r.status_code == 200 and r.content[:4] == b"\x89PNG"
-        assert Image.open(io.BytesIO(r.content)).width == 384  # printer width at 203 dpi
+    r = real_api.c.get(f"/api/assets/{previewed['card']['frontAssetId']}")
+    assert r.status_code == 200 and r.content[:4] == b"\x89PNG"
+    assert Image.open(io.BytesIO(r.content)).size == (1260, 840)
     printed = real_api.post(previewed, "card/print")
     assert printed["card"]["printedAt"]
