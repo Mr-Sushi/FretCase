@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>选一首</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #D4AE6A">FretCase</div>
+    <nav aria-label="步骤" style="display: flex; gap: 6px; margin-left: 12px">
+      <a href="Main.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">① 采集</a>
+      <span style="padding: 7px 14px; border-radius: 999px; background: #D4AE6A; color: #1C1410; font-size: 15px; font-weight: 700">② 选一首</span>
+      <span style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px">③ 打磨</span>
+      <span style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px">④ 做卡</span>
+    </nav>
+    <div style="margin-left: auto; display: flex; gap: 8px; font-size: 13px; color: #BFAE98">
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">联网</span>
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">面板已连接</span>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; gap: 22px; padding: 28px; min-height: 0">
+    <div style="display: flex; align-items: flex-end; gap: 20px">
+      <div>
+        <h1 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 32px; font-weight: 700">听听这三首，挑最像今天的</h1>
+        <div style="margin-top: 6px; color: #BFAE98; font-size: 16px">三首都用了你哼的调子当副歌，只是编法不同。转唱盘在三首之间切换。</div>
+      </div>
+      <div role="group" aria-label="时段" style="margin-left: auto; display: flex; padding: 4px; border-radius: 999px; background: #2A1F18; border: 1px solid #4A3A2D">
+        <sc-for list="{{times}}" as="t" hint-placeholder-count="3">
+          <button type="button" aria-pressed="{{t.on}}" onClick="{{t.pick}}" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font-size: 15px; font-weight: 700">{{t.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; min-height: 0">
+      <sc-for list="{{songs}}" as="s" hint-placeholder-count="3">
+        <article style="border-radius: 18px; background: #2A1F18; border: 2px solid {{s.border}}; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span style="width: 34px; height: 34px; border-radius: 50%; background: #3A2C22; color: #D4AE6A; font-weight: 700; display: flex; align-items: center; justify-content: center">{{s.no}}</span>
+            <h2 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 700">{{s.name}}</h2>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{s.tags}}" as="tag" hint-placeholder-count="3">
+              <span style="padding: 5px 12px; border-radius: 999px; background: #3A2C22; color: #E8DCCB; font-size: 14px">{{tag.t}}</span>
+            </sc-for>
+          </div>
+
+          <div aria-label="谁在演奏" style="display: flex; flex-direction: column; gap: 7px">
+            <sc-for list="{{s.parts}}" as="p" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #BFAE98">
+                <span style="width: 44px">{{p.name}}</span>
+                <span style="flex: 1; height: 10px; border-radius: 5px; background: #3A2C22; overflow: hidden; display: flex">
+                  <span style="width: {{p.w}}%; background: {{p.c}}; border-radius: 5px"></span>
+                </span>
+                <span style="width: 74px; text-align: right; color: #E8DCCB">{{p.sound}}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-size: 14px; line-height: 1.6; color: #BFAE98">{{s.why}}</div>
+
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <button type="button" aria-label="{{s.playLabel}}" onClick="{{s.play}}" style="width: 52px; height: 52px; border-radius: 50%; border: 0; background: #F3E9DA; display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{s.playing}}" hint-placeholder-val="{{ false }}">
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="3" y="2" width="4" height="14" fill="#1C1410"></rect><rect x="11" y="2" width="4" height="14" fill="#1C1410"></rect></svg>
+                </sc-if>
+                <sc-if value="{{s.paused}}" hint-placeholder-val="{{ true }}">
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#1C1410"></path></svg>
+                </sc-if>
+              </button>
+              <div style="flex: 1">
+                <div style="height: 6px; border-radius: 3px; background: #3A2C22; overflow: hidden"><div style="width: {{s.progress}}%; height: 6px; background: #D4AE6A"></div></div>
+                <div style="margin-top: 6px; font-size: 12px; color: #9C8B76">试听 15 秒 · 全曲 1 分 40 秒</div>
+              </div>
+            </div>
+            <a href="Shape.dc.html" style="height: 56px; border-radius: 14px; background: {{s.ctaBg}}; color: {{s.ctaFg}}; border: 1px solid #D4AE6A; font-size: 18px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">就要这首</a>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px">
+      <button type="button" style="height: 52px; padding: 0 22px; border-radius: 14px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 16px; font-weight: 700">都不像，再来三首</button>
+      <a href="Main.dc.html" style="font-size: 15px">回去补一张照片或再哼一段</a>
+      <span style="margin-left: auto; color: #9C8B76; font-size: 13px">选好之后每一段、每个乐手都还能再换</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { time: 'dusk', playing: 0 }; }
+  renderVals() {
+    const C = { vocal: '#E2725B', melody: '#E3A44A', guitar: '#4FB3A6', bass: '#6C93D6', drums: '#A98BD8', amb: '#86B068' };
+    const times = [['day', '白天'], ['dusk', '黄昏'], ['night', '夜晚']].map(([id, label]) => {
+      const on = this.state.time === id;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : 'transparent', fg: on ? '#1C1410' : '#BFAE98', pick: () => this.setState({ time: id }) };
+    });
+    const defs = [
+      { name: '黄昏民谣', tags: ['温暖', '慢一点', '人声在前'], why: '照片里的暖色和木桌，配上木吉他扫弦；副歌就是你哼的那句。',
+        parts: [['人声', C.vocal, 90, '男声'], ['旋律', C.melody, 40, '口琴'], ['吉他', C.guitar, 80, '木吉他扫弦'], ['贝斯', C.bass, 50, '指弹贝斯'], ['鼓', C.drums, 35, '刷子鼓'], ['环境', C.amb, 30, '海浪']] },
+      { name: '海风轻快', tags: ['明亮', '中速', '吉他是主角'], why: '把“风很大”读成轻快：尼龙吉他分解和弦领奏，鼓点更密。',
+        parts: [['人声', C.vocal, 60, '女声'], ['旋律', C.melody, 70, '尼龙吉他'], ['吉他', C.guitar, 90, '分解和弦'], ['贝斯', C.bass, 60, '指弹贝斯'], ['鼓', C.drums, 70, '流行鼓'], ['环境', C.amb, 20, '海浪']] },
+      { name: '夜里想家', tags: ['安静', '慢', '钢琴'], why: '抓住“想家”：小调色彩，钢琴代替吉他，海浪声垫在底下。',
+        parts: [['人声', C.vocal, 80, '男声轻唱'], ['旋律', C.melody, 55, '钢琴'], ['吉他', C.guitar, 20, '只在结尾'], ['贝斯', C.bass, 35, '长音'], ['鼓', C.drums, 10, '几乎没有'], ['环境', C.amb, 60, '海浪']] }
+    ];
+    const songs = defs.map((d, i) => {
+      const playing = this.state.playing === i;
+      return {
+        no: String(i + 1), name: d.name, why: d.why,
+        tags: d.tags.map((t) => ({ t })),
+        parts: d.parts.map(([name, c, w, sound]) => ({ name, c, w, sound })),
+        playing, paused: !playing, playLabel: playing ? '暂停' : '试听',
+        progress: playing ? 46 : 0,
+        border: playing ? '#D4AE6A' : '#3A2C22',
+        ctaBg: playing ? '#D4AE6A' : 'transparent', ctaFg: playing ? '#1C1410' : '#D4AE6A',
+        play: () => this.setState({ playing: playing ? -1 : i })
+      };
+    });
+    return { times, songs };
+  }
+}
+</script>
+</body>
+</html>

@@ -5,9 +5,9 @@
   "description": "A FretCase song. The server owns it; the app receives whole songs and changes them only through the edit API. Times are integer ticks at 480 per quarter note, counted from the start of bar 0. Pitches are MIDI note numbers; spelling (F# or Gb) is derived from the key.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "revision", "createdAt", "updatedAt", "title", "key", "meter", "tempo", "bars", "controls", "sections", "harmony", "tracks", "locks", "assets"],
+  "required": ["schemaVersion", "id", "revision", "createdAt", "updatedAt", "title", "key", "meter", "tempo", "bars", "controls", "sections", "harmony", "tracks", "locks", "assets", "master"],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
+    "schemaVersion": { "const": "2.0" },
     "id": { "$ref": "#/$defs/id" },
     "revision": {
       "type": "integer",
@@ -17,6 +17,7 @@
     "createdAt": { "type": "string", "format": "date-time" },
     "updatedAt": { "type": "string", "format": "date-time" },
     "title": { "type": "string", "maxLength": 80 },
+    "candidate": { "$ref": "#/$defs/candidate" },
     "key": { "$ref": "#/$defs/key" },
     "meter": { "$ref": "#/$defs/meter" },
     "tempo": { "type": "number", "minimum": 40, "maximum": 220, "description": "Quarter notes per minute." },
@@ -51,6 +52,7 @@
         "ambience": { "$ref": "#/$defs/ambienceTrack" }
       }
     },
+    "master": { "$ref": "#/$defs/master" },
     "locks": {
       "type": "array",
       "items": { "$ref": "#/$defs/lock" },
@@ -65,17 +67,11 @@
     "provenance": { "$ref": "#/$defs/provenance" }
   },
   "$defs": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9-]{5,63}$"
-    },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{5,63}$" },
     "tick": { "type": "integer", "minimum": 0 },
     "positiveTick": { "type": "integer", "minimum": 1 },
     "unit": { "type": "number", "minimum": 0, "maximum": 1 },
-    "trackId": {
-      "type": "string",
-      "enum": ["vocal", "melody", "guitar", "bass", "drums", "ambience"]
-    },
+    "trackId": { "type": "string", "enum": ["vocal", "melody", "guitar", "bass", "drums", "ambience"] },
     "key": {
       "type": "object",
       "additionalProperties": false,
@@ -113,9 +109,18 @@
       "required": ["brightness", "complexity", "density"],
       "description": "The three feel knobs, 0 to 1. The tempo knob writes Song.tempo directly. Turning a knob regenerates the unlocked parts it affects.",
       "properties": {
-        "brightness": { "$ref": "#/$defs/unit", "description": "Mode and mood. Affects harmony and, at the extremes, the key's mode." },
-        "complexity": { "$ref": "#/$defs/unit", "description": "Chord vocabulary. Thirds map to FretStudio lanes: basic, explore, colour." },
-        "density": { "$ref": "#/$defs/unit", "description": "Rhythm density. Thirds map to FretStudio rhythm levels: start, next, challenge." }
+        "brightness": {
+          "$ref": "#/$defs/unit",
+          "description": "Mode and mood. Affects harmony and, at the extremes, the key's mode."
+        },
+        "complexity": {
+          "$ref": "#/$defs/unit",
+          "description": "Chord vocabulary. Thirds map to FretStudio lanes: basic, explore, colour."
+        },
+        "density": {
+          "$ref": "#/$defs/unit",
+          "description": "Rhythm density. Thirds map to FretStudio rhythm levels: start, next, challenge."
+        }
       }
     },
     "section": {
@@ -126,7 +131,12 @@
         "id": { "$ref": "#/$defs/id" },
         "label": { "type": "string", "maxLength": 24, "description": "Shown on screen, e.g. 开头, 展开, 高潮, 结尾." },
         "startBar": { "type": "integer", "minimum": 0 },
-        "endBar": { "type": "integer", "minimum": 1, "description": "Exclusive." }
+        "endBar": { "type": "integer", "minimum": 1, "description": "Exclusive." },
+        "lead": {
+          "type": "string",
+          "enum": ["vocal", "melody", "guitar"],
+          "description": "Who carries this section. The server gives the lead more presence and the others less, unless their regions are locked."
+        }
       }
     },
     "voicing": {
@@ -135,8 +145,19 @@
       "required": ["frets", "fingers", "barres", "baseFret", "difficulty"],
       "description": "A guitar voicing, low E string first. Frets are relative to the capo when one is set. Same fields as FretStudio's voicing library.",
       "properties": {
-        "frets": { "type": "array", "items": { "type": "integer", "minimum": -1, "maximum": 15 }, "minItems": 6, "maxItems": 6, "description": "-1 is a muted string, 0 is open." },
-        "fingers": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 4 }, "minItems": 6, "maxItems": 6 },
+        "frets": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -1, "maximum": 15 },
+          "minItems": 6,
+          "maxItems": 6,
+          "description": "-1 is a muted string, 0 is open."
+        },
+        "fingers": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 4 },
+          "minItems": 6,
+          "maxItems": 6
+        },
         "barres": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 15 } },
         "baseFret": { "type": "integer", "minimum": 0 },
         "difficulty": { "$ref": "#/$defs/unit" }
@@ -150,7 +171,10 @@
         "start": { "$ref": "#/$defs/tick" },
         "duration": { "$ref": "#/$defs/positiveTick" },
         "symbol": { "type": "string", "description": "Sounding chord, spelled for the key, e.g. Bb or F#m7." },
-        "shapeSymbol": { "type": "string", "description": "Shape played under the capo, e.g. G. Absent without a capo." },
+        "shapeSymbol": {
+          "type": "string",
+          "description": "Shape played under the capo, e.g. G. Absent without a capo."
+        },
         "roman": { "type": "string", "description": "Roman numeral in the song's key, e.g. IV or bVII." },
         "function": { "type": "string", "enum": ["T", "PD", "D", "COLOR"] },
         "voicing": { "$ref": "#/$defs/voicing" }
@@ -163,7 +187,12 @@
       "properties": {
         "start": { "$ref": "#/$defs/tick" },
         "duration": { "$ref": "#/$defs/positiveTick" },
-        "pitch": { "type": "integer", "minimum": 0, "maximum": 127, "description": "Sounding MIDI note, so a guitar note with a capo is the shape pitch plus the capo fret. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...)." },
+        "pitch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127,
+          "description": "Sounding MIDI note, so a guitar note with a capo is the shape pitch plus the capo fret. On the drum track, a General MIDI percussion key (36 kick, 38 snare, 42 closed hat ...)."
+        },
         "velocity": { "type": "integer", "minimum": 1, "maximum": 127, "default": 90 }
       }
     },
@@ -172,7 +201,11 @@
       "type": "object",
       "unevaluatedProperties": false,
       "properties": {
-        "lyric": { "type": "string", "maxLength": 12, "description": "Syllable sung on this note. One character for Chinese." },
+        "lyric": {
+          "type": "string",
+          "maxLength": 12,
+          "description": "Syllable sung on this note. One character for Chinese."
+        },
         "lineEnd": { "type": "boolean", "default": false, "description": "True on the last note of a lyric line." }
       }
     },
@@ -188,11 +221,19 @@
     },
     "mix": {
       "type": "object",
-      "required": ["instrument", "volume", "muted"],
+      "required": ["instrument", "volume", "muted", "regions"],
       "properties": {
-        "instrument": { "type": "string", "description": "Instrument id from GET /api/catalog for this track." },
+        "instrument": {
+          "type": "string",
+          "description": "Sound id from GET /api/catalog for this track (e.g. steel, nylon, synth-female)."
+        },
         "volume": { "$ref": "#/$defs/unit", "description": "Fader position." },
-        "muted": { "type": "boolean" }
+        "muted": { "type": "boolean" },
+        "regions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/region" },
+          "description": "Exactly one region per section, in section order."
+        }
       }
     },
     "noteTrack": {
@@ -200,9 +241,7 @@
       "type": "object",
       "unevaluatedProperties": false,
       "required": ["notes"],
-      "properties": {
-        "notes": { "type": "array", "items": { "$ref": "#/$defs/note" } }
-      }
+      "properties": { "notes": { "type": "array", "items": { "$ref": "#/$defs/note" } } }
     },
     "vocalTrack": {
       "allOf": [{ "$ref": "#/$defs/mix" }],
@@ -216,7 +255,10 @@
           "enum": ["none", "synth", "recording"],
           "description": "none: no vocal yet. synth: rendered from notes and lyrics. recording: the user's own take."
         },
-        "renderAssetId": { "$ref": "#/$defs/id", "description": "Rendered or recorded vocal audio, aligned to tick 0." }
+        "renderAssetId": {
+          "$ref": "#/$defs/id",
+          "description": "Rendered or recorded vocal audio, aligned to tick 0."
+        }
       }
     },
     "guitarTrack": {
@@ -234,7 +276,11 @@
             "presetId": { "type": "string", "description": "Id in shared/data/rhythm-presets.json." }
           }
         },
-        "notes": { "type": "array", "items": { "$ref": "#/$defs/note" }, "description": "Realised by the server from harmony, voicings and rhythm, so the app only plays notes." }
+        "notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/note" },
+          "description": "Realised by the server from harmony, voicings and rhythm, so the app only plays notes."
+        }
       }
     },
     "ambienceTrack": {
@@ -253,7 +299,12 @@
               "assetId": { "$ref": "#/$defs/id" },
               "start": { "$ref": "#/$defs/tick" },
               "duration": { "$ref": "#/$defs/positiveTick" },
-              "offsetSec": { "type": "number", "minimum": 0, "default": 0, "description": "Where in the recording to start." },
+              "offsetSec": {
+                "type": "number",
+                "minimum": 0,
+                "default": 0,
+                "description": "Where in the recording to start."
+              },
               "loop": { "type": "boolean" },
               "gain": { "$ref": "#/$defs/unit", "default": 1 }
             }
@@ -266,10 +317,7 @@
       "additionalProperties": false,
       "minProperties": 1,
       "description": "Track only: the whole track. Section only: every track in that section. Both: that track in that section.",
-      "properties": {
-        "track": { "$ref": "#/$defs/trackId" },
-        "section": { "$ref": "#/$defs/id" }
-      }
+      "properties": { "track": { "$ref": "#/$defs/trackId" }, "section": { "$ref": "#/$defs/id" } }
     },
     "asset": {
       "type": "object",
@@ -277,7 +325,10 @@
       "required": ["id", "role", "mime"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "role": { "type": "string", "enum": ["hum", "ambience", "photo", "vocal_take", "vocal_render", "card_front", "card_back", "card_print"] },
+        "role": {
+          "type": "string",
+          "enum": ["hum", "ambience", "photo", "vocal_take", "vocal_render", "card_print"]
+        },
         "mime": { "type": "string" },
         "durationSec": { "type": "number", "minimum": 0 },
         "width": { "type": "integer", "minimum": 1 },
@@ -294,7 +345,11 @@
         "text": { "type": "string", "maxLength": 500, "description": "Required for text." }
       },
       "allOf": [
-        { "if": { "properties": { "kind": { "const": "text" } } }, "then": { "required": ["text"] }, "else": { "required": ["assetId"] } }
+        {
+          "if": { "properties": { "kind": { "const": "text" } } },
+          "then": { "required": ["text"] },
+          "else": { "required": ["assetId"] }
+        }
       ]
     },
     "seedCard": {
@@ -303,7 +358,16 @@
       "required": ["inputs", "key", "tempo", "mood", "reasons"],
       "description": "What the device understood from the inputs. Shown before generating; every field can be changed.",
       "properties": {
-        "inputs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/seedInput" } },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/seedInput" },
+          "maxItems": 16,
+          "contains": { "type": "object", "required": ["kind"], "properties": { "kind": { "const": "photo" } } },
+          "minContains": 0,
+          "maxContains": 9,
+          "description": "What was captured: any mix of up to 9 photos, hums, sounds and text. With no photo, a text input is expected (the card then uses style text)."
+        },
         "key": { "$ref": "#/$defs/key" },
         "tempo": { "type": "number", "minimum": 40, "maximum": 220 },
         "meter": { "$ref": "#/$defs/meter" },
@@ -332,7 +396,11 @@
             }
           }
         },
-        "source": { "type": "string", "enum": ["model", "offline"], "description": "Whether a model or the offline rules produced this card." }
+        "source": {
+          "type": "string",
+          "enum": ["model", "offline"],
+          "description": "Whether a model or the offline rules produced this card."
+        }
       }
     },
     "card": {
@@ -340,22 +408,53 @@
       "additionalProperties": false,
       "required": ["style", "showPhoto", "showCity"],
       "properties": {
-        "style": { "type": "string", "enum": ["ink", "comic", "xieyi", "original", "text"], "description": "text: no photo, the front shows the title or line." },
-        "line": { "type": "string", "maxLength": 60, "description": "A sentence about the song, printed when there is no photo and shown on the song page." },
-        "message": { "type": "string", "maxLength": 500, "description": "What the user wants to say, shown on the song page only." },
-        "photoAssetId": { "$ref": "#/$defs/id" },
-        "showPhoto": { "type": "boolean", "description": "Whether the real photo appears on the song page." },
+        "style": {
+          "type": "string",
+          "enum": ["ink", "comic", "xieyi", "original", "text"],
+          "description": "text: no photo, the front shows the title or line."
+        },
+        "line": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "A sentence about the song, printed under the title in the card's paper strip (and large on the picture area with style text), and shown on the song page."
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "What the user wants to say, shown on the song page only."
+        },
+        "photoAssetIds": {
+          "type": "array",
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" },
+          "description": "Photos shown on the song page, in order. Defaults to every photo input."
+        },
+        "coverAssetId": {
+          "$ref": "#/$defs/id",
+          "description": "The photo printed on the card. One of photoAssetIds. Absent with style text."
+        },
+        "showPhoto": { "type": "boolean", "description": "Whether the real photos appear on the song page." },
         "city": { "type": "string", "maxLength": 60 },
-        "showCity": { "type": "boolean" },
+        "showCity": {
+          "type": "boolean",
+          "description": "Whether the city is printed on the card and shown on the song page."
+        },
         "capturedAt": { "type": "string", "format": "date-time" },
-        "frontAssetId": { "$ref": "#/$defs/id" },
-        "backAssetId": { "$ref": "#/$defs/id" },
+        "frontAssetId": {
+          "$ref": "#/$defs/id",
+          "description": "The print image from the last preview: 1260 x 840 px for the Instax Wide image area. Cleared by any card change."
+        },
         "share": {
           "type": "object",
           "additionalProperties": false,
           "required": ["shareId", "url", "state"],
           "properties": {
-            "shareId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{10,32}$", "description": "Random, assigned before printing so the QR code can be printed offline." },
+            "shareId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{10,32}$",
+              "description": "Random, assigned before printing so the QR code can be printed offline."
+            },
             "url": { "type": "string", "format": "uri" },
             "state": { "type": "string", "enum": ["reserved", "queued", "uploaded", "failed"] }
           }
@@ -371,6 +470,81 @@
         "voicingLibrary": { "type": "string" },
         "hreCalibration": { "type": "string" },
         "harmonySource": { "type": "string", "enum": ["model", "library", "rule", "hybrid"] }
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["section", "play", "complexity", "intensity", "style"],
+      "description": "How one track plays in one section. Like a GarageBand Drummer region: complexity is the XY pad's x axis, intensity its y axis.",
+      "properties": {
+        "section": { "$ref": "#/$defs/id" },
+        "play": {
+          "type": "boolean",
+          "description": "False: the track is silent in this section and has no notes there."
+        },
+        "complexity": {
+          "$ref": "#/$defs/unit",
+          "description": "Simple (0) to complex (1): more notes, fills, ornaments."
+        },
+        "intensity": { "$ref": "#/$defs/unit", "description": "Soft (0) to loud (1): velocity and energy." },
+        "style": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Playing style id for this track from GET /api/catalog, e.g. strum, arpeggio, brush."
+        }
+      }
+    },
+    "master": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["volume", "space"],
+      "properties": {
+        "volume": { "$ref": "#/$defs/unit" },
+        "space": {
+          "type": "string",
+          "enum": ["dry", "room", "hall"],
+          "description": "Reverb amount for the whole song: 干净, 房间, 大厅."
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groupId", "index", "name", "tags", "why", "parts"],
+      "description": "Present on the three drafts made by POST /api/candidates. Kept on the chosen song as its subtitle.",
+      "properties": {
+        "groupId": { "$ref": "#/$defs/id" },
+        "index": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "name": {
+          "type": "string",
+          "maxLength": 12,
+          "description": "A plain name for the arrangement, e.g. 黄昏民谣."
+        },
+        "tags": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 8 } },
+        "why": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "One sentence linking the arrangement to the captured inputs."
+        },
+        "timeOfDay": { "type": "string", "enum": ["day", "dusk", "night"] },
+        "parts": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/trackId" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["level", "sound"],
+            "properties": {
+              "level": {
+                "$ref": "#/$defs/unit",
+                "description": "How much this track plays overall, for the bars on the pick screen."
+              },
+              "sound": { "type": "string", "maxLength": 16, "description": "Short label, e.g. 木吉他扫弦." }
+            }
+          }
+        },
+        "chosen": { "type": "boolean", "default": false }
       }
     }
   }

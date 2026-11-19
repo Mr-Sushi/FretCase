@@ -2,7 +2,7 @@
 
 The server runs on the Raspberry Pi at `https://<pi>:8443`. The app is served from the same origin. All bodies are JSON unless noted. Types refer to `shared/schema/song.schema.json` (`Song`, `SeedCard`, `Asset`, …) and `shared/schema/panel-events.schema.json`.
 
-This is the version 1 contract. Endpoints marked **v2** are specified now so that shapes do not change later, but may return `501 not_implemented` until the second release.
+This is the milestone 2 contract (song schema 2.0). Endpoints marked **v2** are specified now so that shapes do not change later, but may return `501 not_implemented` until they are built. Endpoints marked **M2** are new in milestone 2.
 
 ## Conventions
 
@@ -16,7 +16,7 @@ Every change increases `Song.revision` by one. Requests that change a song carry
 
 ### Locks
 
-Regeneration (the knobs, "another take", re-humming) never changes locked content. A lock covers a whole track, a whole section, or one track in one section (`Song.locks`). Editing notes by hand on any track adds a lock for that track and the sections touched.
+Regeneration (the knobs, "another take", re-humming, `setLead`) never changes locked content. A lock covers a whole track, a whole section, or one track in one section (`Song.locks`). Editing notes by hand on any track adds a lock for that track and the sections touched. Changing a region by hand (`setRegion`, `copyRegion`, `shiftRegister`) regenerates that track in that section even when it is locked, and then adds the lock for that track in that section, so a later knob turn keeps the user's choice.
 
 ### Errors
 
@@ -63,17 +63,35 @@ What the controls and screens can choose from.
 
 ```json
 {
-  "instruments": { "vocal": ["synth-female", "synth-male"], "melody": ["piano", "nylon-lead"], "guitar": ["nylon", "steel"], "bass": ["finger-bass"], "drums": ["brush-kit", "pop-kit"], "ambience": ["recording"] },
+  "instruments": {
+    "vocal": [ { "id": "synth-male", "label": "男声" }, { "id": "synth-female", "label": "女声" }, { "id": "synth-soft", "label": "轻声" } ],
+    "melody": [ { "id": "harmonica", "label": "口琴" }, { "id": "piano", "label": "钢琴" }, { "id": "whistle", "label": "口哨" }, { "id": "flute", "label": "长笛" } ],
+    "guitar": [ { "id": "steel", "label": "木吉他" }, { "id": "nylon", "label": "尼龙吉他" }, { "id": "electric-clean", "label": "电吉他（干净）" }, { "id": "ukulele", "label": "尤克里里" } ],
+    "bass": [ { "id": "finger-bass", "label": "指弹贝斯" }, { "id": "upright-bass", "label": "低音提琴" }, { "id": "synth-bass", "label": "合成器贝斯" } ],
+    "drums": [ { "id": "jazz-kit", "label": "爵士鼓" }, { "id": "pop-kit", "label": "流行鼓" }, { "id": "hand-drum", "label": "手鼓" } ],
+    "ambience": [ { "id": "recording", "label": "原声" } ]
+  },
+  "styles": {
+    "vocal": [ { "id": "plain", "label": "只唱主旋律" }, { "id": "harmony", "label": "加一层和声" } ],
+    "melody": [ { "id": "follow", "label": "跟着人声" }, { "id": "answer", "label": "人声停时才出来" } ],
+    "guitar": [ { "id": "strum", "label": "扫弦" }, { "id": "arpeggio", "label": "分解和弦" }, { "id": "muted", "label": "闷音扫弦" }, { "id": "sustain", "label": "只弹长音" } ],
+    "bass": [ { "id": "sustain", "label": "长音" }, { "id": "groove", "label": "跟着鼓点" }, { "id": "walking", "label": "走动" } ],
+    "drums": [ { "id": "brush", "label": "刷子" }, { "id": "sticks", "label": "鼓棒" }, { "id": "hand", "label": "只有手鼓" } ],
+    "ambience": [ { "id": "recording", "label": "原声" }, { "id": "soft", "label": "柔和一点" } ]
+  },
+  "spaces": [ { "id": "dry", "label": "干净" }, { "id": "room", "label": "房间" }, { "id": "hall", "label": "大厅" } ],
   "rhythmPresets": "the contents of shared/data/rhythm-presets.json",
   "cardStyles": ["ink", "comic", "xieyi", "original", "text"]
 }
 ```
 
+`instruments` are sounds (`mix.instrument`); `styles` are playing styles (`region.style`). The app shows `label`, never `id`. Guitar styles map to rhythm families: `strum` and `muted` use strumming presets, `arpeggio` arpeggio presets, `sustain` one chord stroke per chord.
+
 ## Assets
 
 ### `POST /api/assets`
 
-Multipart form: `file` (the recording or image) and `role` (`hum`, `ambience`, `photo`, `vocal_take`). Returns `{ "asset": Asset }`. Audio is stored as received; the server reads its duration.
+Multipart form: `file` (the recording or image) and `role` (`hum`, `ambience`, `photo`, `vocal_take`). Returns `{ "asset": Asset }`. Audio is stored as received; the server reads its duration. Photos are stored as received and their width and height read; a photo larger than 4096 px on its long side is scaled down on upload.
 
 ### `GET /api/assets/{id}`
 
@@ -83,7 +101,9 @@ The file, with its MIME type.
 
 ### `POST /api/seed`
 
-Analyse the captured inputs and propose a seed card. Hum recordings are transcribed to `motif`; photos, text and sounds set key, tempo, mood and instruments, with a reason for each.
+Analyse the captured inputs and propose a seed card. Hum recordings are transcribed to `motif`; photos, text and sounds set key, tempo, mood and instruments, with a reason for each. Up to 9 photos are allowed (more answers `400 invalid_request`); several photos are read together. With no photo, the inputs should include text, but the server accepts any non-empty mix.
+
+In the milestone 2 flow the seed card is not shown as a separate screen: the app sends the inputs here and passes the returned seed straight to `POST /api/candidates`.
 
 Request:
 
@@ -97,13 +117,27 @@ Offline: transcription runs locally; photo and text use colour statistics and ke
 
 ## Songs
 
+### `POST /api/candidates` (M2)
+
+Make three different arrangements of the same seed for the pick screen.
+
+Request: `{ "seed": SeedCard, "bars": 16, "timeOfDay": "dusk", "previousGroupId": "grp-…" }`. `bars`, `timeOfDay` (`day` | `dusk` | `night`) and `previousGroupId` are optional. `timeOfDay` nudges brightness, tempo and instruments (day brighter and faster, night darker, slower and sparser). With `previousGroupId` ("都不像，再来三首") the server avoids repeating the instrument and style combinations of that group.
+
+Response: `201 { "candidates": [Song, Song, Song] }`. Each song is a draft with `candidate` set (`groupId`, `index` 0–2, `name`, `tags`, `why`, `parts`, `timeOfDay`). The three share the melody from the motif when there is one and differ in harmony colour, instruments, styles and lead. Drafts are not listed by `GET /api/songs` and are deleted 24 hours after creation unless chosen. Offline: names, tags and `why` come from rules; with a model they are written by the model.
+
+### `POST /api/songs/{id}/choose` (M2)
+
+Keep this draft. Request: `{}`. Sets `candidate.chosen = true`, deletes the other drafts of its group, and returns `{ "song": Song }`. The song then behaves like any other song (listed, editable, printable).
+
 ### `POST /api/songs`
 
-Generate a song from a seed card the user has confirmed (and possibly edited).
+Generate one song from a seed card. Kept for tools and tests; the app uses `/api/candidates`.
 
 Request: `{ "seed": SeedCard, "bars": 16 }`. `bars` is optional (default 16; 8 when the motif is shorter than 4 bars).
 
-Response: `201 { "song": Song }`. The new song has default sections (开头, 展开, 高潮, 结尾 for 16 bars), all faders at 0.8, no locks, and controls at 0.5.
+Response: `201 { "song": Song }`. The new song has default sections (开头, 主歌, 副歌, 结尾 for 16 bars), all faders at 0.8, `master` at volume 0.8 and space `room`, no locks, and controls at 0.5. Every track has one region per section; a region whose track has nothing to play there has `play: false`.
+
+Lyrics on a new song: with a model, the vocal notes get lyrics written from the text input and the photos; offline, every vocal note gets the syllable 啦 so the line can still be sung as a guide tone, and the user can type lyrics.
 
 ### `GET /api/songs`
 
@@ -131,13 +165,19 @@ Response: `{ "song": Song }`.
 | `setTrackMute` | `track`, `muted` | Long press on a track key |
 | `setInstrument` | `track`, `instrument` | Instrument id from the catalogue |
 | `replaceNotes` | `track`, `from` tick, `to` tick, `notes` | Replaces every note starting in [from, to) on that track. Adds a lock for that track in the sections touched. Not allowed on `ambience`. On `vocal`, notes use the vocal note shape and may carry `lyric` and `lineEnd`, so lyrics survive a pitch edit |
-| `setLyrics` | `section`, `text` | Assigns the text syllable by syllable to vocal notes in that section, one character per note for Chinese. Answers `422 cannot_apply` with `error.detail.noteCount` and `error.detail.syllableCount` when they differ |
-| `setRhythm` | `family`, `presetId` | Guitar rhythm by hand; overrides density until density is turned again |
+| `setLyrics` | `section`, `text` | Assigns the text syllable by syllable to vocal notes in that section, one character per note for Chinese; punctuation and spaces are ignored. When `text` contains line breaks, each line is matched to one lyric line of the section (the vocal notes up to each `lineEnd`), and `error.detail.lines` lists `{ index, noteCount, syllableCount }` for every line that does not fit. Without line breaks the whole section must fit, with `error.detail.noteCount` and `error.detail.syllableCount` on a mismatch. Both answer `422 cannot_apply` |
+| `setRhythm` | `family`, `presetId` | Guitar rhythm by hand; overrides density until density is turned again. Kept for tools; the app uses `setRegion` |
 | `lock` | `track`?, `section`? | Adds a lock (at least one field) |
 | `unlock` | `track`?, `section`? | Removes exactly that lock |
 | `setSections` | `sections` | Replaces the section list; must be contiguous and cover every bar |
 | `setTitle` | `title` | |
-| `setCard` | any of `style`, `line`, `message`, `photoAssetId`, `showPhoto`, `city`, `showCity` | Card fields shown on the preview. Changing any of them clears `frontAssetId` and `backAssetId`, so a new preview is needed before printing |
+| `setCard` | any of `style`, `line`, `message`, `photoAssetIds`, `coverAssetId`, `showPhoto`, `city`, `showCity` | Card fields shown on the preview. `coverAssetId` must be one of `photoAssetIds`; setting `style` to `text` removes `coverAssetId`, and setting a photo style without a cover picks the first photo. Changing any field clears `frontAssetId`, so a new preview is needed before printing |
+| `setRegion` (M2) | `track`, `section`, any of `play`, `complexity`, `intensity`, `style` | How one track plays in one section (the XY pad and style chips). Regenerates that track in that section and locks it there. `play: false` removes its notes in that section |
+| `copyRegion` (M2) | `track`, `section` | "每一段都这样": copies that region's `complexity`, `intensity` and `style` to every section of the track (keeping each section's `play`), regenerates, and locks the track |
+| `setLead` (M2) | `section`, `track`: `vocal` \| `melody` \| `guitar` \| `null` | Who carries the section. Raises the lead's intensity by about 0.15 and lowers the others' by about 0.1 in unlocked regions of that section; when the vocal leads, an unlocked melody region switches to `answer`. `null` removes the lead and restores the regions' previous values |
+| `shiftRegister` (M2) | `track`, `section`, `direction`: `up` \| `down` | "高一点 / 低一点". Vocal and melody: every note in the section moves one scale step in the song's key. Guitar: the next voicing up or down the neck. Bass: one octave, within E1–G3. Not allowed on drums and ambience (`422`); `422` too when the move would leave the instrument's range |
+| `revertMelody` (M2) | `section` | "用回我哼的": restores the melody and vocal pitches of that section from the seed motif, keeping lyrics where the note count is unchanged. `422` when the song has no motif |
+| `setMaster` (M2) | any of `volume` 0–1, `space`: `dry` \| `room` \| `hall` | Whole-song volume and reverb |
 | `setVocalTake` (v2) | `assetId` | Uses the user's own recording as the vocal track: `source = "recording"`, `renderAssetId = assetId` |
 
 Mapping of the feel knobs. The app sends absolute values; the panel's encoder deltas are turned into values by the app (one detent = 0.02).
@@ -152,7 +192,7 @@ If the song's meter has no preset at the requested rhythm level (in `rhythm-pres
 
 ### `POST /api/songs/{id}/another`
 
-"Another take". Regenerates the unlocked content of one section.
+"Another take" (再演一次 / 换一段). Regenerates the unlocked content of one section, keeping each region's `play`, `complexity`, `intensity` and `style`.
 
 Request: `{ "baseRevision": 12, "section": "s-verse", "track": "guitar" }`. `track` is optional: without it, every unlocked track in the section is regenerated; with it, only that track. The app sends `track` when a track key is selected.
 
@@ -174,9 +214,21 @@ Request: `{ "baseRevision": 12 }`. Takes back the most recent action that has no
 
 `{ "history": [ { "revision", "at", "action" } ] }`, newest first, for the study log and debugging. `action` is the op or endpoint name.
 
-### `POST /api/songs/{id}/lyrics` (v2)
+### `POST /api/songs/{id}/lyrics` (M2)
 
-Write lyrics for a section from the song's mood and the user's text input, one syllable per vocal note. Request: `{ "baseRevision", "section", "hint"? }`. Response: `{ "song": Song }`. Offline: `503`.
+Rewrite lyrics with a model, one syllable per vocal note, so the result always fits the melody.
+
+Request: `{ "baseRevision", "sections"?: [id], "keep"?: { "<sectionId>": [lineIndex] }, "themes": ["海", "想家"], "tone": "plain" | "subtle" | "playful", "rhyme": true }`. Without `sections`, every section with vocal notes is rewritten. Lines listed in `keep` stay as they are ("保留"). Response: `{ "song": Song }`. Offline or when the model call fails after its timeout (20 s for this endpoint): `503 offline_unavailable`; typing lyrics with `setLyrics` always works.
+
+### `POST /api/songs/{id}/lyrics/alternatives` (M2)
+
+Three other wordings of one lyric line, each with exactly that line's number of notes ("换个说法").
+
+Request: `{ "section", "line": lineIndex, "themes"?, "tone"?, "rhyme"? }`. Response: `{ "alternatives": [ { "text": "我把乡愁说给海听", "note": "更含蓄" } ] }`. The song does not change; the app applies a choice with `setLyrics`. Offline: `503`.
+
+### `GET /api/songs/{id}/lyrics/themes` (M2)
+
+Suggested themes for the lyrics page, with where each came from: `{ "themes": [ { "text": "海", "source": "photo" | "text" | "sound" | "hum" } ] }`. Offline: keywords from the text input and the photos' colour labels.
 
 ### Vocal playback before synthesis
 
@@ -194,11 +246,17 @@ The song as a file. MIDI carries all six tracks; MusicXML and ABC carry melody, 
 
 ### `POST /api/songs/{id}/card/preview`
 
-Render the card images for the current card fields. Request: `{ "baseRevision" }`. Response: `{ "song": Song }` with `card.frontAssetId` and `card.backAssetId` set (the back image carries the QR code), and a reserved `card.share` (`state: "reserved"`) so the QR code is final before printing. Stylisation by model is v2; in v1 and offline, `ink`, `comic` and `xieyi` use local filters.
+Render the print image for the current card fields. Request: `{ "baseRevision" }`. Response: `{ "song": Song }` with `card.frontAssetId` set and a reserved `card.share` (`state: "reserved"`) so the QR code is final before printing.
+
+The print image is 1260 × 840 px, the Instax Wide image area: the cover photo (stylised by `style`) fills the top, and a paper-coloured strip at the bottom holds the title, `line`, the city and date (city only when `showCity`), and the QR code with a small note mark in its centre. Nothing is printed over the photo. With style `text` the top shows `line` (or the title) large on paper. Stylisation by model is v2; offline, `ink`, `comic` and `xieyi` use local filters.
 
 ### `POST /api/songs/{id}/card/print`
 
-Print the previewed card. Request: `{ "baseRevision" }`. Refused with `422 cannot_apply` unless a preview exists for the current card fields, so nothing is printed without a preview. Response: `{ "song": Song }` with `card.printedAt` set. Printer errors (no paper, not connected) answer `422` with `error.detail.printer`.
+Print the previewed card. Request: `{ "baseRevision" }`. Refused with `422 cannot_apply` unless a preview exists for the current card fields, so nothing is printed without a preview. Response: `{ "song": Song }` with `card.printedAt` set. Printer errors (no film, not connected) answer `422` with `error.detail.printer`.
+
+### `GET /api/printer` (M2)
+
+`{ "printer": { "kind": "instax" | "thermal" | "dry_run", "connected": true, "paper": "ok" | "out" | "unknown", "remaining": 7 } }`. `remaining` is the number of film sheets left when the printer reports it, else `null`. The card screen shows it.
 
 ### `POST /api/songs/{id}/share` (v2)
 
@@ -208,7 +266,34 @@ Upload the song page (audio, real photo if `showPhoto`, city if `showCity`, mess
 
 Resolve a scanned card. Response: `{ "songId": "…" }` when the song is on this device. For a song made on another FretCase (v2), the server fetches it from the song page; offline it answers `503`.
 
-QR codes encode the song page URL, `https://<song-page-host>/s/{shareId}`. The app recognises that pattern when scanning and calls this endpoint.
+QR codes encode the song page URL, `{FRETCASE_SHARE_BASE}/s/{shareId}`. `FRETCASE_SHARE_BASE` defaults to the server's own origin (`https://<pi>:8443`) until upload (v2) gives songs a public host. The app recognises the `/s/{shareId}` pattern when scanning and calls this endpoint.
+
+### `GET /s/{shareId}` (M2)
+
+The song page, for whoever scans the card. An HTML page built from the app's second entry point (`app/song.html`); the server serves the same file for every `/s/*` path. It reads `shareId` from its URL and loads the endpoint below. It must work on a phone browser with no login.
+
+### `GET /api/share/{shareId}/page` (M2)
+
+What the song page shows, with nothing private:
+
+```json
+{
+  "page": {
+    "title": "海边的傍晚",
+    "subtitle": "黄昏民谣",
+    "line": "海风把傍晚吹进歌里",
+    "city": "厦门",
+    "date": "2026-11-19",
+    "message": "在厦门给你写了首歌，回来唱给你听。",
+    "photos": ["/api/share/k3Hq9xV2mPzT/assets/a-photo-01"],
+    "card": "/api/share/k3Hq9xV2mPzT/assets/a-card-print-01",
+    "lyrics": [ { "section": "主歌", "lines": ["海风吹过傍晚的岸", "灯一盏一盏亮起来"] } ]
+  },
+  "song": Song
+}
+```
+
+`city` only when `showCity`; `photos` only when `showPhoto` (in `photoAssetIds` order, else an empty list); `card` only after a print or preview. `song` is the full song for playback with `seed` and `provenance` removed and `assets` limited to those the page uses (photos, ambience clips, vocal render). `GET /api/share/{shareId}/assets/{assetId}` serves only those assets. `404` for an unknown share.
 
 ## Location
 

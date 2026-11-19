@@ -25,6 +25,8 @@ FretCase grows out of [FretStudio](https://github.com/Mr-Sushi/FretStudio) and r
 | [docs/design.md](docs/design.md) | 设计：场景、面板布局、控件、卡片、硬件、供电、分期 |
 | [docs/architecture.md](docs/architecture.md) | 技术架构：模块划分、技术选型、和 FretStudio 的不同 |
 | [docs/porting-from-fretstudio.md](docs/porting-from-fretstudio.md) | 从 FretStudio 移植哪些模块、不移植哪些 |
+| [docs/ui/](docs/ui/) | 第二阶段的界面设计：采集、选一首、打磨、音轨、歌词、做卡、歌曲页 |
+| [docs/milestone-2.md](docs/milestone-2.md) | 第二阶段的分工与卡片模块接口 |
 | [docs/model/index.html](docs/model/index.html) | 可交互的 3D 原型：控件能操作、能出声，下载后用浏览器打开 |
 | [AGENTS.md](AGENTS.md) | 给开发代理的规则 |
 

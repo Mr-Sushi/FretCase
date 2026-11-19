@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>改歌词</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <a href="Shape.dc.html" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #4A3A2D; color: #F3E9DA; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 15px">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M8 1L3 6l5 5" stroke="#F3E9DA" stroke-width="1.8" fill="none"></path></svg>
+      回到整首
+    </a>
+    <div role="tablist" aria-label="改什么" style="display: flex; padding: 4px; border-radius: 12px; background: #2A1F18; border: 1px solid #4A3A2D">
+      <a href="Detail.dc.html" role="tab" aria-selected="false" style="height: 38px; padding: 0 18px; border-radius: 9px; color: #BFAE98; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">音轨</a>
+      <span role="tab" aria-selected="true" style="height: 38px; padding: 0 18px; border-radius: 9px; background: #F3E9DA; color: #1C1410; font-size: 15px; font-weight: 700; display: flex; align-items: center">歌词</span>
+    </div>
+    <span style="margin-left: 10px; font-size: 14px; color: #BFAE98">整首歌词都在这里，改完点一句就能听到唱出来的样子</span>
+    <button type="button" style="margin-left: auto; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">撤销</button>
+  </header>
+
+  <main style="flex: 1; display: flex; gap: 18px; padding: 18px 28px 22px; min-height: 0">
+
+    <section aria-label="整首歌词" style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+        <div style="border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: center; gap: 10px; height: 36px">
+            <h2 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 18px; font-weight: 700">{{sec.name}}</h2>
+            <span style="font-size: 13px; color: {{sec.noteColor}}">{{sec.note}}</span>
+            <button type="button" style="margin-left: auto; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #4A3A2D; background: transparent; color: #D4AE6A; font-size: 13px">整段重写</button>
+          </div>
+          <sc-for list="{{sec.lines}}" as="l" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px; border-radius: 12px; background: {{l.bg}}; border: 1px solid {{l.border}}">
+              <button type="button" onClick="{{l.pick}}" aria-label="选这一句并试听" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: #3A2C22; display: flex; align-items: center; justify-content: center">
+                <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#D4AE6A"></path></svg>
+              </button>
+              <label for="{{l.id}}" style="position: absolute; left: -9999px">{{sec.name}}第 {{l.no}} 句</label>
+              <input id="{{l.id}}" value="{{l.text}}" style="flex: 1; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid #4A3A2D; background: #1C1410; color: #F3E9DA; font-size: 21px; padding: 0 12px">
+              <span style="width: 108px; font-size: 12px; line-height: 1.4; white-space: pre-line; color: {{l.countColor}}">{{l.count}}</span>
+              <span style="width: 70px; font-size: 12px; line-height: 1.4; color: {{l.rhymeColor}}">{{l.rhyme}}</span>
+              <button type="button" aria-pressed="{{l.lockOn}}" onClick="{{l.lock}}" style="width: 56px; height: 40px; border-radius: 10px; border: 1px solid {{l.lockBorder}}; background: {{l.lockBg}}; color: {{l.lockFg}}; font-size: 13px">{{l.lockLabel}}</button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </section>
+
+    <aside style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+      <section aria-label="换个说法" style="border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">“{{selText}}”换个说法</h2>
+        <div style="font-size: 13px; color: #BFAE98; margin-top: -2px">都是 {{selNotes}} 个字，不用改旋律</div>
+        <sc-for list="{{alts}}" as="a" hint-placeholder-count="3">
+          <button type="button" style="min-height: 46px; padding: 8px 14px; border-radius: 12px; border: 1px solid #4A3A2D; background: #2A1F18; color: #F3E9DA; font-size: 18px; text-align: left; display: flex; align-items: center; gap: 10px">
+            <span style="flex: 1">{{a.t}}</span>
+            <span style="font-size: 12px; color: #BFAE98">{{a.why}}</span>
+          </button>
+        </sc-for>
+      </section>
+
+      <section aria-label="重写的方向" style="flex: 1; border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">这首歌在说什么</h2>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <sc-for list="{{themes}}" as="t" hint-placeholder-count="5">
+            <button type="button" aria-pressed="{{t.on}}" onClick="{{t.flip}}" style="height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.fg}}; font-size: 14px">{{t.label}}<span style="font-size: 11px; opacity: 0.75; margin-left: 6px">{{t.src}}</span></button>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font-size: 14px; font-weight: 700; margin-bottom: 6px">语气</div>
+          <div role="radiogroup" aria-label="语气" style="display: flex; gap: 8px">
+            <sc-for list="{{tones}}" as="t" hint-placeholder-count="3">
+              <button type="button" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.fg}}; font-size: 14px">{{t.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 14px; font-weight: 700; margin-bottom: 6px">押韵</div>
+          <div role="radiogroup" aria-label="押韵" style="display: flex; gap: 8px">
+            <sc-for list="{{rhymes}}" as="t" hint-placeholder-count="2">
+              <button type="button" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.fg}}; font-size: 14px">{{t.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <button type="button" style="margin-top: auto; height: 54px; border-radius: 14px; border: 0; background: #D4AE6A; color: #1C1410; font-size: 17px; font-weight: 700">按这些重写没保留的句子</button>
+        <div style="font-size: 12px; color: #9C8B76; text-align: center; margin-top: -6px">字数会跟着旋律走；没联网时用本机的词库</div>
+      </section>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'c1', locks: { v1: true }, themes: { sea: true, wind: true, dusk: true, home: true, lamp: false }, tone: 'plain', rhyme: 'yes' };
+  }
+  renderVals() {
+    const S = [
+      { name: '主歌', lines: [
+        { id: 'v1', text: '海风吹过傍晚的岸', notes: 8, end: 'àn' },
+        { id: 'v2', text: '灯一盏一盏亮起来', notes: 7, end: 'ái' }] },
+      { name: '副歌', lines: [
+        { id: 'c1', text: '我把想家唱给海听', notes: 8, end: 'īng' },
+        { id: 'c2', text: '它把回答还给风', notes: 7, end: 'ēng' }] },
+      { name: '结尾', lines: [
+        { id: 'e1', text: '远方的灯亮了', notes: 6, end: 'le' },
+        { id: 'e2', text: '我也该回去了', notes: 6, end: 'le' }] }
+    ];
+    const notes = { '主歌': '第 2 句多了一个字', '副歌': 'ing / eng 押韵，很顺', '结尾': '两句都以“了”结尾，可以换一个' };
+    const noteColors = { '主歌': '#F0A07A', '副歌': '#9FC98A', '结尾': '#F0A07A' };
+    let selLine = null;
+    const sections = S.map((sec) => ({
+      name: sec.name, note: notes[sec.name], noteColor: noteColors[sec.name],
+      lines: sec.lines.map((l, i) => {
+        const on = this.state.sel === l.id;
+        if (on) selLine = l;
+        const chars = l.text.length, ok = chars === l.notes;
+        const locked = !!this.state.locks[l.id];
+        return {
+          id: l.id, no: String(i + 1), text: l.text,
+          count: ok ? chars + ' 字 / ' + l.notes + ' 个音\n正好' : chars + ' 字 / ' + l.notes + ' 个音\n多 ' + (chars - l.notes) + ' 字',
+          countColor: ok ? '#9FC98A' : '#F0A07A',
+          rhyme: '韵脚 ' + l.end, rhymeColor: '#BFAE98',
+          bg: on ? '#2E2219' : 'transparent', border: on ? '#D4AE6A' : 'transparent',
+          lockOn: locked ? 'true' : 'false', lockLabel: locked ? '已保留' : '保留',
+          lockBg: locked ? '#D4AE6A' : 'transparent', lockFg: locked ? '#1C1410' : '#BFAE98', lockBorder: locked ? '#D4AE6A' : '#4A3A2D',
+          pick: () => this.setState({ sel: l.id }),
+          lock: () => this.setState({ locks: { ...this.state.locks, [l.id]: !locked } })
+        };
+      })
+    }));
+    const ALTS = {
+      v1: [['晚风吹过海边的岸', '更顺口'], ['潮水漫过傍晚的岸', '多些画面'], ['海风翻过黄昏的岸', '更有动作']],
+      v2: [['灯一盏盏亮起来', '去掉一个字，正好'], ['街灯一盏盏亮开', '韵脚换成 ai'], ['灯火慢慢亮起来', '更柔']],
+      c1: [['我把乡愁说给海听', '更含蓄'], ['我把晚风折成船寄', '换个画面'], ['我把心事交给潮汐', '押 i 韵']],
+      c2: [['海把回声还给风', '和上一句呼应'], ['浪替我轻声回应', '押 ing 韵'], ['它把答案交给风', '更直白']],
+      e1: [['远方的灯亮起', '收在 i 韵'], ['远处灯火亮着', '避开重复的了'], ['海上的灯亮了', '回到海']],
+      e2: [['我也该回去了', '保留原句'], ['我该转身回家', '点题：家'], ['风送我回家吧', '押 a 韵']]
+    };
+    const sel = selLine || S[1].lines[0];
+    const alts = ALTS[sel.id].map(([t, why]) => ({ t, why }));
+    const T = [['sea', '海', '照片'], ['wind', '风', '你写的'], ['dusk', '傍晚', '你写的'], ['home', '想家', '你写的'], ['lamp', '灯', '新加的']];
+    const themes = T.map(([id, label, src]) => {
+      const on = !!this.state.themes[id];
+      return { label, src, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : 'transparent', fg: on ? '#1C1410' : '#BFAE98', border: on ? '#F3E9DA' : '#4A3A2D', flip: () => this.setState({ themes: { ...this.state.themes, [id]: !on } }) };
+    });
+    const radio = (key, defs) => defs.map(([id, label]) => {
+      const on = this.state[key] === id;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : 'transparent', fg: on ? '#1C1410' : '#BFAE98', border: on ? '#F3E9DA' : '#4A3A2D', pick: () => this.setState({ [key]: id }) };
+    });
+    return {
+      sections, alts, themes,
+      selText: sel.text, selNotes: String(sel.notes),
+      tones: radio('tone', [['plain', '直白'], ['subtle', '含蓄'], ['playful', '俏皮']]),
+      rhymes: radio('rhyme', [['yes', '每段押韵'], ['no', '不强求']])
+    };
+  }
+}
+</script>
+</body>
+</html>

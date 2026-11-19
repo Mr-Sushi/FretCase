@@ -77,6 +77,26 @@ def test_song_example_is_consistent(path):
     for clip in song["tracks"]["ambience"]["clips"]:
         assert clip["assetId"] in asset_ids
 
+    # Regions: one per section, in section order; a silent region has no notes or clips there.
+    bar = bar_ticks(song)
+    for track_id, track in song["tracks"].items():
+        assert [r["section"] for r in track["regions"]] == [s["id"] for s in sections], track_id
+        for region, section in zip(track["regions"], sections):
+            if region["play"]:
+                continue
+            start, end = section["startBar"] * bar, section["endBar"] * bar
+            assert not [n for n in track.get("notes", []) if start <= n["start"] < end], f"{track_id} plays in a silent region"
+            assert not [c for c in track.get("clips", []) if c["start"] < end and c["start"] + c["duration"] > start]
+
+    photo_ids = {a["id"] for a in song["assets"] if a["role"] == "photo"}
+    card = song.get("card")
+    if card:
+        assert set(card.get("photoAssetIds", [])) <= photo_ids
+        if card["style"] == "text":
+            assert "coverAssetId" not in card
+        else:
+            assert card["coverAssetId"] in card["photoAssetIds"]
+
     presets = {p["id"]: p for p in load(PRESETS)["presets"]}
     rhythm = song["tracks"]["guitar"]["rhythm"]
     preset = presets[rhythm["presetId"]]
@@ -96,6 +116,14 @@ def test_song_example_is_consistent(path):
         ("unknown top-level field", lambda s: s.update(colour="red")),
         ("unknown note field", lambda s: s["tracks"]["melody"]["notes"][0].update(lyric="x")),
         ("volume above 1", lambda s: s["tracks"]["drums"].update(volume=1.2)),
+        ("ten photos", lambda s: s["seed"]["inputs"].extend({"kind": "photo", "assetId": f"a-photo-x{i}"} for i in range(8))),
+        ("ten photos on the card", lambda s: s["card"].update(photoAssetIds=[f"a-photo-x{i}" for i in range(10)])),
+        ("track without regions", lambda s: s["tracks"]["guitar"].pop("regions")),
+        ("region intensity above 1", lambda s: s["tracks"]["drums"]["regions"][0].update(intensity=1.5)),
+        ("bass cannot lead", lambda s: s["sections"][0].update(lead="bass")),
+        ("unknown master space", lambda s: s["master"].update(space="cave")),
+        ("old single photo field", lambda s: s["card"].update(photoAssetId="a-photo-01")),
+        ("candidate index above 2", lambda s: s["candidate"].update(index=3)),
     ],
 )
 def test_song_schema_rejects(why, change):

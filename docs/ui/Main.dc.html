@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>采集</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #D4AE6A">FretCase</div>
+    <nav aria-label="步骤" style="display: flex; gap: 6px; margin-left: 12px">
+      <span style="padding: 7px 14px; border-radius: 999px; background: #D4AE6A; color: #1C1410; font-size: 15px; font-weight: 700">① 采集</span>
+      <span style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px">② 选一首</span>
+      <span style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px">③ 打磨</span>
+      <span style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px">④ 做卡</span>
+    </nav>
+    <div style="margin-left: auto; display: flex; gap: 8px; font-size: 13px; color: #BFAE98">
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">联网</span>
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">面板已连接</span>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; gap: 24px; padding: 24px 28px; min-height: 0">
+
+    <section aria-label="采集" style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+      <div style="flex: 1; border-radius: 16px; overflow: hidden; position: relative; background: #120D0A; border: 1px solid #3A2C22">
+
+        <sc-if value="{{isPhoto}}" hint-placeholder-val="{{ true }}">
+          <img src="/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3" alt="刚拍的照片：桌上的一杯咖啡" style="width: 100%; height: 100%; object-fit: cover; display: block">
+          <div style="position: absolute; left: 20px; bottom: 20px; right: 20px; display: flex; align-items: center; gap: 12px">
+            <span style="display: flex; gap: 6px; padding: 6px; border-radius: 12px; background: rgba(28,20,16,0.82)">
+              <img src="/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3" alt="" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; border: 2px solid #F3E9DA">
+              <img src="/_blob/f713cc8c747b525826bc790aa1701c6f" alt="" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover">
+              <img src="/_blob/e57cb72bc054f2e25610db7a42f16758" alt="" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover">
+            </span>
+            <span style="padding: 8px 14px; border-radius: 999px; background: rgba(28,20,16,0.82); font-size: 15px">3 / 9 张 · 按红键再拍</span>
+            <button type="button" style="margin-left: auto; height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid #F3E9DA; background: rgba(28,20,16,0.6); color: #F3E9DA; font-size: 16px">重拍</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isListen}}" hint-placeholder-val="{{ false }}">
+          <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px">
+            <div style="font-family: 'Noto Serif SC', serif; font-size: 30px; font-weight: 600">{{listenTitle}}</div>
+            <div style="color: #BFAE98; font-size: 17px">{{listenHint}}</div>
+            <button type="button" aria-label="按住录音" style="width: 168px; height: 168px; border-radius: 50%; border: 6px solid #5A2A22; background: #D64533; color: #FFF6EE; font-size: 20px; font-weight: 700">按住</button>
+            <div aria-hidden="true" style="display: flex; align-items: center; gap: 4px; height: 64px">
+              <sc-for list="{{bars}}" as="b" hint-placeholder-count="40">
+                <span style="width: 6px; border-radius: 3px; background: #E2725B; height: {{b.h}}px"></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isText}}" hint-placeholder-val="{{ false }}">
+          <div style="height: 100%; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 20px">
+            <label for="words" style="font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 600">写一句此刻的话</label>
+            <textarea id="words" style="flex: 1; resize: none; border-radius: 14px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font-size: 24px; line-height: 1.6; padding: 20px">海边的傍晚，风很大，有点想家</textarea>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+              <span style="color: #BFAE98; font-size: 15px">也可以对着箱子说出来</span>
+              <button type="button" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">按住说话</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div role="tablist" aria-label="采集方式" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{modes}}" as="m" hint-placeholder-count="4">
+          <button type="button" role="tab" aria-selected="{{m.on}}" onClick="{{m.pick}}" style="height: 72px; border-radius: 14px; border: 1px solid {{m.border}}; background: {{m.bg}}; color: {{m.fg}}; font-size: 19px; font-weight: 700; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+            <span>{{m.label}}</span>
+            <span style="font-size: 12px; font-weight: 400; opacity: 0.8">{{m.sub}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <aside aria-label="已收集" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 600">今天收集到的</div>
+      <div style="color: #BFAE98; font-size: 14px; margin-top: -8px">一样就够；不拍照，写一句话也行</div>
+
+      <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: #2A1F18">
+        <div aria-hidden="true" style="width: 64px; height: 64px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; border-radius: 10px; overflow: hidden">
+          <img src="/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3" alt="" style="width: 100%; height: 31px; object-fit: cover">
+          <img src="/_blob/f713cc8c747b525826bc790aa1701c6f" alt="" style="width: 100%; height: 31px; object-fit: cover">
+          <img src="/_blob/e57cb72bc054f2e25610db7a42f16758" alt="" style="width: 100%; height: 31px; object-fit: cover">
+          <span style="background: #3A2C22"></span>
+        </div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 16px; font-weight: 700">照片 · 3 张</div>
+          <div style="font-size: 13px; color: #BFAE98">最多 9 张；暖色、夜色 → 歌偏温暖</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: #2A1F18">
+        <div aria-hidden="true" style="width: 64px; height: 64px; border-radius: 10px; background: #3A2620; display: flex; align-items: center; justify-content: center; gap: 3px">
+          <span style="width: 4px; height: 18px; border-radius: 2px; background: #E2725B"></span>
+          <span style="width: 4px; height: 34px; border-radius: 2px; background: #E2725B"></span>
+          <span style="width: 4px; height: 24px; border-radius: 2px; background: #E2725B"></span>
+          <span style="width: 4px; height: 40px; border-radius: 2px; background: #E2725B"></span>
+          <span style="width: 4px; height: 16px; border-radius: 2px; background: #E2725B"></span>
+        </div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 16px; font-weight: 700">哼唱 · 9 秒</div>
+          <div style="font-size: 13px; color: #BFAE98">这段会成为副歌的旋律</div>
+        </div>
+        <button type="button" aria-label="试听哼唱" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2l10 6-10 6z" fill="#F3E9DA"></path></svg>
+        </button>
+      </div>
+
+      <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: #2A1F18">
+        <div aria-hidden="true" style="width: 64px; height: 64px; border-radius: 10px; background: #33291C; display: flex; align-items: center; justify-content: center; font-family: 'Noto Serif SC', serif; font-size: 28px; color: #D4AE6A">字</div>
+        <div style="flex: 1; min-width: 0">
+          <div style="font-size: 16px; font-weight: 700">一句话</div>
+          <div style="font-size: 13px; color: #BFAE98; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">「海边的傍晚，风很大，有点想家」</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; border: 1px dashed #4A3A2D; color: #9C8B76">
+        <div style="width: 64px; height: 64px; border-radius: 10px; border: 1px dashed #4A3A2D; display: flex; align-items: center; justify-content: center; font-size: 26px">+</div>
+        <div style="font-size: 14px">环境声（可选）：海浪、街道、雨声</div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+        <a href="Pick.dc.html" style="height: 68px; border-radius: 16px; background: #D4AE6A; color: #1C1410; font-size: 22px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">做成歌</a>
+        <div style="text-align: center; color: #BFAE98; font-size: 13px">约 10 秒，会给你三首挑</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer style="height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 18px; padding: 0 28px; border-top: 1px solid #3A2C22; color: #9C8B76; font-size: 13px">
+    <span>箱子上：</span>
+    <span>红键 短按拍照 · 按住哼唱</span>
+    <span>撤销键 退回上一步</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { mode: 'photo' }; }
+  renderVals() {
+    const mode = this.state.mode;
+    const defs = [
+      { id: 'photo', label: '拍照', sub: '红键短按' },
+      { id: 'hum', label: '哼一段', sub: '红键按住' },
+      { id: 'sound', label: '录声音', sub: '海浪、街道' },
+      { id: 'text', label: '写一句', sub: '也可以说' }
+    ];
+    const modes = defs.map((d) => {
+      const on = d.id === mode;
+      return { ...d, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : '#2A1F18', fg: on ? '#1C1410' : '#F3E9DA', border: on ? '#F3E9DA' : '#4A3A2D', pick: () => this.setState({ mode: d.id }) };
+    });
+    const heights = [10, 18, 30, 22, 40, 52, 34, 26, 44, 58, 48, 30, 20, 36, 50, 62, 44, 28, 18, 26, 38, 54, 46, 32, 22, 14, 24, 40, 56, 42, 30, 20, 34, 48, 36, 24, 16, 28, 20, 12];
+    return {
+      modes,
+      isPhoto: mode === 'photo',
+      isListen: mode === 'hum' || mode === 'sound',
+      isText: mode === 'text',
+      listenTitle: mode === 'hum' ? '哼几句你脑子里的调子' : '录下周围的声音',
+      listenHint: mode === 'hum' ? '不用歌词，啦啦啦就行，5 到 20 秒' : '海浪、街道、雨声都可以，10 秒左右',
+      bars: heights.map((h) => ({ h }))
+    };
+  }
+}
+</script>
+</body>
+</html>

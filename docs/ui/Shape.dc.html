@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>打磨</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #D4AE6A">FretCase</div>
+    <nav aria-label="步骤" style="display: flex; gap: 6px; margin-left: 12px">
+      <a href="Main.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">① 采集</a>
+      <a href="Pick.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">② 选一首</a>
+      <span style="padding: 7px 14px; border-radius: 999px; background: #D4AE6A; color: #1C1410; font-size: 15px; font-weight: 700">③ 打磨</span>
+      <a href="Card.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">④ 做卡</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; gap: 8px; font-size: 13px; color: #BFAE98">
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">联网</span>
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">面板已连接</span>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; gap: 18px; padding: 20px 28px 22px; min-height: 0">
+
+    <div style="display: flex; align-items: center; gap: 16px">
+      <button type="button" aria-label="播放" style="width: 56px; height: 56px; border-radius: 50%; border: 0; background: #D4AE6A; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#1C1410"></path></svg>
+      </button>
+      <div>
+        <h1 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 700">海边的傍晚</h1>
+        <div style="font-size: 14px; color: #BFAE98">黄昏民谣 · 1 分 40 秒 · 点一段只听那一段</div>
+      </div>
+      <div style="margin-left: auto; display: flex; gap: 10px">
+        <button type="button" style="height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">撤销</button>
+        <a href="Detail.dc.html" style="height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #4A3A2D; color: #F3E9DA; font-size: 15px; text-decoration: none; display: flex; align-items: center">音轨和歌词</a>
+        <a href="Card.dc.html" style="height: 48px; padding: 0 22px; border-radius: 12px; background: #D4AE6A; color: #1C1410; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center">做卡</a>
+      </div>
+    </div>
+
+    <section aria-label="段落" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="4">
+        <div style="border-radius: 16px; background: {{s.bg}}; border: 2px solid {{s.border}}; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 196px; box-sizing: border-box">
+          <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 10px">
+            <span style="display: flex; align-items: baseline; gap: 8px">
+              <span style="font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 700">{{s.name}}</span>
+              <span style="font-size: 13px; color: #BFAE98">{{s.take}}</span>
+              <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; font-size: 12px; color: #D4AE6A">已保留</span></sc-if>
+            </span>
+            <span style="font-size: 13px; color: #BFAE98">{{s.feel}}</span>
+            <span style="font-size: 16px; line-height: 1.7; color: #E8DCCB; white-space: pre-line">{{s.lyrics}}</span>
+          </button>
+          <sc-if value="{{s.on}}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: auto; display: flex; gap: 8px">
+              <button type="button" style="flex: 1; height: 44px; border-radius: 10px; border: 0; background: #F3E9DA; color: #1C1410; font-size: 15px; font-weight: 700">换一段</button>
+              <button type="button" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 14px">保留</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </section>
+
+    <div style="flex: 1; display: flex; gap: 20px; min-height: 0">
+
+      <section aria-label="乐手" style="flex: 1 1 auto; border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+        <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700">乐手</h2>
+          <span style="font-size: 13px; color: #BFAE98">{{leadNote}}</span>
+        </div>
+        <sc-for list="{{tracks}}" as="t" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 12px; height: 46px; opacity: {{t.op}}">
+            <span style="width: 12px; height: 28px; border-radius: 4px; background: {{t.c}}"></span>
+            <span style="width: 44px; font-size: 15px; font-weight: 700">{{t.name}}</span>
+            <button type="button" aria-label="换{{t.name}}的音色" style="width: 150px; height: 40px; border-radius: 10px; border: 1px solid #4A3A2D; background: #2A1F18; color: #F3E9DA; font-size: 14px; text-align: left; padding: 0 12px; display: flex; align-items: center">
+              <span style="flex: 1">{{t.sound}}</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3l4 4 4-4" stroke="#BFAE98" stroke-width="1.6" fill="none"></path></svg>
+            </button>
+            <button type="button" aria-pressed="{{t.leadOn}}" onClick="{{t.makeLead}}" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid {{t.leadBorder}}; background: {{t.leadBg}}; color: {{t.leadFg}}; font-size: 13px; font-weight: 700">主角</button>
+            <span aria-label="{{t.name}}音量" style="flex: 1; height: 8px; border-radius: 4px; background: #3A2C22; overflow: hidden"><span style="display: block; width: {{t.vol}}%; height: 8px; background: {{t.c}}"></span></span>
+            <button type="button" aria-pressed="{{t.mutedStr}}" onClick="{{t.toggle}}" style="width: 64px; height: 40px; border-radius: 10px; border: 1px solid #4A3A2D; background: {{t.muteBg}}; color: {{t.muteFg}}; font-size: 13px">{{t.muteLabel}}</button>
+          </div>
+        </sc-for>
+      </section>
+
+      <section aria-label="感觉" style="width: 360px; flex-shrink: 0; border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700">感觉</h2>
+          <span style="font-size: 13px; color: #BFAE98">对应箱子上的四个旋钮</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; flex: 1">
+          <sc-for list="{{knobs}}" as="k" hint-placeholder-count="4">
+            <div style="border-radius: 12px; background: #2A1F18; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+              <div aria-hidden="true" style="width: 64px; height: 64px; border-radius: 50%; background: #3A2C22; border: 3px solid #4A3A2D; position: relative; transform: rotate({{k.deg}}deg)">
+                <span style="position: absolute; left: 29px; top: 4px; width: 4px; height: 18px; border-radius: 2px; background: #D4AE6A"></span>
+              </div>
+              <div style="font-size: 15px; font-weight: 700">{{k.name}}</div>
+              <div style="font-size: 13px; color: #BFAE98">{{k.value}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { section: 2, muted: {}, lead: 'vocal' }; }
+  renderVals() {
+    const S = [
+      { name: '开头', take: '第 1 版', feel: '只有吉他和海浪', lyrics: '（没有歌词）', locked: false },
+      { name: '主歌', take: '第 2 版', feel: '人声进来，轻轻地', lyrics: '海风吹过傍晚的岸\n灯一盏一盏亮起来', locked: true },
+      { name: '副歌', take: '第 1 版', feel: '最满的一段，用你哼的调子', lyrics: '我把想家唱给海听\n它把回答还给风', locked: false },
+      { name: '结尾', take: '第 1 版', feel: '慢慢收，留下海浪', lyrics: '远方的灯亮了\n我也该回去了', locked: false }
+    ];
+    const sections = S.map((s, i) => {
+      const on = this.state.section === i;
+      return { ...s, on, bg: on ? '#2E2219' : '#241A14', border: on ? '#D4AE6A' : '#3A2C22', pick: () => this.setState({ section: i }) };
+    });
+    const T = [
+      ['vocal', '人声', '#E2725B', '男声', 85], ['melody', '旋律', '#E3A44A', '口琴', 55], ['guitar', '吉他', '#4FB3A6', '木吉他扫弦', 75],
+      ['bass', '贝斯', '#6C93D6', '指弹贝斯', 60], ['drums', '鼓', '#A98BD8', '刷子鼓', 40], ['amb', '环境', '#86B068', '海浪', 30]
+    ];
+    const tracks = T.map(([id, name, c, sound, vol]) => {
+      const muted = !!this.state.muted[id];
+      const lead = this.state.lead === id;
+      return {
+        name, c, sound, vol, op: muted ? 0.45 : 1,
+        mutedStr: muted ? 'true' : 'false', muteLabel: muted ? '已静音' : '静音',
+        muteBg: muted ? '#F3E9DA' : 'transparent', muteFg: muted ? '#1C1410' : '#F3E9DA',
+        leadOn: lead ? 'true' : 'false', leadBg: lead ? '#D4AE6A' : 'transparent', leadFg: lead ? '#1C1410' : '#BFAE98', leadBorder: lead ? '#D4AE6A' : '#4A3A2D',
+        toggle: () => this.setState({ muted: { ...this.state.muted, [id]: !muted } }),
+        makeLead: () => this.setState({ lead: id })
+      };
+    });
+    const leadName = T.find((t) => t[0] === this.state.lead)[1];
+    const knobs = [
+      { name: '明暗', value: '偏暖', deg: -20 }, { name: '简繁', value: '简单', deg: -70 },
+      { name: '疏密', value: '中等', deg: 10 }, { name: '速度', value: '每分钟 84 拍', deg: -35 }
+    ];
+    return { sections, tracks, knobs, leadNote: S[this.state.section].name + '由' + leadName + '当主角，其他乐手让一让' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>歌曲页：海边的傍晚</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4EDE0}
+a{color:#8A5A2E}a:hover{color:#6B4321}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4EDE0; color: #3A2A1E; font-family: 'Noto Sans SC', system-ui, sans-serif">
+  <div style="max-width: 480px; margin: 0 auto; padding-bottom: 40px">
+
+    <img src="{{mainPhoto}}" alt="写歌时拍下的照片" style="width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block">
+    <div role="group" aria-label="写歌时拍的照片" style="display: flex; gap: 8px; padding: 10px 22px 0; overflow-x: auto">
+      <sc-for list="{{photos}}" as="ph" hint-placeholder-count="3">
+        <button type="button" onClick="{{ph.pick}}" aria-label="看第 {{ph.no}} 张" aria-pressed="{{ph.on}}" style="flex-shrink: 0; width: 64px; height: 48px; padding: 0; border-radius: 8px; border: 2px solid {{ph.border}}; overflow: hidden; background: #E3D6C1">
+          <img src="{{ph.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="padding: 22px 22px 0; display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 2rem; font-weight: 700; color: #2E2018">海边的傍晚</h1>
+      <div style="font-size: 0.95rem; color: #6E5644">厦门 · 2026年11月19日</div>
+    </div>
+
+    <section aria-label="播放" style="margin: 20px 22px 0; padding: 16px; border-radius: 18px; background: #2A1F18; color: #F3E9DA; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <button type="button" aria-label="{{playLabel}}" onClick="{{toggle}}" style="width: 60px; height: 60px; border-radius: 50%; border: 0; background: #D4AE6A; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+          <sc-if value="{{playing}}" hint-placeholder-val="{{ true }}">
+            <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><rect x="3" y="2" width="4" height="14" fill="#1C1410"></rect><rect x="11" y="2" width="4" height="14" fill="#1C1410"></rect></svg>
+          </sc-if>
+          <sc-if value="{{paused}}" hint-placeholder-val="{{ false }}">
+            <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#1C1410"></path></svg>
+          </sc-if>
+        </button>
+        <div style="flex: 1; min-width: 0">
+          <div style="height: 6px; border-radius: 3px; background: #4A3A2D; overflow: hidden"><div style="width: 46%; height: 6px; background: #D4AE6A"></div></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: #BFAE98"><span>0:46</span><span>1:40</span></div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 3px; font-size: 0.7rem; color: #BFAE98; text-align: center">
+        <span style="padding: 4px 0; border-radius: 4px; background: #3A2C22">开头</span>
+        <span style="padding: 4px 0; border-radius: 4px; background: #3A2C22">主歌</span>
+        <span style="padding: 4px 0; border-radius: 4px; background: #D4AE6A; color: #1C1410; font-weight: 700">副歌</span>
+        <span style="padding: 4px 0; border-radius: 4px; background: #3A2C22">结尾</span>
+      </div>
+    </section>
+
+    <section aria-label="歌词" style="margin: 22px 22px 0; display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{lines}}" as="l" hint-placeholder-count="6">
+        <p style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: {{l.size}}; font-weight: {{l.weight}}; color: {{l.color}}; line-height: 1.5">{{l.text}}</p>
+      </sc-for>
+    </section>
+
+    <section aria-label="留言" style="margin: 26px 22px 0; padding: 18px; border-radius: 16px; background: #FBF7EF; border: 1px solid #E3D6C1">
+      <p style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 1.15rem; line-height: 1.7; color: #2E2018">在厦门给你写了首歌，回来唱给你听。</p>
+    </section>
+
+    <section aria-label="这张卡片" style="margin: 26px 22px 0; display: flex; flex-direction: column; gap: 10px">
+      <img src="/_blob/6bf1de3295a9359a9c4ee9f41be8f521" alt="印出来的卡片" style="width: 100%; border-radius: 6px; box-shadow: 0 8px 20px rgba(58,42,30,0.18); display: block">
+    </section>
+
+    <div style="margin: 26px 22px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <button type="button" style="height: 50px; border-radius: 14px; border: 1px solid #CDBBA2; background: transparent; color: #3A2A1E; font-size: 1rem; font-weight: 700">保存这首歌</button>
+      <button type="button" style="height: 50px; border-radius: 14px; border: 0; background: #2A1F18; color: #F3E9DA; font-size: 1rem; font-weight: 700">转给别人</button>
+    </div>
+
+    <div style="margin: 28px 22px 0; text-align: center; font-size: 0.8rem; color: #8C7560">FretCase</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { playing: true, photo: 0 }; }
+  renderVals() {
+    const L = ['海风吹过傍晚的岸', '灯一盏一盏亮起来', '我把想家唱给海听', '它把回答还给风', '远方的灯亮了', '我也该回去了'];
+    const now = 2;
+    const lines = L.map((text, i) => ({
+      text,
+      size: i === now ? '1.35rem' : '1.1rem',
+      weight: i === now ? 700 : 600,
+      color: i === now ? '#2E2018' : (i < now ? '#A8927C' : '#6E5644')
+    }));
+    const P = ['/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3', '/_blob/f713cc8c747b525826bc790aa1701c6f', '/_blob/e57cb72bc054f2e25610db7a42f16758'];
+    const photos = P.map((img, i) => ({ img, no: String(i + 1), on: this.state.photo === i ? 'true' : 'false', border: this.state.photo === i ? '#8A5A2E' : 'transparent', pick: () => this.setState({ photo: i }) }));
+    return {
+      photos, mainPhoto: P[this.state.photo],
+      lines,
+      playing: this.state.playing, paused: !this.state.playing,
+      playLabel: this.state.playing ? '暂停' : '播放',
+      toggle: () => this.setState({ playing: !this.state.playing })
+    };
+  }
+}
+</script>
+</body>
+</html>

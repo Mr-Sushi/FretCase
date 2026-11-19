@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>做卡</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #D4AE6A">FretCase</div>
+    <nav aria-label="步骤" style="display: flex; gap: 6px; margin-left: 12px">
+      <a href="Main.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">① 采集</a>
+      <a href="Pick.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">② 选一首</a>
+      <a href="Shape.dc.html" style="padding: 7px 14px; border-radius: 999px; color: #BFAE98; font-size: 15px; text-decoration: none">③ 打磨</a>
+      <span style="padding: 7px 14px; border-radius: 999px; background: #D4AE6A; color: #1C1410; font-size: 15px; font-weight: 700">④ 做卡</span>
+    </nav>
+    <div style="margin-left: auto; display: flex; gap: 8px; font-size: 13px; color: #BFAE98">
+      <span style="padding: 5px 10px; border: 1px solid #4A3A2D; border-radius: 999px">相纸还剩 7 张</span>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; gap: 28px; padding: 24px 28px; min-height: 0">
+
+    <section aria-label="卡片预览" style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; min-width: 0">
+      <div style="font-size: 14px; color: #BFAE98">印出来就是这样（拍立得宽幅相纸，108 × 86 毫米）</div>
+      <div style="width: 600px; height: 477px; background: #F7F3EA; border-radius: 6px; position: relative; box-shadow: 0 18px 40px rgba(0,0,0,0.45)">
+        <img src="{{preview}}" alt="卡片预览：上面是风格化的照片，下面的留白里是歌名、一句话、城市和日期，右边是带音符的二维码" style="position: absolute; left: 25px; top: 33px; width: 550px; height: 344px; object-fit: cover; display: block">
+      </div>
+      <a href="SongPage.dc.html" style="width: 600px; box-sizing: border-box; border-radius: 14px; background: #241A14; border: 1px solid #3A2C22; padding: 14px 16px; display: flex; gap: 14px; align-items: center; text-decoration: none; color: #F3E9DA">
+        <img src="/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3" alt="" style="width: 72px; height: 72px; border-radius: 10px; object-fit: cover">
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 700">扫码打开的歌曲页</span>
+          <span style="font-size: 13px; color: #BFAE98; line-height: 1.6">这首歌、真实照片、城市和你的留言</span>
+        </span>
+        <span style="font-size: 14px; color: #D4AE6A">看看</span>
+      </a>
+    </section>
+
+    <aside aria-label="卡片内容" style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+      <div>
+        <div style="font-size: 15px; font-weight: 700; margin-bottom: 10px">封面<span style="font-weight: 400; color: #BFAE98; font-size: 13px">（3 张照片里选一张印在卡上，其余在歌曲页）</span></div>
+        <div role="radiogroup" aria-label="封面照片" style="display: flex; gap: 10px">
+          <sc-for list="{{covers}}" as="c" hint-placeholder-count="3">
+            <button type="button" role="radio" aria-checked="{{c.on}}" aria-label="{{c.label}}" onClick="{{c.pick}}" style="width: 72px; height: 54px; padding: 0; border-radius: 8px; border: 2px solid {{c.border}}; background: #2A1F18; overflow: hidden">
+              <img src="{{c.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 15px; font-weight: 700; margin-bottom: 10px">画风</div>
+        <div role="radiogroup" aria-label="画风" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{styles}}" as="s" hint-placeholder-count="4">
+            <button type="button" role="radio" aria-checked="{{s.on}}" onClick="{{s.pick}}" style="padding: 0; border-radius: 10px; border: 2px solid {{s.border}}; background: #2A1F18; color: #F3E9DA; overflow: hidden; display: flex; flex-direction: column">
+              <img src="{{s.img}}" alt="" style="width: 100%; height: 62px; object-fit: cover; display: block">
+              <span style="height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700">{{s.name}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="title" style="font-size: 15px; font-weight: 700">歌名</label>
+        <input id="title" value="海边的傍晚" style="height: 48px; border-radius: 10px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font-size: 18px; padding: 0 14px">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="line" style="font-size: 15px; font-weight: 700">卡片上的一句</label>
+        <input id="line" value="海风把傍晚吹进歌里" style="height: 48px; border-radius: 10px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font-size: 18px; padding: 0 14px">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="msg" style="font-size: 15px; font-weight: 700">想对听的人说<span style="font-weight: 400; color: #BFAE98; font-size: 13px">（只在歌曲页显示）</span></label>
+        <textarea id="msg" style="height: 56px; resize: none; border-radius: 10px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font-size: 16px; padding: 10px 14px">在厦门给你写了首歌，回来唱给你听。</textarea>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <sc-for list="{{toggles}}" as="t" hint-placeholder-count="2">
+          <button type="button" role="switch" aria-checked="{{t.on}}" onClick="{{t.flip}}" style="height: 46px; border: 0; background: transparent; color: #F3E9DA; display: flex; align-items: center; gap: 12px; padding: 0; font-size: 15px; text-align: left">
+            <span style="width: 46px; height: 28px; border-radius: 14px; background: {{t.track}}; position: relative; flex-shrink: 0"><span style="position: absolute; top: 3px; left: {{t.knob}}px; width: 22px; height: 22px; border-radius: 50%; background: #F3E9DA"></span></span>
+            <span>{{t.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+        <button type="button" style="height: 64px; border-radius: 16px; border: 0; background: #D4AE6A; color: #1C1410; font-size: 22px; font-weight: 700">印出来</button>
+        <div style="text-align: center; color: #BFAE98; font-size: 13px">约 15 秒，从箱子侧面的出卡口出来</div>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { style: 'xieyi', city: true, photo: true, cover: 'coffee' }; }
+  renderVals() {
+    const T = {
+      coffee: { original: '/_blob/3b289fcda9d605e52d45c3b6f705946e', xieyi: '/_blob/cd810202653bd117cf345640fb83ce9a', comic: '/_blob/bbf5d1752532ba095b7f298bf738f7b7', ink: '/_blob/52319209855ac66635cae6d0cdb46495' },
+      cat: { original: '/_blob/8cbdfd4cb0bb6f4e914ed75981e4a65e', xieyi: '/_blob/c4bee8c2c14f634e102e5f6e247ed260', comic: '/_blob/161a2ced6de98a418862b1c30c6ce0fd', ink: '/_blob/28ecd6adb4aaedf38142f349a9302f56' },
+      rocket: { original: '/_blob/f0483fed2e8df0f16c641569bcc39c3c', xieyi: '/_blob/246f1ed94d975e34cd8a425de8575006', comic: '/_blob/3761b4311a397397a7226ec8c5c47e9b', ink: '/_blob/2a48c47b21e42511d9e63646129d13ea' }
+    };
+    const F = {
+      coffee: { original: '/_blob/edef38fe81c1ca629d53a3001fab4703', xieyi: '/_blob/6bf1de3295a9359a9c4ee9f41be8f521', comic: '/_blob/64b6e7a1c4956b9f62e0e31eb8eed254', ink: '/_blob/4433e9d6676ac5c8a49733367ae4aa63' },
+      cat: { original: '/_blob/01b5443f0d1d97128fdb033fee763b6c', xieyi: '/_blob/8a512e09bfb7c77a36afb84b62ba271a', comic: '/_blob/b5a3be644bbbbfff2ea83c644abde4ec', ink: '/_blob/789f05b5c87d13d088e88e4e68e29fbc' },
+      rocket: { original: '/_blob/eec2bb25689a1b863d26fcd4b081549f', xieyi: '/_blob/44ba6bb3b9b0f28914e5e024322e4d7d', comic: '/_blob/42545fd5839313946caa2a34e2dee769', ink: '/_blob/26c0e58c843a8be09a10d852e20b1960' }
+    };
+    const imgs = T[this.state.cover];
+    const full = F[this.state.cover];
+    const covers = [['coffee', '咖啡', '/_blob/f8c4726436ea09d5a8a8dfc4c6bf8cf3'], ['cat', '猫', '/_blob/f713cc8c747b525826bc790aa1701c6f'], ['rocket', '夜里的发射塔', '/_blob/e57cb72bc054f2e25610db7a42f16758']].map(([id, label, img]) => {
+      const on = this.state.cover === id;
+      return { label, img, on: on ? 'true' : 'false', border: on ? '#D4AE6A' : '#3A2C22', pick: () => this.setState({ cover: id }) };
+    });
+    const styles = [['original', '原图'], ['xieyi', '写意'], ['comic', '漫画'], ['ink', '水墨']].map(([id, name]) => {
+      const on = this.state.style === id;
+      return { name, img: imgs[id], on: on ? 'true' : 'false', border: on ? '#D4AE6A' : '#3A2C22', pick: () => this.setState({ style: id }) };
+    });
+    const tg = (key, label) => {
+      const on = this.state[key];
+      return { label, on: on ? 'true' : 'false', track: on ? '#D4AE6A' : '#4A3A2D', knob: on ? 21 : 3, flip: () => this.setState({ [key]: !on }) };
+    };
+    return {
+      styles, covers,
+      preview: full[this.state.style] || imgs[this.state.style],
+      toggles: [tg('city', '显示城市和日期（厦门 · 2026.11.19）'), tg('photo', '歌曲页显示真实照片')]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>音轨</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#D4AE6A}a:hover{color:#E8C98C}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; background: #1C1410; color: #F3E9DA; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 28px; border-bottom: 1px solid #3A2C22">
+    <a href="Shape.dc.html" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #4A3A2D; color: #F3E9DA; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 15px">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M8 1L3 6l5 5" stroke="#F3E9DA" stroke-width="1.8" fill="none"></path></svg>
+      回到整首
+    </a>
+    <div role="tablist" aria-label="改什么" style="display: flex; padding: 4px; border-radius: 12px; background: #2A1F18; border: 1px solid #4A3A2D">
+      <span role="tab" aria-selected="true" style="height: 38px; padding: 0 18px; border-radius: 9px; background: #F3E9DA; color: #1C1410; font-size: 15px; font-weight: 700; display: flex; align-items: center">音轨</span>
+      <a href="Lyrics.dc.html" role="tab" aria-selected="false" style="height: 38px; padding: 0 18px; border-radius: 9px; color: #BFAE98; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">歌词</a>
+    </div>
+    <button type="button" aria-label="播放" style="margin-left: 10px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: #D4AE6A; display: flex; align-items: center; justify-content: center">
+      <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#1C1410"></path></svg>
+    </button>
+    <span style="font-size: 14px; color: #BFAE98">点格子选一段，下面调这个乐手在这一段怎么弹</span>
+    <button type="button" style="margin-left: auto; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">撤销</button>
+  </header>
+
+  <main style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 14px 28px 18px; min-height: 0">
+
+    <section aria-label="整首" style="display: flex; gap: 12px; height: 84px; flex-shrink: 0">
+      <div style="width: 220px; flex-shrink: 0; border-radius: 14px; background: #2A1F18; border: 1px solid #3A2C22; padding: 10px 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between">
+        <div style="font-size: 16px; font-weight: 700">整首</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #BFAE98">
+          <span>总音量</span>
+          <span style="flex: 1; height: 8px; border-radius: 4px; background: #3A2C22; overflow: hidden"><span style="display: block; width: 78%; height: 8px; background: #D4AE6A"></span></span>
+        </div>
+      </div>
+      <div style="flex: 1; position: relative; display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 4px; min-width: 0">
+        <sc-for list="{{sections}}" as="s" hint-placeholder-count="4">
+          <div style="border-radius: 12px; background: #2A1F18; border: 1px solid #3A2C22; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; min-width: 0">
+            <span style="font-size: 14px; font-weight: 700">{{s.name}} <span style="font-weight: 400; color: #9C8B76; font-size: 12px">{{s.bars}} 小节</span></span>
+            <span aria-hidden="true" style="display: flex; align-items: flex-end; gap: 2px; height: 30px">
+              <sc-for list="{{s.energy}}" as="e" hint-placeholder-count="8">
+                <span style="flex: 1; border-radius: 2px; background: #6B5644; height: {{e.h}}px"></span>
+              </sc-for>
+            </span>
+          </div>
+        </sc-for>
+        <div style="position: absolute; top: -4px; bottom: -4px; left: 41%; width: 2px; background: #D4AE6A"></div>
+      </div>
+      <div style="width: 200px; flex-shrink: 0; border-radius: 14px; background: #2A1F18; border: 1px solid #3A2C22; padding: 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; color: #BFAE98">空间感</span>
+        <div role="radiogroup" aria-label="空间感" style="display: flex; gap: 4px">
+          <sc-for list="{{spaces}}" as="sp" hint-placeholder-count="3">
+            <button type="button" role="radio" aria-checked="{{sp.on}}" onClick="{{sp.pick}}" style="flex: 1; height: 40px; border-radius: 8px; border: 0; background: {{sp.bg}}; color: {{sp.fg}}; font-size: 13px; font-weight: 700">{{sp.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="每个乐手" style="border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{tracks}}" as="t" hint-placeholder-count="6">
+        <div style="display: flex; gap: 12px; height: 52px; align-items: center; opacity: {{t.op}}">
+          <div style="width: 210px; flex-shrink: 0; display: flex; align-items: center; gap: 8px">
+            <span style="width: 6px; height: 36px; border-radius: 3px; background: {{t.c}}"></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span style="font-size: 15px; font-weight: 700">{{t.name}}</span>
+              <span style="font-size: 12px; color: #BFAE98; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.sound}}</span>
+            </span>
+            <button type="button" aria-pressed="{{t.mutedStr}}" onClick="{{t.mute}}" aria-label="静音{{t.name}}" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A3A2D; background: {{t.muteBg}}; color: {{t.muteFg}}; font-size: 13px; font-weight: 700">静</button>
+            <button type="button" aria-pressed="{{t.soloStr}}" onClick="{{t.solo}}" aria-label="只听{{t.name}}" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #4A3A2D; background: {{t.soloBg}}; color: {{t.soloFg}}; font-size: 13px; font-weight: 700">独</button>
+          </div>
+          <div style="flex: 1; display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 4px; height: 44px; min-width: 0">
+            <sc-for list="{{t.cells}}" as="cell" hint-placeholder-count="4">
+              <button type="button" onClick="{{cell.pick}}" aria-pressed="{{cell.selStr}}" aria-label="{{t.name}}·{{cell.sec}}" style="position: relative; border-radius: 8px; border: 2px solid {{cell.border}}; background: {{cell.bg}}; padding: 0; overflow: hidden">
+                <sc-if value="{{cell.empty}}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 12px; color: #9C8B76">不演奏</span>
+                </sc-if>
+                <sc-for list="{{cell.marks}}" as="m" hint-placeholder-count="6">
+                  <span style="position: absolute; left: {{m.l}}%; width: {{m.w}}%; top: {{m.t}}px; height: {{m.h}}px; border-radius: 2px; background: {{t.c}}; opacity: 0.9"></span>
+                </sc-for>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-label="这一段怎么弹" style="flex: 1; border-radius: 16px; background: #241A14; border: 1px solid #3A2C22; padding: 12px 16px; display: flex; gap: 20px; min-height: 0">
+      <div style="width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+        <div style="font-size: 13px; color: #BFAE98; display: flex; justify-content: space-between"><span>{{pad.yTop}}</span></div>
+        <div role="group" aria-label="复杂度和力度" style="position: relative; flex: 1; border-radius: 12px; background: #1C1410; border: 1px solid #4A3A2D; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr))">
+          <sc-for list="{{padCells}}" as="pc" hint-placeholder-count="9">
+            <button type="button" onClick="{{pc.pick}}" aria-label="{{pc.label}}" aria-pressed="{{pc.onStr}}" style="border: 0; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0">
+              <sc-if value="{{pc.on}}" hint-placeholder-val="{{ false }}">
+                <span style="width: 26px; height: 26px; border-radius: 50%; background: {{selColor}}; border: 3px solid #F3E9DA"></span>
+              </sc-if>
+              <sc-if value="{{pc.off}}" hint-placeholder-val="{{ true }}">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #4A3A2D"></span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <div style="font-size: 13px; color: #BFAE98; display: flex; justify-content: space-between"><span>{{pad.xLeft}}</span><span>{{pad.yBottom}} · {{pad.xRight}}</span></div>
+      </div>
+
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+        <div style="display: flex; align-items: baseline; gap: 10px">
+          <h2 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 700">{{selTitle}}</h2>
+          <span style="font-size: 13px; color: #BFAE98">{{selHint}}</span>
+        </div>
+        <div>
+          <div style="font-size: 13px; color: #BFAE98; margin-bottom: 6px">{{styleLabel}}</div>
+          <div role="radiogroup" aria-label="{{styleLabel}}" style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{styleChips}}" as="sc" hint-placeholder-count="4">
+              <button type="button" role="radio" aria-checked="{{sc.on}}" onClick="{{sc.pick}}" style="height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid {{sc.border}}; background: {{sc.bg}}; color: {{sc.fg}}; font-size: 15px">{{sc.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 13px; color: #BFAE98; margin-bottom: 6px">音色</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{soundChips}}" as="sc" hint-placeholder-count="4">
+              <button type="button" aria-pressed="{{sc.on}}" onClick="{{sc.pick}}" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid {{sc.border}}; background: {{sc.bg}}; color: {{sc.fg}}; font-size: 15px">{{sc.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px">
+        <button type="button" style="height: 44px; border-radius: 12px; border: 0; background: #F3E9DA; color: #1C1410; font-size: 15px; font-weight: 700">再演一次</button>
+        <button type="button" style="height: 44px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">每一段都这样</button>
+        <sc-if value="{{isVocal}}" hint-placeholder-val="{{ false }}">
+          <button type="button" style="height: 44px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">用回我哼的</button>
+        </sc-if>
+        <div style="display: flex; gap: 8px">
+          <button type="button" style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">低一点</button>
+          <button type="button" style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #F3E9DA; font-size: 15px">高一点</button>
+        </div>
+        <button type="button" style="margin-top: auto; height: 44px; border-radius: 12px; border: 1px solid #4A3A2D; background: transparent; color: #BFAE98; font-size: 14px">这一段不演奏</button>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: { t: 'guitar', s: 2 }, muted: {}, solo: null, space: 'room', pads: {}, styles: {}, sounds: {} };
+  }
+  renderVals() {
+    const SEC = [['开头', 4], ['主歌', 8], ['副歌', 8], ['结尾', 4]];
+    const energyBySec = [[8, 10, 12, 12], [14, 16, 16, 18, 18, 20, 20, 22], [26, 28, 30, 30, 30, 28, 30, 30], [18, 14, 12, 8]];
+    const sections = SEC.map(([name, bars], i) => ({ name, bars: String(bars), energy: energyBySec[i].map((h) => ({ h })) }));
+
+    const T = {
+      vocal: { name: '人声', c: '#E2725B', on: [0, 1, 1, 1], kind: 'line', pad: ['轻声', '用力', '平实', '花哨'],
+        styleLabel: '嗓音', styles: ['男声', '女声', '轻声哼唱', '加一层和声'], sounds: ['温暖', '清亮', '沙哑'] },
+      melody: { name: '旋律', c: '#E3A44A', on: [1, 1, 1, 1], kind: 'line', pad: ['轻', '响', '简单', '多装饰'],
+        styleLabel: '怎么吹拉弹', styles: ['跟着人声', '人声停时才出来', '只在副歌'], sounds: ['口琴', '钢琴', '口哨', '长笛'] },
+      guitar: { name: '吉他', c: '#4FB3A6', on: [1, 1, 1, 1], kind: 'strum', pad: ['轻', '响', '简单', '复杂'],
+        styleLabel: '弹法', styles: ['扫弦', '分解和弦', '闷音扫弦', '只弹长音'], sounds: ['木吉他', '尼龙吉他', '电吉他（干净）', '尤克里里'] },
+      bass: { name: '贝斯', c: '#6C93D6', on: [0, 1, 1, 1], kind: 'long', pad: ['轻', '响', '简单', '走动多'],
+        styleLabel: '弹法', styles: ['长音', '跟着鼓点', '走动'], sounds: ['指弹贝斯', '低音提琴', '合成器贝斯'] },
+      drums: { name: '鼓', c: '#A98BD8', on: [0, 1, 1, 0], kind: 'dots', pad: ['轻', '响', '简单', '复杂'],
+        styleLabel: '打法', styles: ['刷子', '鼓棒', '只有手鼓', '加过门'], sounds: ['爵士鼓', '流行鼓', '手鼓'] },
+      amb: { name: '环境', c: '#86B068', on: [1, 1, 1, 1], kind: 'wash', pad: ['远', '近', '平稳', '起伏'],
+        styleLabel: '声音', styles: ['你录的海浪', '雨声', '街道', '不要'], sounds: ['原声', '柔和一点'] }
+    };
+    const order = ['vocal', 'melody', 'guitar', 'bass', 'drums', 'amb'];
+    const soundNow = { vocal: '男声 · 温暖', melody: '口琴', guitar: '木吉他 · 扫弦', bass: '指弹贝斯', drums: '爵士鼓 · 刷子', amb: '你录的海浪' };
+
+    const seed = (k, i) => { let x = Math.sin(k * 97 + i * 13.7) * 10000; return x - Math.floor(x); };
+    const marksFor = (kind, si, ti) => {
+      const out = [];
+      const n = SEC[si][1] * 2;
+      if (kind === 'line') for (let i = 0; i < n; i++) { if (seed(ti * 10 + si, i) < 0.25) continue; out.push({ l: (i / n) * 100 + 0.5, w: (100 / n) * 0.8, t: 8 + Math.round(seed(ti + si, i) * 22), h: 5 }); }
+      if (kind === 'strum') for (let i = 0; i < n * 2; i++) out.push({ l: (i / (n * 2)) * 100 + 0.3, w: 0.9, t: i % 2 ? 14 : 8, h: i % 2 ? 14 : 24 });
+      if (kind === 'long') for (let i = 0; i < SEC[si][1]; i++) out.push({ l: (i / SEC[si][1]) * 100 + 1, w: (100 / SEC[si][1]) * 0.85, t: 14 + Math.round(seed(ti, i + si) * 14), h: 7 });
+      if (kind === 'dots') for (let i = 0; i < n * 2; i++) { out.push({ l: (i / (n * 2)) * 100 + 0.5, w: 1.2, t: 10, h: 4 }); if (i % 4 === 0) out.push({ l: (i / (n * 2)) * 100 + 0.5, w: 1.6, t: 26, h: 6 }); if (i % 8 === 4) out.push({ l: (i / (n * 2)) * 100 + 0.5, w: 1.6, t: 18, h: 6 }); }
+      if (kind === 'wash') out.push({ l: 1, w: 98, t: 16, h: 10 });
+      return out;
+    };
+
+    const sel = this.state.sel;
+    const tracks = order.map((id, ti) => {
+      const d = T[id];
+      const muted = !!this.state.muted[id];
+      const soloed = this.state.solo === id;
+      const dim = muted || (this.state.solo && !soloed);
+      return {
+        name: d.name, c: d.c, sound: soundNow[id], op: dim ? 0.4 : 1,
+        mutedStr: muted ? 'true' : 'false', muteBg: muted ? '#F3E9DA' : 'transparent', muteFg: muted ? '#1C1410' : '#BFAE98',
+        soloStr: soloed ? 'true' : 'false', soloBg: soloed ? '#D4AE6A' : 'transparent', soloFg: soloed ? '#1C1410' : '#BFAE98',
+        mute: () => this.setState({ muted: { ...this.state.muted, [id]: !muted } }),
+        solo: () => this.setState({ solo: soloed ? null : id }),
+        cells: SEC.map(([secName], si) => {
+          const on = d.on[si] === 1;
+          const isSel = sel.t === id && sel.s === si;
+          return {
+            sec: secName, empty: !on, marks: on ? marksFor(d.kind, si, ti) : [],
+            selStr: isSel ? 'true' : 'false', border: isSel ? '#F3E9DA' : 'transparent', bg: on ? '#2E2219' : '#201812',
+            pick: () => this.setState({ sel: { t: id, s: si } })
+          };
+        })
+      };
+    });
+
+    const d = T[sel.t];
+    const key = sel.t + ':' + sel.s;
+    const pos = this.state.pads[key] ?? (sel.s === 2 ? 5 : 4);
+    const padCells = Array.from({ length: 9 }, (_, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const label = (row === 0 ? d.pad[1] : row === 2 ? d.pad[0] : '适中') + '、' + (col === 0 ? d.pad[2] : col === 2 ? d.pad[3] : '适中');
+      return { label, on: i === pos, off: i !== pos, onStr: i === pos ? 'true' : 'false', pick: () => this.setState({ pads: { ...this.state.pads, [key]: i } }) };
+    });
+    const chip = (list, stateKey, defIdx, round) => list.map((label, i) => {
+      const cur = this.state[stateKey][key] ?? defIdx;
+      const on = cur === i;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : 'transparent', fg: on ? '#1C1410' : '#F3E9DA', border: on ? '#F3E9DA' : '#4A3A2D', pick: () => this.setState({ [stateKey]: { ...this.state[stateKey], [key]: i } }) };
+    });
+    const spaces = [['dry', '干净'], ['room', '房间'], ['hall', '大厅']].map(([id, label]) => {
+      const on = this.state.space === id;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#F3E9DA' : '#3A2C22', fg: on ? '#1C1410' : '#E8DCCB', pick: () => this.setState({ space: id }) };
+    });
+    return {
+      sections, tracks, padCells, spaces,
+      selColor: d.c,
+      pad: { yTop: d.pad[1], yBottom: d.pad[0], xLeft: d.pad[2], xRight: d.pad[3] },
+      selTitle: d.name + ' · ' + SEC[sel.s][0],
+      selHint: '圆点往右更' + d.pad[3] + '，往上更' + d.pad[1] + '；只改这一段',
+      styleLabel: d.styleLabel,
+      styleChips: chip(d.styles, 'styles', 0),
+      soundChips: chip(d.sounds, 'sounds', 0),
+      isVocal: sel.t === 'vocal' || sel.t === 'melody'
+    };
+  }
+}
+</script>
+</body>
+</html>
