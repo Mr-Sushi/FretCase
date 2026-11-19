@@ -1,7 +1,7 @@
 """Bass and drums from the harmony, the meter and the density level. New FretCase code (simple rules)."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from fretcase_engine.chord_spelling import NAME_TO_PC
 from fretcase_engine.common import TPQ, bar_ticks, meter_text
@@ -62,8 +62,9 @@ def bass_notes(chords: Sequence[Dict[str, Any]], meter: Dict[str, int], density:
     return notes
 
 
-def drum_notes(first_bar: int, last_bar: int, meter: Dict[str, int], density: float, variation: int = 0) -> List[Dict[str, Any]]:
-    """Drums for bars [first_bar, last_bar). ``variation`` changes the fill and accent pattern (another take)."""
+def drum_notes(first_bar: int, last_bar: int, meter: Dict[str, int], density: float, variation: int = 0, fills: Optional[bool] = None) -> List[Dict[str, Any]]:
+    """Drums for bars [first_bar, last_bar). ``variation`` changes the fill and accent pattern (another take).
+    ``fills``: None keeps the milestone 1 rule; False has no fills; True ends the range with a fill."""
     level = level_for_density(density)
     bt = bar_ticks(meter)
     text = meter_text(meter)
@@ -96,11 +97,12 @@ def drum_notes(first_bar: int, last_bar: int, meter: Dict[str, int], density: fl
             hit(b0, offset, SNARE, 90)
         for index, offset in enumerate(hats):
             hit(b0, offset, HAT, 78 if index % 2 == 0 else 62)
-        if variation % 3 == 1 and bar % 4 == 3:  # fill in the last bar of each phrase
+        fill_here = (variation % 3 == 1 and bar % 4 == 3) if fills is None else (fills and bar == last_bar - 1)
+        if fill_here:  # fill in the last bar of each phrase
             span = bt // 4
             for i in range(4):
                 hit(b0, bt - span + i * (span // 4), SNARE, 70 + 6 * i)
-        if variation % 3 == 2 and bar % 4 == 0:
+        if fills is None and variation % 3 == 2 and bar % 4 == 0:
             hit(b0, 0, OPEN_HAT, 70)
     notes.sort(key=lambda n: (n["start"], n["pitch"]))
     return notes

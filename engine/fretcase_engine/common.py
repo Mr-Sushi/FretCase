@@ -9,9 +9,18 @@ TPQ = 480  # ticks per quarter note
 TRACKS = ("vocal", "melody", "guitar", "bass", "drums", "ambience")
 ENGINE_VERSION = "0.1.0"
 
-DEFAULT_SECTION_LABELS = [("s-intro", "开头"), ("s-verse", "展开"), ("s-chorus", "高潮"), ("s-outro", "结尾")]
+DEFAULT_SECTION_LABELS = [("s-intro", "开头"), ("s-verse", "主歌"), ("s-chorus", "副歌"), ("s-outro", "结尾")]
 
 Song = Dict[str, Any]
+
+
+class CannotApply(Exception):
+    """A valid request that cannot be applied (HTTP 422 ``cannot_apply``)."""
+
+    def __init__(self, message: str, detail: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.message = message
+        self.detail = detail or {}
 
 
 def bar_ticks(meter: Dict[str, int]) -> int:
