@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FretCase 结构模型</title>
+<title>FretCase 交互原型</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -154,6 +154,15 @@ h2 {
 .legend .t { font-weight: 600; }
 .legend .d { display: block; color: var(--muted); font-size: 13px; }
 .foot { color: var(--muted); font-size: 12px; margin: 0; }
+.howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.howto b { font-weight: 600; color: var(--accent); }
+.msgnote { margin: 0 0 8px; }
+.evlog { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-height: 120px; }
+.evlog li { display: grid; grid-template-columns: 74px 1fr; gap: 6px; align-items: start; font-size: 11.5px; }
+.evlog .dir { color: var(--muted); white-space: nowrap; }
+.evlog li.app .dir { color: var(--warm); }
+.evlog .cnt { display: block; font-family: var(--font-mono); }
+.evlog code { font-family: var(--font-mono); overflow-wrap: anywhere; color: var(--ink); }
 @media (max-width: 820px) {
   html, body { height: auto; }
   .app { height: auto; grid-template-columns: minmax(0, 1fr); }
@@ -167,20 +176,38 @@ h2 {
 <main class="app">
   <section class="stage" id="stage" aria-label="FretCase 三维模型">
     <canvas id="c"></canvas>
-    <div id="markers" aria-hidden="true"></div>
+    <div id="markers" aria-hidden="true" style="display:none"></div>
     <div class="views" role="group" aria-label="视角">
+      <button type="button" data-view="operate">操作</button>
       <button type="button" data-view="front">正面</button>
       <button type="button" data-view="top">俯视控件</button>
       <button type="button" data-view="back">背面镜头</button>
       <button type="button" data-view="side">侧面</button>
     </div>
-    <p class="hint">拖动旋转，滚轮或双指缩放</p>
+    <p class="hint">拖动控件来操作；拖动空白处旋转，滚轮或双指缩放</p>
   </section>
   <aside class="panel">
     <header>
       <h1>FretCase</h1>
-      <p class="sub">打开就能写歌的复古皮箱。面板上是唱盘、四个旋钮、四个功能键、六路小调音台，以及卡片仓和卡片架，单位是毫米。</p>
+      <p class="sub">可以操作的原型：箱子上的控件能按、能拖，屏幕和声音跟着变。</p>
     </header>
+    <section>
+      <h2>怎么玩</h2>
+      <ol class="howto">
+        <li>按<b>播放</b>，听这首 16 小节的歌。灯环一颗灯是一小节。</li>
+        <li>拖<b>唱盘</b>转一圈，在歌里前后移动 4 小节。</li>
+        <li>按<b>换一个</b>，只换唱盘所在那一段的和弦；按<b>撤销</b>退回。</li>
+        <li>上下拖<b>旋钮</b>：明暗切换大小调，简繁换和弦，疏密换节奏，速度改快慢。</li>
+        <li>前后拖<b>推子</b>调每一轨的音量；点<b>彩色方键</b>选中，长按静音。</li>
+        <li>按住<b>红键</b>录音，松开出种子卡；短按是拍照。</li>
+        <li>点屏幕右上角<b>印卡</b>，选风格后打印。</li>
+      </ol>
+    </section>
+    <section>
+      <h2>面板消息（实时）</h2>
+      <p class="note msgnote">每个操作发出的消息，格式和 shared/schema/panel-events.schema.json 一致。</p>
+      <ol class="evlog" id="evlog" aria-live="off"></ol>
+    </section>
     <section>
       <h2>箱盖里的屏幕</h2>
       <div class="seg" role="radiogroup" aria-label="屏幕选项">
@@ -205,7 +232,7 @@ h2 {
       </div>
     </section>
     <section class="toggles">
-      <label for="tg-labels"><input type="checkbox" id="tg-labels" checked> 显示部件编号</label>
+      <label for="tg-labels"><input type="checkbox" id="tg-labels"> 显示部件编号</label>
       <label for="tg-inside"><input type="checkbox" id="tg-inside"> 透视箱底夹层（主机、电池、控制板）</label>
     </section>
     <section>
@@ -218,6 +245,7 @@ h2 {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
 <script>
 (function () {
   'use strict';
@@ -239,11 +267,12 @@ h2 {
     { n: '人声', c: '#e2725b' }, { n: '旋律', c: '#e3a14a' }, { n: '吉他', c: '#49b8b3' },
     { n: '贝斯', c: '#5b8dd6' }, { n: '鼓', c: '#9a7bd1' }, { n: '环境', c: '#7fae6a' }
   ];
+  var TRACK_IDS = ['vocal', 'melody', 'guitar', 'bass', 'drums', 'ambience'];
+  var KNOB_IDS = ['brightness', 'complexity', 'density', 'tempo'];
   var KNOB_X = [20, 56, 92, 128];
   var TRACK_X = [17, 39.8, 62.6, 85.4, 108.2, 131];
   var SCALE_X = [16.5, 35.67, 54.83, 74, 93.17, 112.33, 131.5];
   var ACT_X = [-131, -99.67, -68.33, -37];
-  var CHORDS = ['D', 'D', 'Bm', 'Bm', 'G', 'G', 'A', 'A', 'D', 'F#m', 'G', 'A', 'Em', 'G', 'A', 'D'];
   var CJK = '"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif';
 
   // ---- renderer, scene, camera ----
@@ -422,45 +451,74 @@ h2 {
   silkPlane.position.y = PY + 0.08;
   base.add(silkPlane);
 
+  // interactive parts register here; pick() reads userData.ctrl
+  function hit(obj, ctrl) { obj.traverse(function (n) { n.userData.ctrl = ctrl; }); }
   // left: jog platter with a light ring, a song disc on it
   var PX = -84, PZ = -25;
   base.add(cyl(51.5, 3, mMetal, PX, PY + 1.5, PZ, 64));
-  base.add(cyl(49, 6, mDark, PX, PY + 3, PZ, 64));
-  base.add(cyl(35, 1.4, mCream, PX, PY + 6.7, PZ, 48));
-  base.add(cyl(12, 1.5, mFelt, PX, PY + 6.8, PZ, 32));
-  base.add(cyl(1.8, 5, mMetal, PX, PY + 8, PZ, 16));
-  base.add(cyl(5, 1.2, mMetal, PX + 42, PY + 6.2, PZ, 24));
+  var platter = new T.Group();
+  platter.position.set(PX, 0, PZ);
+  base.add(platter);
+  platter.add(cyl(49, 6, mDark, 0, PY + 3, 0, 64));
+  platter.add(cyl(35, 1.4, mCream, 0, PY + 6.7, 0, 48));
+  platter.add(cyl(12, 1.5, mFelt, 0, PY + 6.8, 0, 32));
+  platter.add(cyl(1.8, 5, mMetal, 0, PY + 8, 0, 16));
+  platter.add(cyl(5, 1.2, mMetal, 42, PY + 6.2, 0, 24));
+  hit(platter, { type: 'platter' });
+  var ringMats = [];
   for (var i = 0; i < 16; i++) {
-    var th = i / 16 * Math.PI * 2, here = i === 5;
-    var lm = std(here ? 0xffc463 : 0xf1e9d6, 0.4, 0, {
-      emissive: new T.Color(here ? 0xe08a12 : 0x8a7a5a), emissiveIntensity: here ? 0.95 : 0.18
-    });
+    var th = i / 16 * Math.PI * 2;
+    var lm = std(0xf1e9d6, 0.4, 0, { emissive: new T.Color(0x8a7a5a), emissiveIntensity: 0.18 });
+    ringMats.push(lm);
     base.add(cyl(2.3, 2.2, lm, PX + 57 * Math.sin(th), PY + 1.1, PZ - 57 * Math.cos(th), 12));
   }
   function roundKey(x, z, r, capMat) {
     base.add(cyl(r + 1.6, 4.5, mMetal, x, PY + 2.25, z, 36));
-    base.add(cyl(r, 7.5, capMat, x, PY + 3.75, z, 36));
+    var cap = cyl(r, 7.5, capMat, x, PY + 3.75, z, 36);
+    cap.userData.restY = cap.position.y;
+    base.add(cap);
+    return cap;
   }
   // capture, play, undo, another take: one row under the platter
-  var mRed = std(0xc8452c, 0.42, 0, { emissive: new T.Color(0x7a1c0e), emissiveIntensity: 0.3 });
-  ACT_X.forEach(function (x, i) { roundKey(x, 78, 9.4, i === 0 ? mRed : mCream); });
+  var ACT_IDS = ['capture', 'play', 'undo', 'another'];
+  var keyCaps = {};
+  ACT_X.forEach(function (x, i) {
+    var m = i === 0 ? std(0xc8452c, 0.42, 0, { emissive: new T.Color(0xd8452c), emissiveIntensity: 0.3 })
+                    : std(0xf1e9d6, 0.5, 0, { emissive: new T.Color(0xffb347), emissiveIntensity: 0 });
+    keyCaps[ACT_IDS[i]] = roundKey(x, 78, 9.4, m);
+    hit(keyCaps[ACT_IDS[i]], { type: 'key', id: ACT_IDS[i] });
+  });
   // right: three aligned rows between x = 8 and x = 140
+  var knobGroups = [];
   KNOB_X.forEach(function (kx, k) {
     base.add(cyl(13.5, 1.5, mMetal, kx, PY + 0.75, -70, 40));
-    base.add(cyl(12, 16, mKnob, kx, PY + 8, -70, 40));
-    var tick = box(1.6, 0.6, 9, mCream, kx, PY + 16.3, -70);
-    tick.rotation.y = [0.7, -0.4, 0.2, -0.9][k];
-    tick.translateZ(-5);
-    base.add(tick);
+    var g = new T.Group();
+    g.position.set(kx, 0, -70);
+    base.add(g);
+    g.add(cyl(12, 16, mKnob, 0, PY + 8, 0, 40));
+    g.add(box(1.6, 0.6, 9, mCream, 0, PY + 16.3, -5));
+    knobGroups.push(g);
+    hit(g, { type: 'knob', id: KNOB_IDS[k] });
   });
   // six-channel mixer: a coloured square key and a volume fader per track
-  var FADER_Z = [3, 11, -1, 19, 7, 27];
+  var FADER_Z0 = -4, FADER_Z1 = 38;
+  function faderZ(v) { return FADER_Z1 - v * (FADER_Z1 - FADER_Z0); }
+  var trackKeys = [], faderCaps = [];
   TRACK_X.forEach(function (x, i) {
-    var km = std(TRACKS[i].c, 0.45, 0, { emissive: new T.Color(TRACKS[i].c), emissiveIntensity: i === 2 ? 0.6 : 0.2 });
-    base.add(box(18, 5, 18, km, x, PY + 2.5, -28));
+    var km = std(TRACKS[i].c, 0.45, 0, { emissive: new T.Color(TRACKS[i].c), emissiveIntensity: 0.2 });
+    var key = box(18, 5, 18, km, x, PY + 2.5, -28);
+    key.userData.restY = key.position.y;
+    base.add(key);
+    trackKeys.push(key);
+    hit(key, { type: 'key', id: 'track.' + TRACK_IDS[i], track: i });
     base.add(box(3, 1.2, 50, mDark, x, PY + 0.6, 17));
-    base.add(box(13, 9, 7, mCream, x, PY + 4.5, FADER_Z[i]));
-    base.add(box(13.2, 1.2, 1.6, km, x, PY + 8.6, FADER_Z[i]));
+    var cap = new T.Group();
+    cap.position.set(x, 0, faderZ(0.8));
+    base.add(cap);
+    cap.add(box(13, 9, 7, mCream, 0, PY + 4.5, 0));
+    cap.add(box(13.2, 1.2, 1.6, std(TRACKS[i].c, 0.45), 0, PY + 8.6, 0));
+    faderCaps.push(cap);
+    hit(cap, { type: 'fader', track: i });
   });
   // card crate: blank and recorded cards stand on edge in a well, tops showing
   var CX = 74;
@@ -517,7 +575,8 @@ h2 {
   // print outlet on the right wall, a fresh card halfway out
   base.add(box(2, 6, 64, mMetal, W / 2 + 1, 30, -40));
   base.add(box(2.4, 2, 58, mDark, W / 2 + 1, 30, -40));
-  base.add(box(26, 0.9, 54, mCream, W / 2 + 13, 30, -40));
+  var strip = box(26, 0.9, 54, mCream, W / 2 - 14, 30, -40);
+  base.add(strip);
   // headphone jack and volume wheel on the right wall
   [[6.5, 3, mMetal, 1.5, 64], [2.6, 3.4, mDark, 1.6, 64], [10, 5, mMetal, 2.5, 36]].forEach(function (j) {
     var m = cyl(j[0], j[1], j[2], W / 2 + j[3], 40, j[4], 32);
@@ -592,45 +651,6 @@ h2 {
   lid.add(screenGroup);
   lid.add(camGroup);
 
-  function drawUI(cv, sc) {
-    var w = cv.width, h = cv.height, c = cv.getContext('2d');
-    var u = w / 100;
-    c.fillStyle = '#0f1b20'; c.fillRect(0, 0, w, h);
-    c.textBaseline = 'middle';
-    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (4.2 * u) + 'px ' + CJK; c.textAlign = 'left';
-    c.fillText('种子卡', 4 * u, 7 * u);
-    var chips = ['D 大调', '84 拍/分', '平静偏暖', '海浪铺底'], cx = 22 * u;
-    c.font = '500 ' + (2.6 * u) + 'px ' + CJK;
-    chips.forEach(function (s) {
-      var tw = c.measureText(s).width + 3.2 * u;
-      c.fillStyle = '#1f3a42'; c.fillRect(cx, 4.4 * u, tw, 5.2 * u);
-      c.fillStyle = '#9fd8d3'; c.fillText(s, cx + 1.6 * u, 7 * u);
-      cx += tw + 1.6 * u;
-    });
-    var top = 14 * u, bw = 92 * u / 16;
-    c.textAlign = 'center';
-    CHORDS.forEach(function (ch, i) {
-      var x = 4 * u + i * bw;
-      c.fillStyle = i === 5 ? '#e3a14a' : i < 4 ? '#1f6f6b' : '#1b2f37';
-      c.fillRect(x + 0.25 * u, top, bw - 0.5 * u, 8 * u);
-      c.fillStyle = i === 5 ? '#201305' : '#e9f1f3';
-      c.font = '600 ' + (2.5 * u) + 'px ' + CJK;
-      c.fillText(ch, x + bw / 2, top + 4 * u);
-    });
-    var rowsTop = top + 11 * u, avail = h - rowsTop - 3 * u, rh = avail / TRACKS.length;
-    TRACKS.forEach(function (t, r) {
-      var y = rowsTop + r * rh;
-      c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'left';
-      c.fillText(t.n, 4 * u, y + rh * 0.42);
-      for (var i = 0; i < 16; i++) {
-        var on = (i * 7 + r * 5) % 11 !== 0;
-        c.globalAlpha = on ? (r === 2 ? 1 : 0.75) : 0.14;
-        c.fillStyle = t.c;
-        c.fillRect(11 * u + i * (85 * u / 16) + 0.25 * u, y + rh * 0.14, 85 * u / 16 - 0.5 * u, rh * 0.56);
-      }
-      c.globalAlpha = 1;
-    });
-  }
 
   function clearGroup(g) {
     while (g.children.length) {
@@ -653,11 +673,14 @@ h2 {
     screenGroup.add(body);
     var cv = document.createElement('canvas');
     cv.width = 1024; cv.height = Math.round(1024 * sc.dh / sc.dw);
-    drawUI(cv, sc);
-    var disp = new T.Mesh(new T.PlaneGeometry(sc.dw, sc.dh), new T.MeshBasicMaterial({ map: tex(cv) }));
+    var dtex = tex(cv);
+    var disp = new T.Mesh(new T.PlaneGeometry(sc.dw, sc.dh), new T.MeshBasicMaterial({ map: dtex }));
     disp.rotation.x = Math.PI / 2;
     disp.position.set(0, RIM - 1.48, D / 2);
+    disp.userData.ctrl = { type: 'screen' };
     screenGroup.add(disp);
+    scr = { cv: cv, tex: dtex, mesh: disp };
+    drawScreen(cv);
     var cx, cz;
     if (sc.tablet) {
       cx = sc.w / 2 - 14; cz = D / 2 + sc.h / 2 - 14;
@@ -743,6 +766,7 @@ h2 {
 
   // ---- views ----
   var VIEWS = {
+    operate: { p: [0, 600, 760], t: [0, 118, -50] },
     front: { p: [370, 350, 720], t: [0, 112, -30] },
     top:   { p: [0, 760, 250],   t: [0, 50, 10] },
     back:  { p: [-430, 340, -820], t: [0, 125, -80] },
@@ -759,8 +783,8 @@ h2 {
   Array.prototype.forEach.call(document.querySelectorAll('.views button'), function (b) {
     b.addEventListener('click', function () { flyTo(b.getAttribute('data-view')); });
   });
-  camera.position.fromArray(VIEWS.front.p);
-  controls.target.fromArray(VIEWS.front.t);
+  camera.position.fromArray(VIEWS.operate.p);
+  controls.target.fromArray(VIEWS.operate.t);
 
   // ---- inputs ----
   var lidInput = document.getElementById('lid'), lidOut = document.getElementById('lid-out');
@@ -783,6 +807,788 @@ h2 {
     woodMat.depthWrite = !tgInside.checked;
     woodMat.needsUpdate = true;
   });
+
+  // =====================================================================
+  // ---- prototype: song, sound, panel interaction ----
+  // =====================================================================
+  var KNOB_NAMES = { brightness: '明暗', complexity: '简繁', density: '疏密', tempo: '速度' };
+  var LANE_NAMES = ['基础', '进阶', '色彩'];
+  var LEVEL_NAMES = ['入门', '进阶', '挑战'];
+  var SECTION_DEF = [{ label: '开头', start: 0 }, { label: '展开', start: 4 }, { label: '高潮', start: 8 }, { label: '结尾', start: 12 }];
+  var BARS = 16, STEPS = 16;
+  var NOTE_PC = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+  var MAJOR_MAP = { I: ['D', ''], ii: ['E', 'm'], iii: ['F#', 'm'], IV: ['G', ''], iv: ['G', 'm'], V: ['A', ''], vi: ['B', 'm'] };
+  var MINOR_MAP = { i: ['B', 'm'], III: ['D', ''], iv: ['E', 'm'], v: ['F#', 'm'], V: ['F#', ''], VI: ['G', ''], VII: ['A', ''] };
+  var TAKES_MAJOR = [
+    [['I', 'I', 'vi', 'vi'], ['I', 'IV', 'I', 'V'], ['vi', 'IV', 'I', 'V']],
+    [['IV', 'IV', 'V', 'V'], ['ii', 'V', 'I', 'vi'], ['IV', 'V', 'iii', 'vi']],
+    [['I', 'iii', 'IV', 'V'], ['I', 'V', 'vi', 'IV'], ['IV', 'V', 'I', 'I']],
+    [['ii', 'IV', 'V', 'I'], ['IV', 'iv', 'I', 'I'], ['vi', 'IV', 'V', 'I']]
+  ];
+  var TAKES_MINOR = [
+    [['i', 'i', 'VI', 'VI'], ['i', 'VI', 'III', 'VII'], ['i', 'iv', 'VI', 'V']],
+    [['VI', 'VII', 'i', 'i'], ['iv', 'VII', 'III', 'VI'], ['VI', 'III', 'VII', 'i']],
+    [['VI', 'VII', 'III', 'i'], ['i', 'VII', 'VI', 'VII'], ['iv', 'v', 'VI', 'VII']],
+    [['iv', 'VI', 'V', 'i'], ['VI', 'VII', 'i', 'i'], ['iv', 'V', 'i', 'i']]
+  ];
+  var QUAL = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], add9: [0, 4, 7, 14] };
+  // melody per bar: [step, length in 16ths, midi]; D major, fits both D major and B minor harmony
+  var MELODY = [
+    [[0, 4, 74], [4, 4, 76], [8, 8, 78]], [[0, 4, 76], [4, 4, 74], [8, 8, 71]], [[0, 4, 71], [4, 4, 74], [8, 4, 73], [12, 4, 71]], [[0, 12, 69], [12, 4, 71]],
+    [[0, 4, 74], [4, 4, 71], [8, 8, 67]], [[0, 4, 69], [4, 4, 71], [8, 8, 74]], [[0, 6, 73], [6, 2, 71], [8, 8, 69]], [[0, 12, 76], [12, 4, 74]],
+    [[0, 4, 78], [4, 4, 79], [8, 8, 81]], [[0, 4, 81], [4, 4, 78], [8, 8, 76]], [[0, 4, 79], [4, 4, 78], [8, 4, 76], [12, 4, 74]], [[0, 8, 76], [8, 8, 73]],
+    [[0, 4, 76], [4, 4, 78], [8, 8, 79]], [[0, 4, 78], [4, 4, 76], [8, 8, 74]], [[0, 6, 76], [6, 2, 73], [8, 8, 69]], [[0, 16, 74]]
+  ];
+  var LYRICS = '海风吹过傍晚 浪花轻轻回答 远方的灯亮了 我把歌留下'.replace(/ /g, '');
+
+  var S = {
+    knobs: { brightness: 0.62, complexity: 0.4, density: 0.3, tempo: 84 },
+    takes: [0, 0, 0, 0],
+    vol: [0.8, 0.8, 0.75, 0.7, 0.5, 0.55],
+    muted: [false, false, false, false, false, false],
+    selected: 2,
+    playing: false,
+    step: 0,
+    posBar: 0,
+    view: 'song',
+    recording: false, recStart: 0,
+    toast: null,
+    flash: 0,
+    cardStyle: 'ink',
+    title: '海边的傍晚',
+    printed: 0
+  };
+  var history = [];
+  var song = [];
+
+  function level(v) { return v < 0.34 ? 0 : v < 0.67 ? 1 : 2; }
+  function isDark() { return S.knobs.brightness < 0.34; }
+  function sectionOf(bar) { var s = 0; SECTION_DEF.forEach(function (d, i) { if (bar >= d.start) { s = i; } }); return s; }
+
+  function chordFor(roman, dark, cx) {
+    var base = (dark ? MINOR_MAP : MAJOR_MAP)[roman];
+    var root = base[0], q = base[1];
+    var dominant = roman === 'V';
+    if (cx === 1) { if (dominant) { q = '7'; } else if (q === 'm' && roman !== 'i') { q = 'm7'; } }
+    if (cx === 2) {
+      if (dominant) { q = '7'; } else if (q === 'm') { q = 'm7'; } else if (roman === 'IV' || roman === 'VI') { q = 'add9'; } else { q = 'maj7'; }
+    }
+    var rootPc = NOTE_PC[root];
+    return { sym: root + q, roman: roman, rootPc: rootPc, pcs: QUAL[q].map(function (iv) { return (rootPc + iv) % 12; }), ivs: QUAL[q] };
+  }
+
+  function guitarVoicing(ch) {
+    var bass = 40 + ((ch.rootPc - 4 + 12) % 12);
+    var notes = [bass];
+    var tones = ch.ivs.map(function (iv) { return ch.rootPc + iv; });
+    var p = 52;
+    for (var k = 0; notes.length < 5 && k < 24; k++) {
+      var cand = p + k;
+      if (tones.some(function (t) { return (cand - t) % 12 === 0; }) && cand > notes[notes.length - 1] + 2) { notes.push(cand); }
+    }
+    return notes;
+  }
+
+  function computeSong() {
+    var dark = isDark(), cx = level(S.knobs.complexity), dl = level(S.knobs.density);
+    var table = dark ? TAKES_MINOR : TAKES_MAJOR;
+    song = [];
+    for (var b = 0; b < BARS; b++) {
+      var sec = sectionOf(b);
+      var roman = table[sec][S.takes[sec]][b - SECTION_DEF[sec].start];
+      var ch = chordFor(roman, dark, cx);
+      var ev = { vocal: [], melody: [], guitar: [], bass: [], drums: [] };
+      MELODY[b].forEach(function (n, i) {
+        ev.melody.push({ s: n[0], len: n[1], m: n[2], v: 0.8 });
+        ev.vocal.push({ s: n[0], len: n[1], m: n[2], v: 0.7 });
+      });
+      var vo = guitarVoicing(ch);
+      if (dl === 0) {
+        [0, 8].forEach(function (s) { ev.guitar.push({ s: s, len: 8, chord: vo, dir: 1, v: 0.7 }); });
+      } else if (dl === 1) {
+        var order = [0, 2, 3, 4, 1, 3, 2, 4];
+        for (var k = 0; k < 8; k++) { ev.guitar.push({ s: k * 2, len: 2, m: vo[order[k] % vo.length], v: k === 0 ? 0.8 : 0.6 }); }
+      } else {
+        [[0, 1, 0.8], [4, 1, 0.6], [6, -1, 0.5], [10, -1, 0.5], [12, 1, 0.65], [14, -1, 0.45]].forEach(function (x) {
+          ev.guitar.push({ s: x[0], len: 2, chord: vo, dir: x[1], v: x[2] });
+        });
+      }
+      var root = 36 + ((ch.rootPc - 0 + 12) % 12), fifth = root + 7;
+      if (root > 45) { root -= 12; fifth -= 12; }
+      if (dl === 0) { ev.bass.push({ s: 0, len: 15, m: root, v: 0.8 }); }
+      else if (dl === 1) { ev.bass.push({ s: 0, len: 7, m: root, v: 0.85 }); ev.bass.push({ s: 8, len: 7, m: fifth, v: 0.7 }); }
+      else { [[0, root], [6, root], [8, fifth], [12, root + 12], [14, fifth]].forEach(function (x, i) { ev.bass.push({ s: x[0], len: 2, m: x[1], v: i ? 0.65 : 0.85 }); }); }
+      if (dl === 0) { ev.drums.push({ s: 0, d: 'k', v: 0.7 }); ev.drums.push({ s: 8, d: 's', v: 0.35 }); }
+      else if (dl === 1) {
+        [0, 8].forEach(function (s) { ev.drums.push({ s: s, d: 'k', v: 0.8 }); });
+        [4, 12].forEach(function (s) { ev.drums.push({ s: s, d: 's', v: 0.55 }); });
+        for (var h = 0; h < 16; h += 2) { ev.drums.push({ s: h, d: 'h', v: h % 4 ? 0.3 : 0.45 }); }
+      } else {
+        [0, 6, 8, 11].forEach(function (s) { ev.drums.push({ s: s, d: 'k', v: 0.8 }); });
+        [4, 12].forEach(function (s) { ev.drums.push({ s: s, d: 's', v: 0.65 }); });
+        for (var h2 = 0; h2 < 16; h2++) { ev.drums.push({ s: h2, d: 'h', v: h2 % 4 === 0 ? 0.45 : h2 % 2 ? 0.2 : 0.3 }); }
+      }
+      song.push({ chord: ch, sec: sec, ev: ev });
+    }
+  }
+
+  // ---- sound ----
+  var A = null;
+  function midiHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function buildAudio() {
+    var Tn = window.Tone;
+    if (!Tn) { return null; }
+    var a = { T: Tn };
+    a.limiter = new Tn.Limiter(-2).toDestination();
+    a.tone = new Tn.Filter(8000, 'lowpass').connect(a.limiter);
+    a.bus = new Tn.Gain(0.9).connect(a.tone);
+    a.gains = TRACK_IDS.map(function (id, i) { return new Tn.Gain(S.muted[i] ? 0 : S.vol[i]).connect(a.bus); });
+    a.vibrato = new Tn.Vibrato(5, 0.12).connect(a.gains[0]);
+    a.vocal = new Tn.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.06, decay: 0.2, sustain: 0.7, release: 0.35 }, volume: -10 }).connect(a.vibrato);
+    a.melody = new Tn.PolySynth(Tn.FMSynth, { harmonicity: 3, modulationIndex: 8, envelope: { attack: 0.005, decay: 0.7, sustain: 0.15, release: 0.8 }, modulationEnvelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.5 }, volume: -14 }).connect(a.gains[1]);
+    a.guitarTone = new Tn.Filter(2600, 'lowpass').connect(a.gains[2]);
+    a.guitar = new Tn.PolySynth(Tn.Synth, { oscillator: { type: 'triangle8' }, envelope: { attack: 0.002, decay: 0.9, sustain: 0.04, release: 0.6 }, volume: -15 }).connect(a.guitarTone);
+    a.guitar.maxPolyphony = 24;
+    a.bass = new Tn.MonoSynth({ oscillator: { type: 'triangle' }, filter: { Q: 1, type: 'lowpass' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.3 }, filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.4, baseFrequency: 180, octaves: 2.2 }, volume: -6 }).connect(a.gains[3]);
+    a.kick = new Tn.MembraneSynth({ pitchDecay: 0.03, octaves: 6, envelope: { attack: 0.001, decay: 0.35, sustain: 0 }, volume: -6 }).connect(a.gains[4]);
+    a.snareHp = new Tn.Filter(1800, 'highpass').connect(a.gains[4]);
+    a.snare = new Tn.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.16, sustain: 0 }, volume: -12 }).connect(a.snareHp);
+    a.hatHp = new Tn.Filter(7000, 'highpass').connect(a.gains[4]);
+    a.hat = new Tn.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.04, sustain: 0 }, volume: -20 }).connect(a.hatHp);
+    a.waveGain = new Tn.Gain(0.4).connect(a.gains[5]);
+    a.waveLfo = new Tn.LFO(0.11, 0.12, 0.85).connect(a.waveGain.gain);
+    a.waveFilter = new Tn.Filter(650, 'lowpass').connect(a.waveGain);
+    a.noise = new Tn.Noise('pink').connect(a.waveFilter);
+    a.noise.volume.value = -8;
+    Tn.Transport.bpm.value = S.knobs.tempo;
+    Tn.Transport.scheduleRepeat(tick, '16n');
+    applyTone();
+    return a;
+  }
+  function ensureAudio() {
+    if (A || !window.Tone) { return; }
+    try { window.Tone.start(); A = buildAudio(); } catch (e) { A = null; }
+  }
+  function applyTone() { if (A) { A.tone.frequency.rampTo(1600 + S.knobs.brightness * 9000, 0.2); } }
+  function applyGain(i) { if (A) { A.gains[i].gain.rampTo(S.muted[i] ? 0 : S.vol[i], 0.08); } }
+
+  function strum(chord, dir, time, len, vel) {
+    var T16 = A.T.Time('16n').toSeconds();
+    var order = dir > 0 ? chord : chord.slice().reverse();
+    order.forEach(function (m, k) {
+      A.guitar.triggerAttackRelease(midiHz(m), len * T16 * 0.9, time + k * 0.012 * (dir > 0 ? 1 : 0.7), vel * (dir > 0 ? 1 : 0.8));
+    });
+  }
+  // monophonic voices refuse a start at or before their previous start; nudge such notes by 1 ms
+  function mono(voice, time) {
+    var t = Math.max(time, (voice.__last || 0) + 0.001);
+    voice.__last = t;
+    return t;
+  }
+  function playBar(bar, s, time, only) {
+    var b = song[bar], T16 = A.T.Time('16n').toSeconds();
+    if (!only || only === 'melody') { b.ev.melody.forEach(function (n) { if (n.s === s) { A.melody.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.95, time, n.v); } }); }
+    if (!only) {
+      b.ev.vocal.forEach(function (n) { if (n.s === s) { A.vocal.triggerAttackRelease(midiHz(n.m - 12), n.len * T16 * 0.9, mono(A.vocal, time), n.v); } });
+      b.ev.bass.forEach(function (n) { if (n.s === s) { A.bass.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.9, mono(A.bass, time), n.v); } });
+      b.ev.drums.forEach(function (n) {
+        if (n.s !== s) { return; }
+        if (n.d === 'k') { A.kick.triggerAttackRelease('C1', T16 * 0.9, mono(A.kick, time), n.v); }
+        else if (n.d === 's') { A.snare.triggerAttackRelease('16n', mono(A.snare, time), n.v); }
+        else { A.hat.triggerAttackRelease('32n', mono(A.hat, time), n.v); }
+      });
+    }
+    if (!only || only === 'guitar') {
+      b.ev.guitar.forEach(function (n) {
+        if (n.s !== s) { return; }
+        if (n.chord) { strum(n.chord, n.dir, time, n.len, n.v); }
+        else { A.guitar.triggerAttackRelease(midiHz(n.m), n.len * T16 * 0.9, time, n.v); }
+      });
+    }
+  }
+  function tick(time) {
+    var step = S.step, bar = Math.floor(step / STEPS) % BARS, s = step % STEPS;
+    try { playBar(bar, s, time); } catch (e) { /* one bad note must not stop the loop */ }
+    S.step = (step + 1) % (BARS * STEPS);
+    window.Tone.Draw.schedule(function () { S.posBar = step / STEPS; }, time);
+  }
+  function previewBar(bar) {
+    if (!A || S.playing) { return; }
+    var now = A.T.now() + 0.02, b = song[bar];
+    strum(guitarVoicing(b.chord), 1, now, 8, 0.6);
+  }
+  function setPlaying(on) {
+    ensureAudio();
+    S.playing = on;
+    if (A) {
+      if (on) {
+        S.step = Math.round(S.posBar * STEPS) % (BARS * STEPS);
+        A.T.Transport.start('+0.05');
+        if (A.noise.state !== 'started') { A.noise.start(); A.waveLfo.start(); }
+      } else {
+        A.T.Transport.stop();
+        A.noise.stop();
+      }
+    }
+    lightKey('play', on ? 'on' : 'off');
+  }
+
+  // ---- panel messages, as in shared/schema/panel-events.schema.json ----
+  var seq = { panel: 0, app: 0 }, t0 = performance.now();
+  var evlog = document.getElementById('evlog');
+  function emit(from, type, payload) {
+    var msg = { v: 1, type: type, seq: seq[from]++, t: Math.round(performance.now() - t0) };
+    if (payload) { msg.payload = payload; }
+    if (!evlog) { return msg; }
+    var first = evlog.firstChild, li;
+    if (first && first.getAttribute('data-type') === type && from === 'app') {
+      li = first; li.textContent = '';
+      var n = (+li.getAttribute('data-n') || 1) + 1; li.setAttribute('data-n', n);
+    } else {
+      li = document.createElement('li'); li.setAttribute('data-type', type); li.setAttribute('data-n', 1);
+    }
+    li.className = from;
+    var tag = document.createElement('span'); tag.className = 'dir'; tag.textContent = from === 'panel' ? '面板 → app' : 'app → 面板';
+    var code = document.createElement('code'); code.textContent = JSON.stringify(payload ? { type: type, payload: payload } : { type: type });
+    if (+li.getAttribute('data-n') > 1) { var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = '×' + li.getAttribute('data-n'); tag.appendChild(cnt); }
+    li.appendChild(tag); li.appendChild(code);
+    if (li !== first) { evlog.insertBefore(li, evlog.firstChild); }
+    while (evlog.children.length > 9) { evlog.removeChild(evlog.lastChild); }
+    return msg;
+  }
+
+  // ---- lights ----
+  var lastRing = '';
+  function updateRing() {
+    var bar = Math.floor(S.posBar) % BARS, sec = sectionOf(bar);
+    var pixels = [];
+    for (var i = 0; i < 16; i++) {
+      var m = ringMats[i];
+      if (i === bar) { m.color.setHex(0xffc463); m.emissive.setHex(0xe08a12); m.emissiveIntensity = 1.1; pixels.push('#e08a12'); }
+      else if (sectionOf(i) === sec) { m.color.setHex(0xf6e3b8); m.emissive.setHex(0xb08a50); m.emissiveIntensity = 0.45; pixels.push('#5a4630'); }
+      else { m.color.setHex(0xf1e9d6); m.emissive.setHex(0x8a7a5a); m.emissiveIntensity = 0.06; pixels.push(null); }
+    }
+    var key = bar + ':' + sec;
+    if (key !== lastRing) { lastRing = key; emit('app', 'ring.set', { pixels: pixels, brightness: 0.6 }); }
+  }
+  var keyModes = {};
+  function lightKey(id, mode) {
+    if (keyModes[id] === mode) { return; }
+    keyModes[id] = mode;
+    emit('app', 'key.light', { id: id, mode: mode });
+  }
+  function updateKeyLights(now) {
+    var cap = keyCaps.capture.material;
+    cap.emissiveIntensity = S.recording ? (Math.sin(now / 120) > 0 ? 1.2 : 0.15) : 0.3;
+    keyCaps.play.material.emissiveIntensity = S.playing ? 0.75 : 0;
+    trackKeys.forEach(function (k, i) {
+      k.material.emissiveIntensity = S.muted[i] ? 0.0 : i === S.selected ? 0.75 : 0.22;
+      k.material.color.set(S.muted[i] ? '#5a5048' : TRACKS[i].c);
+    });
+  }
+
+  // ---- history (undo) ----
+  function snapshot() { return JSON.parse(JSON.stringify({ knobs: S.knobs, takes: S.takes, muted: S.muted })); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function pushHistory(label, before) {
+    history.push({ label: label, snap: before });
+    if (history.length > 50) { history.shift(); }
+  }
+  function undo() {
+    var h = history.pop();
+    if (!h) { toast('没有可以撤销的了'); return; }
+    S.knobs = h.snap.knobs; S.takes = h.snap.takes; S.muted = h.snap.muted;
+    if (A) { A.T.Transport.bpm.rampTo(S.knobs.tempo, 0.1); }
+    TRACK_IDS.forEach(function (_, i) { applyGain(i); });
+    applyTone(); computeSong(); syncKnobs();
+    toast('已撤销：' + h.label);
+  }
+
+  function toast(text) { S.toast = { text: text, until: performance.now() + 2200 }; }
+
+  // ---- actions ----
+  function another() {
+    var sec = sectionOf(Math.floor(S.posBar) % BARS), before = snapshot();
+    S.takes[sec] = (S.takes[sec] + 1) % 3;
+    pushHistory('换一个（' + SECTION_DEF[sec].label + '）', before);
+    computeSong();
+    toast('换一个：' + SECTION_DEF[sec].label + ' 第 ' + (S.takes[sec] + 1) + ' 版');
+    if (!S.playing) { previewBar(SECTION_DEF[sec].start); }
+  }
+  function setKnob(id, value) {
+    if (id === 'tempo') {
+      S.knobs.tempo = Math.max(60, Math.min(132, Math.round(value)));
+      if (A) { A.T.Transport.bpm.rampTo(S.knobs.tempo, 0.1); }
+    } else {
+      var oldLevel = level(S.knobs[id]), oldDark = isDark();
+      S.knobs[id] = Math.max(0, Math.min(1, Math.round(value * 100) / 100));
+      if (id === 'brightness') { applyTone(); }
+      if (level(S.knobs[id]) !== oldLevel || isDark() !== oldDark) {
+        computeSong();
+        if (id === 'complexity') { toast('和弦：' + LANE_NAMES[level(S.knobs.complexity)]); }
+        if (id === 'density') { toast('节奏：' + LEVEL_NAMES[level(S.knobs.density)]); }
+        if (id === 'brightness') { toast(isDark() ? '转暗：b 小调' : '转亮：D 大调'); }
+      }
+    }
+    syncKnobs();
+  }
+  function syncKnobs() {
+    ['brightness', 'complexity', 'density', 'tempo'].forEach(function (id, k) {
+      var v = id === 'tempo' ? (S.knobs.tempo - 60) / 72 : S.knobs[id];
+      knobGroups[k].rotation.y = -(v - 0.5) * Math.PI * 1.5;
+    });
+  }
+  function startRecording() {
+    S.recording = true; S.recStart = performance.now(); S.view = 'record';
+    lightKey('capture', 'blink');
+  }
+  function stopRecording() {
+    S.recording = false; S.view = 'seed';
+    lightKey('capture', 'off');
+  }
+  function takePhoto() { S.flash = performance.now(); toast('拍了一张照片（箱盖背面的镜头）'); }
+  function generateFromSeed() {
+    var before = snapshot();
+    S.takes = [Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3), Math.floor(Math.random() * 3)];
+    pushHistory('生成新歌', before);
+    computeSong();
+    S.view = 'song';
+    toast('按种子卡生成了新的一版');
+  }
+
+  computeSong();
+
+  // ---- screen ----
+  var scr = null, regions = [];
+  function chip(c, x, y, text, u, fill, ink) {
+    c.font = '500 ' + (2.5 * u) + 'px ' + CJK;
+    var tw = c.measureText(text).width + 3 * u;
+    c.fillStyle = fill; roundRect(c, x, y - 2.6 * u, tw, 5.2 * u, 1 * u); c.fill();
+    c.fillStyle = ink; c.textAlign = 'left'; c.fillText(text, x + 1.5 * u, y);
+    return tw;
+  }
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  function button(c, x, y, w, h, text, u, action, primary) {
+    c.fillStyle = primary ? '#e3a14a' : '#22363e'; roundRect(c, x, y, w, h, 1.2 * u); c.fill();
+    c.fillStyle = primary ? '#201305' : '#e9f1f3'; c.font = '600 ' + (2.7 * u) + 'px ' + CJK; c.textAlign = 'center';
+    c.fillText(text, x + w / 2, y + h / 2);
+    regions.push({ x: x, y: y, w: w, h: h, action: action });
+  }
+
+  function drawCardArt(c, w, h, style, title, dateText) {
+    c.save();
+    c.fillStyle = '#f3ecdc'; c.fillRect(0, 0, w, h);
+    var sx = w / 688, sy = h / 400;
+    c.scale(sx, sy);
+    function ridge(pts, fill) { c.fillStyle = fill; c.beginPath(); c.moveTo(0, 232); pts.forEach(function (q) { c.lineTo(q[0], q[1]); }); c.lineTo(688, 232); c.closePath(); c.fill(); }
+    var far = [[0, 150], [90, 118], [170, 146], [260, 96], [350, 140], [450, 110], [560, 150], [688, 128]];
+    var mid = [[0, 196], [120, 168], [220, 190], [330, 150], [420, 186], [540, 172], [688, 200]];
+    var near = [[0, 232], [40, 204], [130, 188], [210, 214], [260, 232]];
+    if (style === 'comic') {
+      c.fillStyle = '#151515';
+      for (var y = 20; y < 232; y += 14) { for (var x = (y / 14) % 2 ? 7 : 0; x < 688; x += 14) { c.beginPath(); c.arc(x, y, 1.2 + (y / 232) * 1.8, 0, 7); c.fill(); } }
+      c.lineWidth = 5; c.strokeStyle = '#151515'; c.fillStyle = '#f3ecdc';
+      [far, mid].forEach(function (pts) { c.beginPath(); c.moveTo(0, 232); pts.forEach(function (q) { c.lineTo(q[0], q[1]); }); c.lineTo(688, 232); c.closePath(); c.fill(); c.stroke(); });
+      c.fillStyle = '#151515'; ridge(near, '#151515');
+      c.beginPath(); c.arc(520, 78, 32, 0, 7); c.fillStyle = '#f3ecdc'; c.fill(); c.stroke();
+      for (var r = 0; r < 12; r++) { var a = r / 12 * Math.PI * 2; c.beginPath(); c.moveTo(520 + Math.cos(a) * 44, 78 + Math.sin(a) * 44); c.lineTo(520 + Math.cos(a) * 60, 78 + Math.sin(a) * 60); c.stroke(); }
+      c.lineWidth = 4;
+      [[300, 254, 250], [120, 272, 330], [360, 292, 220]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 10, wv[0] + wv[2], wv[1]); c.stroke(); });
+    } else if (style === 'xieyi') {
+      c.strokeStyle = 'rgba(20,20,20,0.85)'; c.lineCap = 'round';
+      c.lineWidth = 9; c.beginPath(); c.moveTo(40, 210); c.quadraticCurveTo(140, 150, 230, 205); c.stroke();
+      c.lineWidth = 4; c.beginPath(); c.moveTo(260, 160); c.quadraticCurveTo(360, 110, 470, 165); c.stroke();
+      c.fillStyle = 'rgba(25,25,25,0.12)'; c.beginPath(); c.ellipse(380, 175, 260, 24, 0, 0, 7); c.fill();
+      c.fillStyle = '#9b2a1a'; c.beginPath(); c.arc(540, 82, 22, 0, 7); c.fill();
+      c.lineWidth = 2.5; c.strokeStyle = 'rgba(20,20,20,0.5)';
+      [[120, 266, 160], [380, 286, 200]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 6, wv[0] + wv[2], wv[1]); c.stroke(); });
+      c.fillStyle = '#9b2a1a'; c.fillRect(612, 250, 34, 34);
+      c.fillStyle = '#f3ecdc'; c.font = '700 22px ' + CJK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('歌', 629, 268);
+    } else {
+      ridge(far, 'rgba(30,30,30,0.14)'); ridge(mid, 'rgba(25,25,25,0.32)'); ridge(near, 'rgba(15,15,15,0.82)');
+      c.strokeStyle = 'rgba(20,20,20,0.75)'; c.lineWidth = 3; c.beginPath(); c.arc(520, 78, 30, 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(25,25,25,0.4)'; c.lineWidth = 2.5;
+      [[300, 250, 250], [120, 268, 330], [360, 286, 220], [60, 300, 180]].forEach(function (wv) { c.beginPath(); c.moveTo(wv[0], wv[1]); c.quadraticCurveTo(wv[0] + wv[2] / 2, wv[1] - 5, wv[0] + wv[2], wv[1]); c.stroke(); });
+      c.fillStyle = '#151515'; c.fillRect(604, 262, 44, 44);
+      c.fillStyle = '#f3ecdc'; c.font = '700 30px ' + CJK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('歌', 626, 285);
+    }
+    c.fillStyle = '#f1e9d6'; c.fillRect(0, 318, 688, 82);
+    c.textBaseline = 'middle';
+    c.fillStyle = '#151515'; c.font = '700 40px ' + CJK; c.textAlign = 'left'; c.fillText(title, 28, 358);
+    c.fillStyle = '#555'; c.font = '500 24px ' + CJK; c.textAlign = 'right'; c.fillText(dateText, 660, 358);
+    c.restore();
+  }
+  function drawQr(c, x, y, size, seedText) {
+    var n = 25, cell = size / n, hsh = 0;
+    for (var i = 0; i < seedText.length; i++) { hsh = (hsh * 31 + seedText.charCodeAt(i)) >>> 0; }
+    c.fillStyle = '#f3ecdc'; c.fillRect(x - cell, y - cell, size + 2 * cell, size + 2 * cell);
+    c.fillStyle = '#151515';
+    function finder(fx, fy) {
+      c.fillRect(x + fx * cell, y + fy * cell, 7 * cell, 7 * cell);
+      c.fillStyle = '#f3ecdc'; c.fillRect(x + (fx + 1) * cell, y + (fy + 1) * cell, 5 * cell, 5 * cell);
+      c.fillStyle = '#151515'; c.fillRect(x + (fx + 2) * cell, y + (fy + 2) * cell, 3 * cell, 3 * cell);
+    }
+    for (var r = 0; r < n; r++) {
+      for (var q = 0; q < n; q++) {
+        if ((r < 8 && q < 8) || (r < 8 && q > n - 9) || (r > n - 9 && q < 8)) { continue; }
+        hsh = (hsh * 1103515245 + 12345) >>> 0;
+        if ((hsh >>> 16) & 1) { c.fillRect(x + q * cell, y + r * cell, cell + 0.5, cell + 0.5); }
+      }
+    }
+    finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+  }
+
+  function drawScreen(cv) {
+    var w = cv.width, h = cv.height, c = cv.getContext('2d'), u = w / 100, now = performance.now();
+    regions = [];
+    c.fillStyle = '#0f1b20'; c.fillRect(0, 0, w, h);
+    c.textBaseline = 'middle';
+    if (S.view === 'seed') { drawSeed(c, w, h, u); }
+    else if (S.view === 'card') { drawCardView(c, w, h, u); }
+    else { drawSong(c, w, h, u); }
+    if (S.view === 'record') {
+      c.fillStyle = 'rgba(80,10,6,0.82)'; c.fillRect(0, 0, w, h);
+      var secs = (now - S.recStart) / 1000;
+      c.fillStyle = '#ffd9cf'; c.textAlign = 'center'; c.font = '700 ' + (6 * u) + 'px ' + CJK;
+      c.fillText('录音中  ' + Math.floor(secs / 60) + ':' + ('0' + Math.floor(secs % 60)).slice(-2), w / 2, h * 0.36);
+      c.font = '500 ' + (3 * u) + 'px ' + CJK; c.fillText('哼一段旋律，松开红键结束', w / 2, h * 0.47);
+      for (var i = 0; i < 40; i++) {
+        var lv = 0.25 + 0.75 * Math.abs(Math.sin(now / 160 + i * 0.7) * Math.sin(now / 410 + i * 0.31));
+        c.fillStyle = '#ff8a70'; c.fillRect(w * 0.2 + i * (w * 0.6 / 40), h * 0.66 - lv * h * 0.12, w * 0.6 / 40 * 0.6, lv * h * 0.24);
+      }
+    }
+    if (S.toast && now < S.toast.until) {
+      c.font = '600 ' + (2.8 * u) + 'px ' + CJK;
+      var tw = c.measureText(S.toast.text).width + 6 * u;
+      c.fillStyle = 'rgba(227,161,74,0.96)'; roundRect(c, (w - tw) / 2, h - 9 * u, tw, 6 * u, 1.4 * u); c.fill();
+      c.fillStyle = '#201305'; c.textAlign = 'center'; c.fillText(S.toast.text, w / 2, h - 6 * u);
+    }
+    var fl = now - S.flash;
+    if (fl < 350) { c.fillStyle = 'rgba(255,255,255,' + (1 - fl / 350) + ')'; c.fillRect(0, 0, w, h); }
+  }
+
+  function drawSong(c, w, h, u) {
+    var dark = isDark(), cx = level(S.knobs.complexity), dl = level(S.knobs.density);
+    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (4 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(S.title, 4 * u, 6.5 * u);
+    c.font = '700 ' + (4 * u) + 'px ' + CJK;
+    var x = 4 * u + c.measureText(S.title).width + 3 * u;
+    [dark ? 'b 小调' : 'D 大调', S.knobs.tempo + ' 拍/分', '和弦：' + LANE_NAMES[cx], '节奏：' + LEVEL_NAMES[dl]].forEach(function (t) {
+      x += chip(c, x, 6.5 * u, t, u, '#1f3a42', '#9fd8d3') + 1.4 * u;
+    });
+    button(c, w - 16 * u, 3.4 * u, 12 * u, 6.2 * u, '印卡', u, 'openCard', true);
+
+    var L = 13 * u, R = w - 3 * u, bw = (R - L) / BARS, top = 13 * u;
+    var curBar = Math.floor(S.posBar) % BARS, curSec = sectionOf(curBar);
+    SECTION_DEF.forEach(function (d, i) {
+      var sx = L + d.start * bw;
+      c.fillStyle = i === curSec ? '#2c4a52' : '#16272e'; c.fillRect(sx + 0.3 * u, top, 4 * bw - 0.6 * u, 4.4 * u);
+      c.fillStyle = i === curSec ? '#e9f1f3' : '#92a6ae'; c.font = '600 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'left';
+      c.fillText(d.label + '  第 ' + (S.takes[i] + 1) + ' 版', sx + 1.4 * u, top + 2.2 * u);
+    });
+    var ctop = top + 5.2 * u;
+    song.forEach(function (b, i) {
+      var bx = L + i * bw;
+      c.fillStyle = i === curBar ? '#e3a14a' : '#1b2f37'; c.fillRect(bx + 0.2 * u, ctop, bw - 0.4 * u, 5 * u);
+      c.fillStyle = i === curBar ? '#201305' : '#e9f1f3'; c.textAlign = 'center';
+      var fs = 2.1 * u;
+      c.font = '600 ' + fs + 'px ' + CJK;
+      while (fs > 1.2 * u && c.measureText(b.chord.sym).width > bw - 0.8 * u) { fs -= 0.1 * u; c.font = '600 ' + fs + 'px ' + CJK; }
+      c.fillText(b.chord.sym, bx + bw / 2, ctop + 2.5 * u);
+    });
+    var rowsTop = ctop + 6.6 * u, avail = h - rowsTop - 2.5 * u, rh = avail / 6;
+    TRACKS.forEach(function (t, r) {
+      var y = rowsTop + r * rh, alpha = S.muted[r] ? 0.22 : 1;
+      if (r === S.selected) { c.strokeStyle = t.c; c.lineWidth = 0.35 * u; roundRect(c, 1.2 * u, y + 0.15 * u, w - 2.6 * u, rh - 0.3 * u, 0.8 * u); c.stroke(); }
+      c.globalAlpha = alpha;
+      c.fillStyle = '#c4d2d7'; c.font = '600 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(t.n, 2.6 * u, y + rh * 0.38);
+      c.fillStyle = '#2a3c43'; c.fillRect(2.6 * u, y + rh * 0.66, 8 * u, 0.7 * u);
+      c.fillStyle = t.c; c.fillRect(2.6 * u, y + rh * 0.66, 8 * u * S.vol[r], 0.7 * u);
+      c.fillStyle = t.c;
+      var lane = { y: y + rh * 0.12, h: rh * 0.76 };
+      song.forEach(function (b, bi) {
+        var bx = L + bi * bw, sw = bw / STEPS, id = TRACK_IDS[r];
+        if (id === 'melody' || id === 'vocal') {
+          b.ev[id].forEach(function (n) {
+            var py = lane.y + lane.h * (1 - (n.m - 64) / 22);
+            c.fillRect(bx + n.s * sw, py - 0.5 * u, Math.max(n.len * sw - 0.25 * u, 0.4 * u), 1.0 * u);
+          });
+          if (id === 'vocal') {
+            c.fillStyle = '#e9f1f3'; c.font = '500 ' + (1.7 * u) + 'px ' + CJK; c.textAlign = 'left';
+            var li = 0;
+            for (var k = 0; k < bi; k++) { li += song[k].ev.vocal.length; }
+            b.ev.vocal.forEach(function (n, ni) { var ch = LYRICS[(li + ni) % LYRICS.length]; c.fillText(ch, bx + n.s * sw + 0.2 * u, lane.y + lane.h * 0.9); });
+            c.fillStyle = t.c;
+          }
+        } else if (id === 'guitar') {
+          b.ev.guitar.forEach(function (n) {
+            if (n.chord) { c.fillRect(bx + n.s * sw, lane.y + lane.h * (n.dir > 0 ? 0.15 : 0.45), Math.max(n.len * sw - 0.3 * u, 0.5 * u), lane.h * 0.4); }
+            else { var py = lane.y + lane.h * (1 - (n.m - 40) / 36); c.fillRect(bx + n.s * sw, py - 0.4 * u, n.len * sw - 0.2 * u, 0.8 * u); }
+          });
+        } else if (id === 'bass') {
+          b.ev.bass.forEach(function (n) { var py = lane.y + lane.h * (1 - (n.m - 28) / 30); c.fillRect(bx + n.s * sw, py - 0.6 * u, n.len * sw - 0.25 * u, 1.2 * u); });
+        } else if (id === 'drums') {
+          b.ev.drums.forEach(function (n) {
+            var py = lane.y + lane.h * (n.d === 'k' ? 0.8 : n.d === 's' ? 0.5 : 0.2);
+            c.beginPath(); c.arc(bx + n.s * sw + sw / 2, py, (n.d === 'h' ? 0.35 : 0.6) * u, 0, 7); c.fill();
+          });
+        } else {
+          c.beginPath();
+          for (var px = 0; px <= bw; px += 2) {
+            var gx = bx + px, amp = 0.32 + 0.18 * Math.sin((bi * bw + px) / (bw * 0.9));
+            c.lineTo(gx, lane.y + lane.h * (0.5 - amp * 0.5 * Math.sin((bi * bw + px) / (bw * 0.33))));
+          }
+          for (var px2 = bw; px2 >= 0; px2 -= 2) {
+            var gx2 = bx + px2, amp2 = 0.32 + 0.18 * Math.sin((bi * bw + px2) / (bw * 0.9));
+            c.lineTo(gx2, lane.y + lane.h * (0.5 + amp2 * 0.5));
+          }
+          c.globalAlpha = alpha * 0.5; c.fill(); c.globalAlpha = alpha;
+        }
+      });
+      if (S.muted[r]) { c.globalAlpha = 1; c.fillStyle = '#e9f1f3'; c.font = '600 ' + (2.2 * u) + 'px ' + CJK; c.textAlign = 'right'; c.fillText('静音', R - 1 * u, y + rh / 2); }
+      c.globalAlpha = 1;
+    });
+    var phx = L + (S.posBar % BARS) * bw;
+    c.fillStyle = '#ffc463'; c.fillRect(phx - 0.15 * u, ctop - 0.5 * u, 0.3 * u, h - ctop - 1.5 * u);
+  }
+
+  function drawSeed(c, w, h, u) {
+    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (5 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText('种子卡', 5 * u, 8 * u);
+    c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.6 * u) + 'px ' + CJK; c.fillText('设备从你的哼唱、海浪声和照片里读出了这些，每一项都可以改', 5 * u, 14 * u);
+    var rows = [
+      ['调', isDark() ? 'b 小调' : 'D 大调', '哼唱的音落在 D 大调的音阶上'],
+      ['速度', S.knobs.tempo + ' 拍/分', '海浪大约每 0.7 秒一次'],
+      ['情绪', isDark() ? '安静偏冷' : '平静偏暖', '照片以暖色为主，亮度中等'],
+      ['旋律动机', '8 小节', '来自刚才的哼唱，已对齐到拍子上'],
+      ['音色', '尼龙吉他 · 钢琴 · 刷子鼓', '海边、傍晚，选了偏柔和的乐器']
+    ];
+    rows.forEach(function (r, i) {
+      var y = 20 * u + i * 7.4 * u;
+      c.fillStyle = '#16272e'; roundRect(c, 5 * u, y - 3.1 * u, w - 10 * u, 6.2 * u, 1 * u); c.fill();
+      c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.5 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText(r[0], 7 * u, y);
+      c.fillStyle = '#e9f1f3'; c.font = '700 ' + (3 * u) + 'px ' + CJK; c.fillText(r[1], 20 * u, y);
+      c.fillStyle = '#9fd8d3'; c.font = '500 ' + (2.3 * u) + 'px ' + CJK; c.textAlign = 'right'; c.fillText(r[2], w - 7 * u, y);
+    });
+    button(c, w - 40 * u, h - 13 * u, 35 * u, 7 * u, '用这张种子卡生成', u, 'generate', true);
+    button(c, 5 * u, h - 13 * u, 14 * u, 7 * u, '返回', u, 'back', false);
+  }
+
+  function drawCardView(c, w, h, u) {
+    c.fillStyle = '#e9f1f3'; c.font = '700 ' + (4.4 * u) + 'px ' + CJK; c.textAlign = 'left'; c.fillText('卡片预览', 5 * u, 7 * u);
+    var styles = [['ink', '水墨'], ['comic', '漫画'], ['xieyi', '写意']], sx = 30 * u;
+    styles.forEach(function (s) {
+      var on = S.cardStyle === s[0];
+      c.fillStyle = on ? '#e3a14a' : '#22363e'; roundRect(c, sx, 3.6 * u, 11 * u, 6 * u, 1.2 * u); c.fill();
+      c.fillStyle = on ? '#201305' : '#e9f1f3'; c.font = '600 ' + (2.6 * u) + 'px ' + CJK; c.textAlign = 'center'; c.fillText(s[1], sx + 5.5 * u, 6.6 * u);
+      regions.push({ x: sx, y: 3.6 * u, w: 11 * u, h: 6 * u, action: 'style:' + s[0] });
+      sx += 12.5 * u;
+    });
+    var cw = 44 * u, chh = cw * 400 / 688, top = 14 * u;
+    c.save(); c.translate(5 * u, top); drawCardArt(c, cw, chh, S.cardStyle, S.title, '2026.11.19'); c.restore();
+    c.fillStyle = '#92a6ae'; c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.textAlign = 'center'; c.fillText('正面', 5 * u + cw / 2, top + chh + 3 * u);
+    var bx = 53 * u;
+    c.fillStyle = '#f3ecdc'; c.fillRect(bx, top, cw, chh);
+    drawQr(c, bx + 3 * u, top + 3 * u, chh - 6 * u, S.title + S.cardStyle);
+    c.fillStyle = '#151515'; c.textAlign = 'left'; c.font = '700 ' + (3 * u) + 'px ' + CJK; c.fillText(S.title, bx + chh, top + 6 * u);
+    c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.fillStyle = '#444';
+    c.fillText('里斯本', bx + chh, top + 11 * u); c.fillText('2026.11.19', bx + chh, top + 15 * u);
+    c.fillText('扫码听这首歌', bx + chh, top + 21 * u);
+    c.fillStyle = '#92a6ae'; c.textAlign = 'center'; c.font = '500 ' + (2.2 * u) + 'px ' + CJK; c.fillText('背面（二维码为示意）', bx + cw / 2, top + chh + 3 * u);
+    button(c, w - 30 * u, h - 13 * u, 25 * u, 7 * u, '打印', u, 'print', true);
+    button(c, 5 * u, h - 13 * u, 14 * u, 7 * u, '返回', u, 'back', false);
+  }
+
+  function screenTap(uv) {
+    if (!uv || !scr) { return; }
+    var px = uv.x * scr.cv.width, py = (1 - uv.y) * scr.cv.height;
+    for (var i = regions.length - 1; i >= 0; i--) {
+      var r = regions[i];
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { runAction(r.action); return; }
+    }
+  }
+  function runAction(a) {
+    if (a === 'openCard') { S.view = 'card'; }
+    else if (a === 'back') { S.view = 'song'; }
+    else if (a === 'generate') { generateFromSeed(); }
+    else if (a === 'print') { startPrint(); }
+    else if (a.indexOf('style:') === 0) { S.cardStyle = a.slice(6); }
+  }
+
+  // ---- printing ----
+  var printing = null;
+  function startPrint() {
+    S.view = 'song';
+    printing = { start: performance.now(), swapped: false };
+    toast('正在打印：' + S.title);
+  }
+  function updatePrint(now) {
+    if (!printing) { return; }
+    var t = (now - printing.start) / 1000;
+    var out = t < 1.8 ? t / 1.8 : t < 3.4 ? 1 : Math.max(0, 1 - (t - 3.4) / 0.6);
+    strip.position.x = W / 2 - 14 + out * 27;
+    if (t > 3.4 && !printing.swapped) {
+      printing.swapped = true;
+      drawCardArt(art.getContext('2d'), art.width, art.height, S.cardStyle, S.title, '2026.11.19');
+      face.material.map.needsUpdate = true;
+      toast('卡片已经立在卡片架上');
+    }
+    if (t > 4.0) { printing = null; }
+  }
+
+  // ---- pointer interaction ----
+  var ray = new T.Raycaster(), ndc = new T.Vector2(), drag = null, pv = new T.Vector3();
+  var faderPlane = new T.Plane(new T.Vector3(0, 1, 0), 0), planeHit = new T.Vector3();
+  function setNdc(ev) {
+    var r = canvas.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+  }
+  function pick(ev) {
+    setNdc(ev);
+    var all = ray.intersectObject(root, true);
+    if (!all.length) { return null; }
+    var o = all[0].object;
+    if (o.userData.ctrl) { return { ctrl: o.userData.ctrl, uv: all[0].uv }; }
+    return null;
+  }
+  function screenXY(x, y, z) {
+    pv.set(x, y, z); pv.project(camera);
+    var r = canvas.getBoundingClientRect();
+    return { x: (pv.x * 0.5 + 0.5) * r.width + r.left, y: (-pv.y * 0.5 + 0.5) * r.height + r.top };
+  }
+  function platterAngle(ev) {
+    var cpt = screenXY(PX, root.position.y + PY + 6, PZ);
+    return Math.atan2(ev.clientY - cpt.y, ev.clientX - cpt.x);
+  }
+  function faderValueAt(ev) {
+    setNdc(ev);
+    faderPlane.constant = -(root.position.y + PY + 8);
+    if (!ray.ray.intersectPlane(faderPlane, planeHit)) { return null; }
+    var z = planeHit.z;
+    return Math.max(0, Math.min(1, (FADER_Z1 - z) / (FADER_Z1 - FADER_Z0)));
+  }
+  function setFader(i, v) {
+    v = Math.round(v * 100) / 100;
+    if (Math.abs(v - S.vol[i]) < 0.01) { return; }
+    S.vol[i] = v;
+    faderCaps[i].position.z = faderZ(v);
+    applyGain(i);
+    emit('panel', 'fader.move', { track: TRACK_IDS[i], value: v });
+  }
+  function pressCap(obj, down) { obj.position.y = obj.userData.restY - (down ? 2 : 0); }
+
+  function keyDown(ctrl) {
+    emit('panel', 'key', { id: ctrl.id, action: 'down' });
+    var cap = ctrl.track != null ? trackKeys[ctrl.track] : keyCaps[ctrl.id];
+    pressCap(cap, true);
+    drag.cap = cap;
+    drag.downAt = performance.now();
+    if (ctrl.id === 'capture') {
+      drag.onLong = startRecording;
+    } else if (ctrl.track != null) {
+      drag.onLong = function () {
+        var before = snapshot(), i = ctrl.track;
+        S.muted[i] = !S.muted[i]; applyGain(i);
+        pushHistory((S.muted[i] ? '静音' : '取消静音') + '：' + TRACKS[i].n, before);
+        toast((S.muted[i] ? '静音：' : '取消静音：') + TRACKS[i].n);
+      };
+    } else if (ctrl.id === 'play') { setPlaying(!S.playing); }
+    else if (ctrl.id === 'undo') { undo(); }
+    else if (ctrl.id === 'another') { another(); }
+  }
+  // long press is measured from timestamps, not timers, so a slow frame cannot swallow it
+  var LONG_MS = 600;
+  function checkLong(now) {
+    if (drag && drag.onLong && !drag.long && now - drag.downAt >= LONG_MS) { drag.long = true; drag.onLong(); }
+  }
+  function keyUp(ctrl) {
+    emit('panel', 'key', { id: ctrl.id, action: 'up' });
+    if (drag.cap) { pressCap(drag.cap, false); }
+    checkLong(performance.now());
+    if (ctrl.id === 'capture') { if (drag.long) { stopRecording(); } else { takePhoto(); } }
+    else if (ctrl.track != null && !drag.long) { S.selected = ctrl.track; toast('选中：' + TRACKS[ctrl.track].n + '，旋钮和屏幕编辑作用在这一轨'); }
+  }
+
+  stage.addEventListener('pointerdown', function (ev) {
+    if (ev.button !== 0) { return; }
+    var h = pick(ev);
+    if (!h) { return; }
+    ensureAudio();
+    controls.enabled = false;
+    ev.preventDefault();
+    var ctrl = h.ctrl;
+    drag = { ctrl: ctrl, x: ev.clientX, y: ev.clientY, acc: 0 };
+    if (ctrl.type === 'key') { keyDown(ctrl); }
+    else if (ctrl.type === 'platter') { drag.angle = platterAngle(ev); }
+    else if (ctrl.type === 'knob') { drag.before = snapshot(); }
+    else if (ctrl.type === 'fader') { var v = faderValueAt(ev); if (v != null) { setFader(ctrl.track, v); } }
+    else if (ctrl.type === 'screen') { screenTap(h.uv); drag = null; controls.enabled = true; }
+  }, true);
+
+  window.addEventListener('pointermove', function (ev) {
+    if (!drag) {
+      if (ev.target === canvas) { canvas.style.cursor = pick(ev) ? 'pointer' : ''; }
+      return;
+    }
+    var ctrl = drag.ctrl;
+    if (ctrl.type === 'platter') {
+      var a = platterAngle(ev), d = a - drag.angle;
+      if (d > Math.PI) { d -= 2 * Math.PI; } if (d < -Math.PI) { d += 2 * Math.PI; }
+      drag.angle = a; platter.rotation.y -= d; drag.acc += d;
+      var det = 0, step = Math.PI / 8;
+      while (drag.acc >= step) { det++; drag.acc -= step; }
+      while (drag.acc <= -step) { det--; drag.acc += step; }
+      if (det) {
+        emit('panel', 'platter.turn', { delta: det });
+        var prevBar = Math.floor(S.posBar);
+        S.posBar = ((S.posBar + det / 4) % BARS + BARS) % BARS;
+        if (S.playing) { S.step = Math.round(S.posBar * STEPS); }
+        else if (Math.floor(S.posBar) !== prevBar) { previewBar(Math.floor(S.posBar)); }
+      }
+    } else if (ctrl.type === 'knob') {
+      drag.acc += drag.y - ev.clientY; drag.y = ev.clientY;
+      var n = 0;
+      while (drag.acc >= 6) { n++; drag.acc -= 6; }
+      while (drag.acc <= -6) { n--; drag.acc += 6; }
+      if (n) {
+        emit('panel', 'knob.turn', { knob: ctrl.id, delta: n });
+        setKnob(ctrl.id, ctrl.id === 'tempo' ? S.knobs.tempo + n : S.knobs[ctrl.id] + n * 0.02);
+      }
+    } else if (ctrl.type === 'fader') {
+      var fv = faderValueAt(ev); if (fv != null) { setFader(ctrl.track, fv); }
+    }
+  });
+  window.addEventListener('pointerup', function () {
+    if (!drag) { return; }
+    var ctrl = drag.ctrl;
+    if (ctrl.type === 'key') { keyUp(ctrl); }
+    if (ctrl.type === 'knob' && drag.before && !same(drag.before.knobs, S.knobs)) { pushHistory(KNOB_NAMES[ctrl.id], drag.before); }
+    drag = null;
+    controls.enabled = true;
+  });
+
+  // ---- per-frame update ----
+  var frameNo = 0;
+  function protoFrame(now) {
+    frameNo++;
+    checkLong(now);
+    updateRing();
+    updateKeyLights(now);
+    updatePrint(now);
+    if (scr && (frameNo % 2 === 0)) { drawScreen(scr.cv); scr.tex.needsUpdate = true; }
+  }
+
+  syncKnobs();
+  TRACK_IDS.forEach(function (_, i) { faderCaps[i].position.z = faderZ(S.vol[i]); });
+  emit('panel', 'hello', { role: 'panel', name: 'simulator' });
+  emit('panel', 'snapshot', { faders: { vocal: S.vol[0], melody: S.vol[1], guitar: S.vol[2], bass: S.vol[3], drums: S.vol[4], ambience: S.vol[5] }, keysDown: [] });
+  if (!window.Tone) { toast('声音库没有加载，原型可以操作但没有声音'); }
+  // small hooks for automated checks of the prototype
+  window.__proj = function (x, y, z) { return screenXY(x, root.position.y + y, z); };
+  window.__state = function () { return { posBar: Math.round(S.posBar * 100) / 100, takes: S.takes, knobs: S.knobs, vol: S.vol, muted: S.muted, playing: S.playing, view: S.view, history: history.length, chords: song.map(function (b) { return b.chord.sym; }).join(' ') }; };
+  window.__action = runAction;
 
   setScreen('ipad11');
 
@@ -811,6 +1617,7 @@ h2 {
       if (fly.k >= 1) { fly = null; }
     }
     controls.update();
+    protoFrame(performance.now());
     renderer.render(scene, camera);
     if (tgLabels.checked) {
       for (var i = 0; i < PARTS.length; i++) {
