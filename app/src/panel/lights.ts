@@ -37,6 +37,7 @@ export interface LightState {
   recording: boolean
   busy: boolean
   playing: boolean
+  view?: string
 }
 
 /** Light of every key for the current state. Selected track: full colour; others dimmer; muted: off. */

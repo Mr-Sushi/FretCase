@@ -115,7 +115,7 @@ export type TrackId = "vocal" | "melody" | "guitar" | "bass" | "drums" | "ambien
  * A FretCase song. The server owns it; the app receives whole songs and changes them only through the edit API. Times are integer ticks at 480 per quarter note, counted from the start of bar 0. Pitches are MIDI note numbers; spelling (F# or Gb) is derived from the key.
  */
 export interface Song {
-  schemaVersion: "1.0";
+  schemaVersion: "2.0";
   id: Id;
   /**
    * Increases by one with every change. Edit requests carry the revision they were based on; the server rejects a stale one.
@@ -124,6 +124,7 @@ export interface Song {
   createdAt: string;
   updatedAt: string;
   title: string;
+  candidate?: Candidate;
   key: Key;
   meter: Meter;
   /**
@@ -155,6 +156,7 @@ export interface Song {
     drums: NoteTrack;
     ambience: AmbienceTrack;
   };
+  master: Master;
   /**
    * Regeneration never changes locked content. Editing notes by hand adds a lock for that track and section.
    */
@@ -165,6 +167,42 @@ export interface Song {
   assets: Asset[];
   card?: Card;
   provenance?: Provenance;
+}
+/**
+ * Present on the three drafts made by POST /api/candidates. Kept on the chosen song as its subtitle.
+ *
+ * This interface was referenced by `Song`'s JSON-Schema
+ * via the `definition` "candidate".
+ */
+export interface Candidate {
+  groupId: Id;
+  index: number;
+  /**
+   * A plain name for the arrangement, e.g. 黄昏民谣.
+   */
+  name: string;
+  /**
+   * @maxItems 4
+   */
+  tags: [] | [string] | [string, string] | [string, string, string] | [string, string, string, string];
+  /**
+   * One sentence linking the arrangement to the captured inputs.
+   */
+  why: string;
+  timeOfDay?: "day" | "dusk" | "night";
+  parts: {
+    [k: string]: {
+      /**
+       * How much this track plays overall, for the bars on the pick screen.
+       */
+      level: number;
+      /**
+       * Short label, e.g. 木吉他扫弦.
+       */
+      sound: string;
+    };
+  };
+  chosen?: boolean;
 }
 /**
  * This interface was referenced by `Song`'s JSON-Schema
@@ -230,9 +268,115 @@ export interface Controls {
  */
 export interface SeedCard {
   /**
+   * What was captured: any mix of up to 9 photos, hums, sounds and text. With no photo, a text input is expected (the card then uses style text).
+   *
    * @minItems 1
+   * @maxItems 16
    */
-  inputs: [SeedInput, ...SeedInput[]];
+  inputs:
+    | [SeedInput]
+    | [SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput, SeedInput]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ]
+    | [
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput,
+        SeedInput
+      ];
   key: Key;
   tempo: number;
   meter?: Meter;
@@ -290,6 +434,10 @@ export interface Section {
    * Exclusive.
    */
   endBar: number;
+  /**
+   * Who carries this section. The server gives the lead more presence and the others less, unless their regions are locked.
+   */
+  lead?: "vocal" | "melody" | "guitar";
 }
 /**
  * This interface was referenced by `Song`'s JSON-Schema
@@ -342,7 +490,7 @@ export interface Voicing {
  */
 export interface Mix {
   /**
-   * Instrument id from GET /api/catalog for this track.
+   * Sound id from GET /api/catalog for this track (e.g. steel, nylon, synth-female).
    */
   instrument: string;
   /**
@@ -350,6 +498,35 @@ export interface Mix {
    */
   volume: number;
   muted: boolean;
+  /**
+   * Exactly one region per section, in section order.
+   */
+  regions: Region[];
+}
+/**
+ * How one track plays in one section. Like a GarageBand Drummer region: complexity is the XY pad's x axis, intensity its y axis.
+ *
+ * This interface was referenced by `Song`'s JSON-Schema
+ * via the `definition` "region".
+ */
+export interface Region {
+  section: Id;
+  /**
+   * False: the track is silent in this section and has no notes there.
+   */
+  play: boolean;
+  /**
+   * Simple (0) to complex (1): more notes, fills, ornaments.
+   */
+  complexity: number;
+  /**
+   * Soft (0) to loud (1): velocity and energy.
+   */
+  intensity: number;
+  /**
+   * Playing style id for this track from GET /api/catalog, e.g. strum, arpeggio, brush.
+   */
+  style: string;
 }
 /**
  * This interface was referenced by `Song`'s JSON-Schema
@@ -360,6 +537,17 @@ export interface NoteFields {
   duration: PositiveTick;
   pitch: number;
   velocity?: number;
+}
+/**
+ * This interface was referenced by `Song`'s JSON-Schema
+ * via the `definition` "master".
+ */
+export interface Master {
+  volume: Unit;
+  /**
+   * Reverb amount for the whole song: 干净, 房间, 大厅.
+   */
+  space: "dry" | "room" | "hall";
 }
 /**
  * Track only: the whole track. Section only: every track in that section. Both: that track in that section.
@@ -377,7 +565,7 @@ export interface Lock {
  */
 export interface Asset {
   id: Id;
-  role: "hum" | "ambience" | "photo" | "vocal_take" | "vocal_render" | "card_front" | "card_back" | "card_print";
+  role: "hum" | "ambience" | "photo" | "vocal_take" | "vocal_render" | "card_print";
   mime: string;
   durationSec?: number;
   width?: number;
@@ -393,23 +581,47 @@ export interface Card {
    */
   style: "ink" | "comic" | "xieyi" | "original" | "text";
   /**
-   * A sentence about the song, printed when there is no photo and shown on the song page.
+   * A sentence about the song, printed under the title in the card's paper strip (and large on the picture area with style text), and shown on the song page.
    */
   line?: string;
   /**
    * What the user wants to say, shown on the song page only.
    */
   message?: string;
-  photoAssetId?: Id;
   /**
-   * Whether the real photo appears on the song page.
+   * Photos shown on the song page, in order. Defaults to every photo input.
+   *
+   * @maxItems 9
+   */
+  photoAssetIds?:
+    | []
+    | [Id]
+    | [Id, Id]
+    | [Id, Id, Id]
+    | [Id, Id, Id, Id]
+    | [Id, Id, Id, Id, Id]
+    | [Id, Id, Id, Id, Id, Id]
+    | [Id, Id, Id, Id, Id, Id, Id]
+    | [Id, Id, Id, Id, Id, Id, Id, Id]
+    | [Id, Id, Id, Id, Id, Id, Id, Id, Id];
+  /**
+   * The photo printed on the card. One of photoAssetIds. Absent with style text.
+   */
+  coverAssetId?: string;
+  /**
+   * Whether the real photos appear on the song page.
    */
   showPhoto: boolean;
   city?: string;
+  /**
+   * Whether the city is printed on the card and shown on the song page.
+   */
   showCity: boolean;
   capturedAt?: string;
-  frontAssetId?: Id;
-  backAssetId?: Id;
+  /**
+   * The print image from the last preview: 1260 x 840 px for the Instax Wide image area. Cleared by any card change.
+   */
+  frontAssetId?: string;
   share?: {
     /**
      * Random, assigned before printing so the QR code can be printed offline.

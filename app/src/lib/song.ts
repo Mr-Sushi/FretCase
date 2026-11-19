@@ -3,12 +3,12 @@ import type { Key, Meter, Note, Section, Song, TrackId } from '../types'
 export const TPQ = 480
 
 export const TRACKS: { id: TrackId; name: string; color: string }[] = [
-  { id: 'vocal', name: '人声', color: '#e2725b' },
-  { id: 'melody', name: '旋律', color: '#e3a14a' },
-  { id: 'guitar', name: '吉他', color: '#49b8b3' },
-  { id: 'bass', name: '贝斯', color: '#5b8dd6' },
-  { id: 'drums', name: '鼓', color: '#9a7bd1' },
-  { id: 'ambience', name: '环境声', color: '#7fae6a' },
+  { id: 'vocal', name: '人声', color: '#E2725B' },
+  { id: 'melody', name: '旋律', color: '#E3A44A' },
+  { id: 'guitar', name: '吉他', color: '#4FB3A6' },
+  { id: 'bass', name: '贝斯', color: '#6C93D6' },
+  { id: 'drums', name: '鼓', color: '#A98BD8' },
+  { id: 'ambience', name: '环境', color: '#86B068' },
 ]
 export const TRACK_IDS = TRACKS.map((t) => t.id)
 export const trackColor = (id: TrackId) => TRACKS.find((t) => t.id === id)!.color
@@ -79,3 +79,33 @@ export function trackNotes(song: Song, track: TrackId): Note[] {
 }
 
 export const barOfTick = (song: Pick<Song, 'meter'>, tick: number) => tick / barTicks(song.meter)
+
+export const sectionById = (song: Pick<Song, 'sections'>, id: string | null | undefined) => song.sections.find((s) => s.id === id)
+export const regionOf = (song: Song, track: TrackId, sectionId: string) => song.tracks[track].regions.find((r) => r.section === sectionId)
+export const trackLabelSound = (song: Song, track: TrackId) => song.tracks[track].instrument
+
+/** Seconds of the whole song. */
+export function songSeconds(song: Pick<Song, 'meter' | 'bars' | 'tempo'>): number {
+  return (songTicks(song) / TPQ) * (60 / song.tempo)
+}
+export const ticksToSeconds = (ticks: number, tempo: number) => (ticks / TPQ) * (60 / tempo)
+export const secondsToTicks = (sec: number, tempo: number) => Math.round((sec * tempo * TPQ) / 60)
+
+/** "1 分 40 秒" */
+export function formatLong(sec: number): string {
+  const s = Math.round(sec)
+  return s >= 60 ? `${Math.floor(s / 60)} 分 ${s % 60} 秒` : `${s} 秒`
+}
+/** "1:40" */
+export function formatClock(sec: number): string {
+  const s = Math.max(0, Math.floor(sec))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** Where a candidate preview starts: the vocal-led section, else the middle of the song. */
+export function previewStartTick(song: Song): number {
+  const bt = barTicks(song.meter)
+  const lead = song.sections.find((s) => s.lead === 'vocal')
+  if (lead) return lead.startBar * bt
+  return Math.floor(song.bars / 2) * bt
+}
