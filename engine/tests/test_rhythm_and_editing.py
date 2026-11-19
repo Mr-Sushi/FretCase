@@ -99,8 +99,9 @@ def test_lyrics_one_character_per_note_and_mismatch_detail(song_cache):
 
 
 def test_lyrics_lines_and_english_words():
-    assert editing.split_syllables("海风，吹过\n你 好") == [["海", "风"], ["吹", "过"], ["你", "好"]]
-    assert editing.split_syllables("sea breeze, blow") == [["sea", "breeze"], ["blow"]]
+    # only line breaks start a new line; punctuation and spaces are ignored
+    assert editing.split_syllables("海风，吹过\n你 好") == [["海", "风", "吹", "过"], ["你", "好"]]
+    assert editing.split_syllables("sea breeze, blow") == [["sea", "breeze", "blow"]]
 
 
 def test_set_sections_must_be_contiguous_and_cover_every_bar(song_cache):

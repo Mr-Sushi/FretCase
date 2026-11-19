@@ -126,6 +126,8 @@ def choose_archetypes(seed: Dict[str, Any], time_of_day: Optional[str], avoid: S
     chosen = [max(pool, key=weight)]
     while len(chosen) < 3:
         rest = [a for a in pool if a not in chosen]
+        fresh_lane = [a for a in rest if a["lane"] not in {c["lane"] for c in chosen}]
+        rest = fresh_lane or rest  # three different harmony colours whenever the pool allows
         chosen.append(max(rest, key=lambda a: weight(a) + 0.8 * min(_distance(a, c) for c in chosen)))
     return chosen
 

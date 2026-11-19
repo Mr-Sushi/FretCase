@@ -200,6 +200,17 @@ def check_consistency(song: Song) -> List[str]:
     for clip in song["tracks"]["ambience"]["clips"]:
         if clip["assetId"] not in asset_ids:
             problems.append("clip refers to a missing asset")
+    section_ids = [x["id"] for x in secs]
+    for track_id, track in song["tracks"].items():
+        if [r["section"] for r in track.get("regions", [])] != section_ids:
+            problems.append(f"{track_id} does not have exactly one region per section")
+            continue
+        for region, section in zip(track["regions"], secs):
+            if region["play"]:
+                continue
+            start, end = section_window(song, section)
+            if any(start <= n["start"] < end for n in track.get("notes", [])) or any(start <= c["start"] < end for c in track.get("clips", [])):
+                problems.append(f"{track_id} has notes in {section['id']} where play is false")
     return problems
 
 
@@ -226,7 +237,8 @@ def set_region(song: Song, track: str, section_id: str, play: Any = None, comple
     play_changed = "play" in fields and fields["play"] != region["play"]
     region.update(fields)
     R.regenerate_region(s, track, section_id, line=line)
-    if track == "vocal" and play_changed and not is_locked(s, "melody", section_id):
+    melody_answers = R.region_of(s, "melody", section_id)["style"] == "answer"
+    if track == "vocal" and play_changed and (melody_answers or not is_locked(s, "melody", section_id)):
         R.regenerate_region(s, "melody", section_id, line=line)  # a melody that answers the vocal depends on it
     add_lock(s, track, section_id)
     R.refresh_rhythm(s)
