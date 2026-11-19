@@ -1,117 +1,139 @@
-"""Offline stylisation of a photo: ink, comic, xieyi and original. Output is bilevel (0 or 255).
+"""Offline photo styles for the picture area: ink, comic, xieyi and original.
 
-Every filter is deterministic: the same photo and size always give the same pixels.
+All filters take and return a BGR uint8 array of the same size, use only OpenCV and NumPy, and
+are deterministic (any randomness is seeded), so a preview and a print match.
 """
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
-from PIL import Image, ImageChops, ImageFilter, ImageOps
+from PIL import Image, ImageOps
+
+PAPER_BGR = (228, 241, 247)  # #F7F1E4
 
 
-def cover(img: Image.Image, size: tuple[int, int]) -> Image.Image:
-    """Resize to fill ``size`` and crop the centre."""
-    return ImageOps.fit(img, size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
-
-
-def load_gray(path, size: tuple[int, int]) -> Image.Image:
+def load_cover(path, size: tuple[int, int]) -> np.ndarray:
+    """Read a photo (EXIF rotation applied), fill ``size`` by scaling and centre-cropping. BGR."""
     with Image.open(path) as im:
-        im = ImageOps.exif_transpose(im)
-        im = im.convert("RGB")
-        return cover(im, size).convert("L")
+        im = ImageOps.exif_transpose(im).convert("RGB")
+        im = ImageOps.fit(im, size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+        return cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
 
 
-def _arr(img: Image.Image) -> np.ndarray:
-    return np.asarray(img, dtype=np.float32)
-
-
-def _img(a: np.ndarray) -> Image.Image:
-    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "L")
-
-
-def _dither(img: Image.Image) -> Image.Image:
-    """Floyd-Steinberg to 1 bit, back to 0/255 'L'."""
-    return img.convert("1", dither=Image.Dither.FLOYDSTEINBERG).convert("L")
-
-
-def _vignette(shape: tuple[int, int], strength: float, power: float = 2.0) -> np.ndarray:
-    """0 in the middle to ``strength`` at the corners (added to the tone to fade to paper)."""
-    h, w = shape
+def _vignette(shape, strength: float, power: float = 2.0) -> np.ndarray:
+    h, w = shape[:2]
     y, x = np.mgrid[0:h, 0:w].astype(np.float32)
     r = np.sqrt(((x - w / 2) / (w / 2)) ** 2 + ((y - h / 2) / (h / 2)) ** 2) / np.sqrt(2)
     return strength * np.clip(r, 0, 1) ** power
 
 
-def _lines(gray: Image.Image, small: float, large: float, threshold: float) -> np.ndarray:
-    """Difference of Gaussians: True where there is a dark edge."""
-    a = _arr(gray.filter(ImageFilter.GaussianBlur(small)))
-    b = _arr(gray.filter(ImageFilter.GaussianBlur(large)))
-    return (b - a) > threshold
+def _grain(shape, amount: float, seed: int = 7) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    g = rng.normal(0, amount, shape[:2]).astype(np.float32)
+    return cv2.GaussianBlur(g, (0, 0), 0.8)[..., None]
 
 
-def original(gray: Image.Image) -> Image.Image:
-    g = ImageOps.autocontrast(gray, cutoff=1)
-    g = _img(255 * (_arr(g) / 255) ** 1.1)
-    return _dither(g)
+def original(b: np.ndarray) -> np.ndarray:
+    """Warm, slightly faded film look."""
+    f = b.astype(np.float32) / 255
+    f = 0.05 + 0.92 * f
+    f[..., 2] *= 1.05
+    f[..., 0] *= 0.94
+    f = f * (1 - _vignette(b.shape, 0.22)[..., None])
+    return np.clip(f * 255 + _grain(b.shape, 2.5), 0, 255).astype(np.uint8)
 
 
-def ink(gray: Image.Image) -> Image.Image:
-    """Ink wash (水墨): soft grey washes, dark brush edges, paper white at the borders."""
-    g = ImageOps.autocontrast(gray, cutoff=2)
-    wash = _arr(g.filter(ImageFilter.GaussianBlur(2.0)))
-    wash = 255 * (wash / 255) ** 1.5                      # most of the picture lighter than the photo
-    wash = wash + _vignette(wash.shape, 140)              # fade to paper at the edges
-    tone = _dither(_img(wash))
-    edges = _lines(g, 1.2, 4.0, 14.0)
-    out = _arr(tone)
-    out[edges] = 0
-    return _img(out)
+def xieyi(b: np.ndarray) -> np.ndarray:
+    """Watercolour (写意): flat washes, soft edges, light paper showing through, pale borders."""
+    s = cv2.stylization(b, sigma_s=80, sigma_r=0.45)
+    paper = np.empty_like(s)
+    paper[:] = PAPER_BGR
+    out = cv2.addWeighted(s, 0.82, paper, 0.18, 0).astype(np.float32)
+    fade = np.clip(_vignette(b.shape, 0.55, 2.6), 0, 1)[..., None]
+    out = out * (1 - fade) + np.array(PAPER_BGR, np.float32) * fade
+    out += _grain(b.shape, 3.0)
+    return np.clip(out, 0, 255).astype(np.uint8)
 
 
-def comic(gray: Image.Image) -> Image.Image:
-    """Comic (漫画): three tones as a 45 degree halftone screen, with heavy outlines."""
-    g = ImageOps.autocontrast(gray, cutoff=1)
-    soft = g.filter(ImageFilter.GaussianBlur(1.5))
-    tone = _arr(soft) / 255.0
-    tone = np.floor(tone * 3.0) / 2.0                      # posterise to 4 levels: 0, .5, 1 (and 1.5 clipped)
-    tone = np.clip(tone, 0, 1)
-    h, w = tone.shape
+def ink(b: np.ndarray) -> np.ndarray:
+    """Ink wash (水墨): grey-black washes on warm paper, dark brush edges, fading at the border."""
+    g8 = cv2.cvtColor(cv2.edgePreservingFilter(b, flags=1, sigma_s=60, sigma_r=0.4), cv2.COLOR_BGR2GRAY)
+    g8 = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4, 3)).apply(g8)  # even out dark or bright photos
+    g = cv2.normalize(g8, None, 0, 255, cv2.NORM_MINMAX).astype(np.float32) / 255
+    wash = np.clip(0.08 + 0.92 * g ** 1.9, 0, 1)
+    wash = np.clip(wash + _vignette(b.shape, 0.7, 2.4), 0, 1)
+    blur_a = cv2.GaussianBlur(g, (0, 0), 1.2)
+    blur_b = cv2.GaussianBlur(g, (0, 0), 4.0)
+    edge = np.clip((blur_b - blur_a - 0.015) * 9.0, 0, 1)
+    edge *= 1 - np.clip(_vignette(b.shape, 1.0, 1.6) * 1.4, 0, 1)
+    tone = np.clip(wash - 0.85 * edge, 0, 1)
+    dark = np.array([42, 38, 34], np.float32)  # warm black
+    paper = np.array(PAPER_BGR, np.float32)
+    out = dark[None, None, :] + (paper - dark)[None, None, :] * tone[..., None]
+    out += _grain(b.shape, 2.0)
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def _halftone(shape, cell: float, coverage: np.ndarray) -> np.ndarray:
+    """Dots on a 45 degree grid; ``coverage`` in 0..1 sets the dot size. True where inked."""
+    h, w = shape[:2]
     y, x = np.mgrid[0:h, 0:w].astype(np.float32)
-    cell = 7.0
-    c, s = np.cos(np.pi / 4), np.sin(np.pi / 4)
+    c = s = np.float32(np.sqrt(0.5))
     u = (x * c + y * s) / cell
     v = (-x * s + y * c) / cell
-    screen = (np.cos(2 * np.pi * u) + np.cos(2 * np.pi * v)) / 4.0 + 0.5   # 0..1, one dot per cell
-    dark = 1.0 - tone
-    out = np.where(dark > screen * 0.95 + 0.02, 0.0, 255.0)
-    out[dark < 0.06] = 255.0
-    # outlines from the unposterised picture, thickened
-    edges = _lines(g, 1.0, 3.0, 18.0)
-    line_img = Image.fromarray(np.where(edges, 0, 255).astype(np.uint8), "L").filter(ImageFilter.MinFilter(3))
-    out_img = ImageChops.darker(_img(out), line_img)
-    return out_img
+    d = np.sqrt((u - np.round(u)) ** 2 + (v - np.round(v)) ** 2)  # 0 at the dot centre, up to ~0.7
+    radius = np.sqrt(np.clip(coverage, 0, 1) / np.pi) * 1.05
+    return d < radius
 
 
-def xieyi(gray: Image.Image) -> Image.Image:
-    """Freehand ink (写意): big soft shapes, a few strong strokes, plenty of white paper."""
-    g = ImageOps.autocontrast(gray, cutoff=3)
-    small = g.resize((max(1, g.width // 6), max(1, g.height // 6)), Image.Resampling.BOX)
-    soft = small.resize(g.size, Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(5))
-    a = _arr(soft) / 255.0
-    a = np.clip((a - 0.25) / 0.6, 0, 1)                      # push light areas to white
-    a = a ** 1.3
-    wash = 255 * a + _vignette(a.shape, 255, power=1.6)       # strong fade: the edges are blank paper
-    tone = _dither(_img(np.clip(wash, 0, 255)))
-    strokes = _lines(g, 2.5, 8.0, 12.0)
-    stroke_img = Image.fromarray(np.where(strokes, 0, 255).astype(np.uint8), "L").filter(ImageFilter.MedianFilter(5))
-    fade = _vignette(a.shape, 1.0, power=1.4)
-    stroke_arr = _arr(stroke_img)
-    stroke_arr[fade > 0.55] = 255                              # no strokes near the border
-    return _img(np.minimum(_arr(tone), stroke_arr))
+def comic(b: np.ndarray) -> np.ndarray:
+    """Comic (漫画): flat saturated colour areas, halftone dots in the shadows, bold black outlines."""
+    h, w = b.shape[:2]
+    smooth = b
+    for _ in range(2):
+        smooth = cv2.bilateralFilter(smooth, 9, 70, 9)
+    smooth = cv2.pyrMeanShiftFiltering(smooth, 10, 26)
+
+    # Flat colour: k-means in Lab (seeded), then a median to clear speckles.
+    lab = cv2.cvtColor(smooth, cv2.COLOR_BGR2LAB)
+    small = cv2.resize(lab, (w // 4, h // 4), interpolation=cv2.INTER_AREA).reshape(-1, 3).astype(np.float32)
+    cv2.setRNGSeed(1234)
+    crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
+    _, _, centres = cv2.kmeans(small, 7, None, crit, 1, cv2.KMEANS_PP_CENTERS)
+    flat_lab = lab.reshape(-1, 1, 3).astype(np.float32)
+    d = ((flat_lab - centres[None, :, :]) ** 2).sum(axis=2)
+    labels = d.argmin(axis=1).reshape(h, w).astype(np.uint8)
+    labels = cv2.medianBlur(labels, 7)
+    flat = centres[labels].astype(np.uint8)
+    flat = cv2.cvtColor(flat, cv2.COLOR_LAB2BGR)
+    hsv = cv2.cvtColor(flat, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[..., 1] = np.clip(hsv[..., 1] * 1.3, 0, 255)
+    hsv[..., 2] = np.clip((hsv[..., 2] - 128) * 1.12 + 134, 0, 255)
+    flat = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+    # Halftone dots in the shadows: darker areas get bigger dots of a deep tone.
+    gray = cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
+    shade = np.clip((0.5 - gray) / 0.4, 0, 1)
+    dots = _halftone(b.shape, 9.0, shade * 0.9)
+    deep = (flat.astype(np.float32) * 0.45).astype(np.uint8)
+    out = np.where(dots[..., None], deep, flat)
+
+    # Outlines: from the lightly smoothed photo, thickened, with tiny specks removed.
+    g = cv2.cvtColor(cv2.bilateralFilter(b, 7, 50, 7), cv2.COLOR_BGR2GRAY)
+    g = cv2.GaussianBlur(g, (0, 0), 1.6)
+    edges = cv2.Canny(g, 40, 110)
+    edges = cv2.dilate(edges, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    n, lab_cc, stats, _ = cv2.connectedComponentsWithStats(edges, connectivity=8)
+    keep = np.zeros(n, bool)
+    keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= 90
+    edges = (keep[lab_cc] * 255).astype(np.uint8)
+    out[edges > 0] = (22, 18, 20)
+    return out
 
 
-STYLES = {"ink": ink, "comic": comic, "xieyi": xieyi, "original": original}
+STYLES = {"original": original, "xieyi": xieyi, "ink": ink, "comic": comic}
 
 
-def stylise(style: str, gray: Image.Image) -> Image.Image:
-    return STYLES[style](gray)
+def stylise(style: str, picture: np.ndarray) -> np.ndarray:
+    return STYLES[style](picture)

@@ -30,6 +30,8 @@ A page served over https can only open `wss://` addresses (browsers block `ws://
 
 The last address used is remembered but not connected automatically; use `?ws=` for that.
 
+The 当前界面 menu (采集, 选一首, 打磨, 音轨, 歌词, 做卡) puts the screen name in front of every log line, to make it easy to follow which screen a test run was on. It is a local label only: the panel protocol is unchanged and nothing about the screen is sent.
+
 ## Controls
 
 | Control | Input | Message |

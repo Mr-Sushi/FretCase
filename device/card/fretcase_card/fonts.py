@@ -1,4 +1,9 @@
-"""Font lookup. Cards use a Chinese font; there is none in the repository, so find one."""
+"""Font lookup. Cards use a CJK serif for titles and a CJK sans for the rest.
+
+No font is stored in the repository. ``FRETCASE_CARD_FONT`` (a font file) overrides both faces.
+When no CJK font can be found, ``OSError`` is raised with a message that says what to install:
+printing boxes instead of Chinese would waste a film.
+"""
 
 from __future__ import annotations
 
@@ -10,20 +15,20 @@ from PIL import ImageFont
 
 FONT_ENV = "FRETCASE_CARD_FONT"
 
-# (path, collection index preference). For .ttc files the Simplified Chinese face is chosen by name.
-_CANDIDATES = [
-    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
-    "/usr/share/fonts/truetype/noto/NotoSerifCJK-Bold.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
-    "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/noto-cjk/NotoSansCJK-Bold.ttc",
+_DIRS = [
+    "/usr/share/fonts/opentype/noto",
+    "/usr/share/fonts/truetype/noto",
+    "/usr/share/fonts/noto-cjk",
+    "/usr/share/fonts/google-noto-cjk",
+]
+_SERIF = [f"{d}/NotoSerifCJK-{w}.ttc" for w in ("Bold", "SemiBold", "Regular") for d in _DIRS]
+_SANS = [f"{d}/NotoSansCJK-{w}.ttc" for w in ("Medium", "Regular", "Bold") for d in _DIRS]
+_OTHER = [
     "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
     "/usr/share/fonts/wenquanyi/wqy-zenhei/wqy-zenhei.ttc",
     "/System/Library/Fonts/PingFang.ttc",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
 ]
+_CANDIDATES = {"serif": _SERIF + _SANS + _OTHER, "sans": _SANS + _SERIF + _OTHER}
 
 
 def _open(path: str, size: int) -> ImageFont.FreeTypeFont:
@@ -40,22 +45,34 @@ def _open(path: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(path, size)
 
 
-@lru_cache(maxsize=1)
-def font_path() -> str | None:
+def font_path(kind: str = "sans") -> str:
+    """Path of the font file for ``kind`` ("serif" or "sans"). Raises OSError if none exists."""
     env = os.environ.get(FONT_ENV)
-    if env and Path(env).is_file():
-        return env
-    for p in _CANDIDATES:
+    if env:
+        if Path(env).is_file():
+            return env
+        raise OSError(f"{FONT_ENV}={env!r} is not a file; point it at a CJK font (.ttf, .otf or .ttc)")
+    for p in _CANDIDATES[kind]:
         if Path(p).is_file():
             return p
-    return None
+    raise OSError(
+        "no CJK font found for card text: install fonts-noto-cjk (Debian, Raspberry Pi OS) "
+        f"or set {FONT_ENV} to a font file"
+    )
 
 
-@lru_cache(maxsize=64)
-def get_font(size: int) -> ImageFont.ImageFont | ImageFont.FreeTypeFont:
-    path = font_path()
-    if path is None:
-        # Pillow's built-in font has no Chinese glyphs; text will show boxes. Install
-        # fonts-noto-cjk on the Pi, or set FRETCASE_CARD_FONT.
-        return ImageFont.load_default(size)
-    return _open(path, size)
+@lru_cache(maxsize=128)
+def get_font(kind: str, size: int) -> ImageFont.FreeTypeFont:
+    return _open(font_path(kind), size)
+
+
+def serif(size: int) -> ImageFont.FreeTypeFont:
+    return get_font("serif", size)
+
+
+def sans(size: int) -> ImageFont.FreeTypeFont:
+    return get_font("sans", size)
+
+
+def clear_cache() -> None:
+    get_font.cache_clear()

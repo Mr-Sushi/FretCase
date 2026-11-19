@@ -1,35 +1,27 @@
 # device/card
 
-Python package `fretcase_card`: card layout, offline stylisation (ink, comic, xieyi) and thermal printing. Called by `server/`. Interface in ../../docs/milestone-1.md (`CardInput`, `CardImages`, `render_card`, `Printer`, `PrinterError`, all importable from `fretcase_card`). Owner: agent C.
+Python package `fretcase_card`, version 2: renders the Instax Wide card and prints it. Interface in `../../docs/milestone-2.md` ("Card module, version 2"): `CardInput`, `CardImages`, `render_card`, `Printer`, `PrinterError`, all importable from `fretcase_card`. Owner: agent C.
 
-## Geometry
+## Layout (1260 x 840)
 
-58 mm thermal paper is 384 dots wide at 203 dpi. A card is 54 x 86 mm, so one face is 384 x 688 dots. The strip is 384 x 1390: front (688), a 14-dot fold line, back (688). The back half is turned 180 degrees in the strip so it reads upright after the strip is folded over the card's bottom edge and the card is turned over like a page (`STRIP_BACK_ROTATION` in `render.py`; set it to 0 for a fold over the top edge). `back_png` is always upright.
+Picture 1260 x 610 on top, paper strip (`#F7F1E4`) 230 px below: title (serif, 64 px, shrinks to 34), line (sans, 28 px, shrinks to 18), `city · date` (24 px), and a 178 px QR code (error correction H, modules 4 or 5 px, note mark in the centre). Nothing is drawn over the picture. Long text shrinks, then ends with an ellipsis; it never reaches the QR code.
 
-## Faces
-
-- **Front with a photo** (styles `ink`, `comic`, `xieyi`, `original`): centre-cropped photo, stylised, inside a frame.
-  - `ink` (水墨): grey washes dithered, dark brush edges, fades to paper at the border.
-  - `comic` (漫画): four tones as a 45 degree halftone screen, thick outlines.
-  - `xieyi` (写意): big soft shapes, a few strong strokes, mostly white paper.
-  - `original`: contrast-stretched, Floyd-Steinberg dither.
-- **Front without a photo**, or style `text`: the `line` (or the title when there is no line), large, under a small waveform that is derived from the title so each card differs.
-- **Back**: title, QR code of `share_url` (error correction M, 4-module quiet zone, as large as fits in 300 dots), the city only when it is not None and not empty, the date.
-
-Everything is bilevel and deterministic: the same input gives the same bytes. Text is thresholded, photos are dithered.
+Styles (OpenCV and NumPy only, deterministic): `original` (warm film look), `xieyi` (watercolour, pale borders), `ink` (grey-black wash on paper, brush edges), `comic` (flat colour areas from seeded k-means, halftone dots in the shadows, black outlines), `text` (paper with the line, or the title, set large and balanced; the strip then does not repeat the line).
 
 ## Fonts
 
-No font is stored in the repository. `fonts.py` looks for Noto Serif/Sans CJK (`fonts-noto-cjk` on Debian and Raspberry Pi OS), then WenQuanYi, then DejaVu. Set `FRETCASE_CARD_FONT` to use another file. Without a Chinese font, Chinese text prints as boxes. Preview and print match only when both use the same font and Pillow version.
+No font is stored in the repository: Noto Serif/Sans CJK (`fonts-noto-cjk`), then WenQuanYi. `FRETCASE_CARD_FONT` (a font file) overrides both faces. With no CJK font `render_card` raises `OSError` naming the package to install.
 
-## Printer
+## Printers (`FRETCASE_PRINTER`, default `dry_run`)
 
-`Printer(device=None, dry_run_dir=None)`. `device` is `usb:0x0416:0x5011` (vendor and product id), `serial:/dev/ttyUSB0[:baud]` or a device file such as `/dev/usb/lp0`; if None, `FRETCASE_PRINTER` is used. With `dry_run_dir` each `print_strip` writes `print-0001.png`, `print-0002.png`, ... (the strip bytes unchanged) and `status()` is `{"connected": true, "paper": "ok"}`. Errors raise `PrinterError`. `status()` never raises; paper is `"unknown"` when the printer cannot report it. Real hardware has not been tested; only the python-escpos output (raster command and feed) is checked with a dummy printer.
+- `dry_run`: `print-0001.png`, ... in `FRETCASE_DRY_RUN_DIR` (default `./fretcase-prints`) or the `dry_run_dir` argument.
+- `instax` / `instax:<BLE address>`: Instax Wide Link over Bluetooth LE with `bleak` (`instax.py`). **Untested on a device.** Framing, JPEG encoding (1260 x 840, at most 105 KB) and the print sequence are tested against a fake BLE client only. The data chunk size (900) is an assumption; override with `FRETCASE_INSTAX_CHUNK`. The protocol follows the notes of javl/InstaxBLE (MIT); the code is a reimplementation, nothing was copied.
+- `thermal:usb:<vid>:<pid>` (hex): ESC/POS; the card is turned 90 degrees, scaled to 384 px wide and dithered.
+
+`status()` never raises. `print_card` raises `PrinterError`.
 
 ## Tests
 
 ```
 cd device && uv run pytest card
 ```
-
-Renders each style from a synthetic photo, a card with no photo, checks determinism, sizes, layout limits, the strip layout, decodes the QR code with OpenCV (dev dependency, skipped if missing), and the printer in dry-run and with a dummy backend.

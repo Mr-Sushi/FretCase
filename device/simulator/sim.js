@@ -272,6 +272,7 @@
   var logEl = document.getElementById('log');
   var showIn = document.getElementById('show-in');
   var lines = [];
+  var screenSel = document.getElementById('screen');  // a label for the log only; never sent
   function logLine(entry) {
     if (entry.dir === 'in' && !showIn.checked) return;
     var m = entry.msg;
@@ -280,7 +281,7 @@
     var cls = entry.dir === 'in' ? 'in' : entry.sent ? 'out-sent' : 'out-dry';
     var d = document.createElement('div');
     d.className = cls;
-    d.textContent = tag + '#' + m.seq + ' t=' + m.t + ' ' + body;
+    d.textContent = '[' + screenSel.value + '] ' + tag + '#' + m.seq + ' t=' + m.t + ' ' + body;
     var atEnd = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 4;
     logEl.appendChild(d);
     lines.push(d);
