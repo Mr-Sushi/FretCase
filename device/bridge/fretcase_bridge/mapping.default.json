@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "comment": "Default MIDI mapping between the controller firmware and the bridge. Channel numbers are 1-16. Platter and knobs send relative CC (two's complement, 7 bit: 1..63 is +1..+63, 127..65 is -1..-63). Faders send absolute CC 0..127. Keys send note on (velocity > 0) and note off. Lights go the other way as SysEx.",
+  "channel": 1,
+  "platter": { "cc": 16 },
+  "knobs": {
+    "brightness": 17,
+    "complexity": 18,
+    "density": 19,
+    "tempo": 20
+  },
+  "faders": {
+    "vocal": 21,
+    "melody": 22,
+    "guitar": 23,
+    "bass": 24,
+    "drums": 25,
+    "ambience": 26
+  },
+  "keys": {
+    "capture": 36,
+    "play": 37,
+    "undo": 38,
+    "another": 39,
+    "track.vocal": 40,
+    "track.melody": 41,
+    "track.guitar": 42,
+    "track.bass": 43,
+    "track.drums": 44,
+    "track.ambience": 45
+  },
+  "fader_default": 0.8,
+  "sysex": {
+    "prefix": [125, 70, 67],
+    "ring": 1,
+    "key_light": 2,
+    "dump_request": 3,
+    "version": 4,
+    "key_modes": { "off": 0, "on": 1, "blink": 2, "pulse": 3 }
+  }
+}
