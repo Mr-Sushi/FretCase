@@ -18,6 +18,10 @@ export interface AudioLike {
   setTrackGain(track: TrackId, volume: number, muted: boolean): void
   setSolo?(track: TrackId | null): void
   setMaster?(volume: number, space: SpaceId): void
+  /** Platter while playing: true when the song is played like a record; false means "seek instead". */
+  jog?(delta: number): boolean
+  /** Prepares what jog needs (a rendered copy of the song) in the background. */
+  prepareJog?(): void
 }
 
 /** What the controller needs from the panel socket. */
@@ -60,6 +64,7 @@ export class Controller {
         volume: (t) => st.state.song?.tracks[t].volume ?? 0.8,
         controlValue: (c) => st.state.song?.controls[c] ?? 0.5,
         tempo: () => st.state.song?.tempo ?? 84,
+        playing: () => st.state.playing && !st.state.preview,
         focus: () => st.state.focus,
         sectionIndex: () => Math.max(0, st.state.song?.sections.findIndex((s) => s.id === st.state.editSection) ?? 0),
         cardStyleIndex: () => Math.max(0, CARD_STYLE_ORDER.indexOf((st.state.song?.card?.style ?? 'xieyi') as CardStyle)),
@@ -649,6 +654,7 @@ export class Controller {
     this.applyLoop()
     await this.audio.play()
     this.store.set({ playing: true })
+    this.audio.prepareJog?.()
     this.log('play')
   }
   pause() { this.audio?.stop(); this.store.set({ playing: false }); this.log('pause') }
@@ -813,6 +819,7 @@ export class Controller {
       case 'track.select': this.selectTrack(s.selectedTrack === i.track ? null : i.track); return
       case 'track.mute': void this.toggleMute(i.track); return
       case 'seek': this.seekToBar(i.bar); return
+      case 'jog': if (!this.audio?.jog?.(i.delta)) this.seekToBar(i.bar); return
       case 'volume': void this.setVolume(i.track, i.value); return
       case 'control': void this.setControl(i.control, i.value); return
       case 'tempo': void this.setTempo(i.value); return

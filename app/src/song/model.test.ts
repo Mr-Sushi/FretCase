@@ -27,7 +27,7 @@ describe('the song page', () => {
     const hidden: SharePage = { ...page, photos: [] }
     delete hidden.city
     const model = buildModel(hidden, song)
-    expect(model.meta).toBe('2026年11月19日')
+    expect(model.meta).toBe(formatDate(hidden.date))
     expect(JSON.stringify(model)).not.toContain('厦门' + ' ·')
     expect(model.photos).toEqual([])
     // The song JSON still carries the card's city; the page must not read it.

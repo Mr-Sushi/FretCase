@@ -13,6 +13,8 @@ export type Intent =
   | { type: 'track.select'; track: TrackId }
   | { type: 'track.mute'; track: TrackId }
   | { type: 'seek'; bar: number }
+  /** A platter turn while the song plays: played like a record; `bar` is where a plain seek would go. */
+  | { type: 'jog'; delta: number; bar: number }
   | { type: 'volume'; track: TrackId; value: number }
   | { type: 'control'; control: 'brightness' | 'complexity' | 'density'; value: number }
   | { type: 'tempo'; value: number }
@@ -41,6 +43,8 @@ export interface PanelContext {
   volume(track: TrackId): number
   controlValue(control: 'brightness' | 'complexity' | 'density'): number
   tempo(): number
+  /** Whether the song is playing: then the platter plays it like a record instead of moving the position. */
+  playing(): boolean
 }
 
 export interface InterpreterOptions {
@@ -139,7 +143,8 @@ export class PanelInterpreter {
       return
     }
     this.position = clamp(this.position + delta / this.opts.detentsPerBar, 0, this.ctx.bars)
-    this.emit({ type: 'seek', bar: this.position })
+    if (this.ctx.playing()) this.emit({ type: 'jog', delta, bar: this.position })
+    else this.emit({ type: 'seek', bar: this.position })
   }
 
   // ---- knobs ------------------------------------------------------------------------------

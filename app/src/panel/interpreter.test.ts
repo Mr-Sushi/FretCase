@@ -10,7 +10,7 @@ const sections: Section[] = [
 
 function setup(selected: PanelContext['selectedTrack'] = null, screen = 'shape') {
   const out: Intent[] = []
-  const state = { selected, screen, focus: 0, sectionIndex: 0, styleIndex: 1, region: { complexity: 0.5, intensity: 0.5 }, volumes: { drums: 0.8 } as Record<string, number>, controls: { brightness: 0.5, complexity: 0.5, density: 0.5 }, tempo: 84 }
+  const state = { selected, screen, focus: 0, sectionIndex: 0, styleIndex: 1, region: { complexity: 0.5, intensity: 0.5 }, volumes: { drums: 0.8 } as Record<string, number>, controls: { brightness: 0.5, complexity: 0.5, density: 0.5 }, tempo: 84, playing: false }
   const ctx: PanelContext = {
     screen: () => state.screen,
     focus: () => state.focus,
@@ -23,6 +23,7 @@ function setup(selected: PanelContext['selectedTrack'] = null, screen = 'shape')
     volume: (t) => state.volumes[t] ?? 0.8,
     controlValue: (c) => state.controls[c],
     tempo: () => state.tempo,
+    playing: () => state.playing,
   }
   const pi = new PanelInterpreter(ctx, (i) => out.push(i))
   let seq = 0
@@ -125,6 +126,19 @@ describe('platter', () => {
     send('platter.turn', { delta: 2 }, 0)
     expect(out).toEqual([{ type: 'seek', bar: 8 }])
     expect(pi.sectionUnderPlatter()?.id).toBe('s-chorus')
+  })
+})
+
+describe('platter while playing', () => {
+  it('plays the song like a record instead of seeking, and seeks again once stopped', () => {
+    const { out, send, state } = setup()
+    state.playing = true
+    send('platter.turn', { delta: 2 }, 0)
+    send('platter.turn', { delta: -1 }, 30)
+    expect(out).toEqual([{ type: 'jog', delta: 2, bar: 0.5 }, { type: 'jog', delta: -1, bar: 0.25 }])
+    state.playing = false
+    send('platter.turn', { delta: 4 }, 60)
+    expect(out.at(-1)).toEqual({ type: 'seek', bar: 1.25 })
   })
 })
 
