@@ -35,4 +35,18 @@ export const PAD_WORDS: Record<TrackId, [string, string, string, string]> = {
   drums: ['soft', 'loud', 'simple', 'busy'],
   ambience: ['far', 'near', 'steady', 'rolling'],
 }
+/** What each playing style does, in one plain line (the labels come from the catalogue). */
+export const STYLE_HELP: Record<TrackId, Record<string, string>> = {
+  vocal: { plain: 'One voice sings the tune', harmony: 'A second voice joins the tune' },
+  melody: { follow: 'Plays the tune along with the voice', answer: 'Plays in the gaps, when the voice rests' },
+  guitar: { strum: 'All the strings together, in a steady rhythm', arpeggio: 'The notes of each chord, one string at a time', muted: 'Short, damped strums, almost like a drum', sustain: 'Each chord played once and left to ring' },
+  bass: { sustain: 'One long low note under each chord', groove: 'Short notes that move with the drums', walking: 'Steps from note to note, beat by beat' },
+  drums: { brush: 'Soft, brushed strokes', sticks: 'A fuller beat, played with sticks', hand: 'Only a hand drum and a shaker' },
+  ambience: { recording: 'The sound you recorded, as it is', soft: 'The same sound, quieter' },
+}
+/** Titles of the two "how much" choices for each player: [how many notes, how hard]. */
+export const AXIS_TITLE: Record<TrackId, [string, string]> = {
+  vocal: ['How fancy', 'How strong'], melody: ['How busy', 'How loud'], guitar: ['How busy', 'How loud'],
+  bass: ['How busy', 'How loud'], drums: ['How busy', 'How loud'], ambience: ['Movement', 'How close'],
+}
 export const STYLE_TITLE: Record<TrackId, string> = { vocal: 'Voice', melody: 'How it plays', guitar: 'Playing style', bass: 'Playing style', drums: 'Drumming', ambience: 'Sound' }

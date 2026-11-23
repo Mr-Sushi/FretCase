@@ -1,7 +1,8 @@
 import { lyricsFailureText } from '../app/controller'
 import { useEffect, useState } from 'react'
 import { useApp, useSel } from '../app/context'
-import { countLine, rhymeLabel, rhymeNote, sectionLines } from '../lib/lyrics'
+import { countLine, rhymeLabel, rhymeNote, sectionLines, syllables, type LyricLine } from '../lib/lyrics'
+import type { Song } from '../types'
 import { PlayIcon, Segmented } from './ui'
 import { SubHeader } from './SubHeader'
 
@@ -33,7 +34,7 @@ export function LyricsView() {
 
   return (
     <>
-      <SubHeader tab="lyrics" hint="All the lyrics are here. After a change, tap a line to hear it sung" />
+      <SubHeader tab="lyrics" hint="Each dot is a note of the voice, with the syllable it sings. Tap ▶ to hear the tune of a line" />
       <main className="lyrics">
         <section aria-label="All lyrics" className="lyr-main">
           {sections.length === 0 && <div className="panel empty-note">This song has no vocal notes yet, so there are no lyrics to write.</div>}
@@ -59,11 +60,14 @@ export function LyricsView() {
                     <div key={l.index} className={`lyr-line ${selected ? 'sel' : ''}`}>
                       <button type="button" className="sqbtn" aria-label="Choose this line and listen" onClick={() => c.selectLine(s.id, l.index)}><PlayIcon size={14} color="#D4AE6A" /></button>
                       <label htmlFor={id} className="sr">{s.label} line {l.index + 1}</label>
-                      <input
-                        id={id} value={text} onChange={(e) => setDrafts((d) => ({ ...d, [key(s.id, l.index)]: e.target.value }))}
-                        onBlur={() => void commit(s.id, lines)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                        aria-invalid={bad || undefined}
-                      />
+                      <div className="lyr-mid">
+                        <input
+                          id={id} value={text} onChange={(e) => setDrafts((d) => ({ ...d, [key(s.id, l.index)]: e.target.value }))}
+                          onBlur={() => void commit(s.id, lines)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          aria-invalid={bad || undefined}
+                        />
+                        <LineNotes song={song} line={l} text={text} />
+                      </div>
                       <span className="lcount" style={{ color: bad ? WARN : OK }}>{cnt.label}{'\n'}{cnt.hint}</span>
                       <span className="lrhyme">{rhymeLabel(text)}</span>
                       <button type="button" className={`keepbtn ${kept ? 'on' : ''}`} aria-pressed={kept} onClick={() => c.toggleKeep(s.id, l.index)}>{kept ? 'Kept' : 'Keep'}</button>
@@ -134,5 +138,34 @@ function TakePanel() {
         : <button type="button" className="takebtn" disabled={take === 'saving'} onClick={() => void c.recordVocalTake()}>● {hasTake ? 'Again' : 'Record'}</button>}
       {hasTake && !take && <button type="button" className="linkbtn" onClick={() => void c.removeVocalTake()}>Guide voice</button>}
     </section>
+  )
+}
+
+/**
+ * The voice notes of one line, one dot per note (higher dots are higher notes), each with the syllable it sings:
+ * the same notes as the Voice row on the tracks screen. A syllable without a note, or a note without a syllable,
+ * shows in the warning colour; the note that is sounding lights up.
+ */
+function LineNotes({ song, line, text }: { song: Song; line: LyricLine; text: string }) {
+  const pos = useSel((s) => s.positionTick)
+  const playing = useSel((s) => s.playing)
+  const notes = song.tracks.vocal.notes.filter((n) => n.start >= line.fromTick && n.start < line.toTick).sort((a, b) => a.start - b.start)
+  const syl = syllables(text)
+  const lo = Math.min(...notes.map((n) => n.pitch)), hi = Math.max(...notes.map((n) => n.pitch))
+  const count = Math.max(notes.length, syl.length)
+  return (
+    <div className="linenotes" aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => {
+        const n = notes[i]
+        const now = !!n && playing && pos >= n.start && pos < n.start + n.duration
+        const lift = n ? (hi === lo ? 5 : Math.round(((n.pitch - lo) / (hi - lo)) * 10)) : 0
+        return (
+          <span key={i} className={`${now ? 'now' : ''} ${!n || syl[i] === undefined ? 'bad' : ''}`}>
+            <i style={n ? { transform: `translateY(${-lift}px)` } : { visibility: 'hidden' }} />
+            <em>{(syl[i] ?? '?').replace(/-$/, '‑')}</em>
+          </span>
+        )
+      })}
+    </div>
   )
 }

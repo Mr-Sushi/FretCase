@@ -224,7 +224,8 @@ export class MockApi implements Api {
     const song = this.get(id).song
     const out: LyricsTheme[] = []
     const text = song.seed?.inputs.find((i) => i.kind === 'text')?.text
-    if (text) for (const w of text.split(/[，。,.！!？?\s]+/).filter(Boolean).slice(0, 4)) out.push({ text: w.slice(0, 6), source: 'text' })
+    const SKIP = /^(a|an|the|at|in|on|of|to|and|or|but|is|are|was|very|little|bit|so|with|for|my|i|it)$/i
+    if (text) for (const w of [...new Set(text.split(/[^\p{L}']+/u).filter((x) => x.length > 2 && !SKIP.test(x)).map((x) => x.toLowerCase()))].slice(0, 4)) out.push({ text: w.slice(0, 16), source: 'text' })
     if (song.seed?.inputs.some((i) => i.kind === 'photo')) out.push({ text: 'warm colours', source: 'photo' })
     if (song.seed?.inputs.some((i) => i.kind === 'sound')) out.push({ text: 'waves', source: 'sound' })
     if (!out.length) out.push({ text: 'sea', source: 'photo' }, { text: 'wind', source: 'text' }, { text: 'dusk', source: 'text' }, { text: 'homesick', source: 'text' })

@@ -119,3 +119,46 @@ export function studioState(song: Song): 'none' | 'current' | 'older' {
   if (!r) return 'none'
   return song.revision === r.revision && r.basedOnRevision === r.revision - 1 ? 'current' : 'older'
 }
+
+/** How a song feels, from calm to lively: what the pick screen colours its cards by. */
+export interface Feel { id: 'calm' | 'gentle' | 'easy' | 'upbeat' | 'lively'; label: string; color: string; energy: number }
+const FEELS: { below: number; id: Feel['id']; label: string; color: string }[] = [
+  { below: 0.25, id: 'calm', label: 'Calm', color: '#6FA0E6' },
+  { below: 0.42, id: 'gentle', label: 'Gentle', color: '#55B8AE' },
+  { below: 0.58, id: 'easy', label: 'Easy-going', color: '#D9BC55' },
+  { below: 0.75, id: 'upbeat', label: 'Upbeat', color: '#EC9347' },
+  { below: Infinity, id: 'lively', label: 'Lively', color: '#E8604A' },
+]
+const DRIVE: Record<'drums' | 'guitar' | 'bass', { weight: number; styles: Record<string, number>; other: number }> = {
+  drums: { weight: 0.5, styles: { sticks: 1, hand: 0.7, brush: 0.45 }, other: 0.6 },
+  guitar: { weight: 0.3, styles: { strum: 1, muted: 0.85, arpeggio: 0.5, sustain: 0.15 }, other: 0.5 },
+  bass: { weight: 0.2, styles: { groove: 1, walking: 0.8, sustain: 0.3 }, other: 0.5 },
+}
+
+/**
+ * Energy from 0 (still) to 1 (driving): the tempo, and how hard the drums, guitar and bass push in the sections
+ * where they play. Only a reading of the song for display; nothing is stored.
+ */
+export function songEnergy(song: Song): number {
+  const tempo = clamp((song.tempo - 60) / 60, 0, 1)
+  let drive = 0
+  for (const t of ['drums', 'guitar', 'bass'] as const) {
+    const tr = song.tracks[t]
+    if (tr.muted || !song.sections.length) continue
+    const d = DRIVE[t]
+    let sum = 0
+    for (const s of song.sections) {
+      const r = tr.regions.find((x) => x.section === s.id)
+      if (r && r.play === false) continue
+      sum += d.styles[r?.style ?? ''] ?? d.other
+    }
+    drive += d.weight * (sum / song.sections.length)
+  }
+  return clamp(0.45 * tempo + 0.55 * drive, 0, 1)
+}
+
+export function songFeel(song: Song): Feel {
+  const energy = songEnergy(song)
+  const f = FEELS.find((x) => energy < x.below)!
+  return { id: f.id, label: f.label, color: f.color, energy }
+}

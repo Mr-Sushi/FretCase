@@ -212,6 +212,17 @@ export class Controller {
     this.log('region.select', { track, sectionId })
   }
 
+  /** Plays the chosen section from its start, in a loop: one player alone (`track`) or everyone (null). */
+  async hearRegion(track: TrackId | null) {
+    const s = this.store.state
+    const sec = s.editSection ?? s.song?.sections[0]?.id
+    if (!s.song || !sec) return
+    if (s.solo !== track) { this.store.set({ solo: track }); this.audio?.setSolo?.(track) }
+    this.selectSection(sec, true)
+    await this.play()
+    this.log('region.hear', { track, sec })
+  }
+
   selectTrack(track: TrackId | null) { this.store.set({ selectedTrack: track }); this.log('track.select', track) }
 
   sectionUnderPosition() {

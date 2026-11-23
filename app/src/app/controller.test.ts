@@ -627,3 +627,19 @@ describe('singing one\'s own vocal', () => {
     expect(store.state.vocalTake).toBeNull()
   })
 })
+
+describe('hearing one player in one section', () => {
+  it('solos the player, loops the section and plays from its start', async () => {
+    const { c, store, audio } = ctx
+    await c.openSong(DEMO)
+    const sec = store.state.song!.sections[1]
+    c.selectRegion('guitar', sec.id)
+    await c.hearRegion('guitar')
+    expect(store.state.solo).toBe('guitar')
+    expect(store.state.playing).toBe(true)
+    expect(store.state.looping).toBe(true)
+    expect(audio.loop).toEqual({ from: sec.startBar * 1920, to: sec.endBar * 1920 })
+    await c.hearRegion(null)
+    expect(store.state.solo).toBeNull()
+  })
+})

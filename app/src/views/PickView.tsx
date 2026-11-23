@@ -1,7 +1,7 @@
 import { StepHeader } from '../App'
 import { useApp, useSel } from '../app/context'
 import { PREVIEW_SECONDS } from '../app/controller'
-import { formatLong, songSeconds, TRACKS } from '../lib/song'
+import { formatLong, songFeel, songSeconds, TRACKS } from '../lib/song'
 import type { TimeOfDay } from '../types'
 import { PauseIcon, PlayIcon } from './ui'
 
@@ -23,6 +23,7 @@ export function PickView() {
           <div>
             <h1>Listen to these three and pick the one most like today</h1>
             <div className="lead">All three use what you captured, arranged in different ways. Turn the platter to move between them; press the red key to choose.</div>
+            <div className="feelkey" aria-hidden="true"><span>The colour shows the feel:</span><span>calm</span><i /><span>lively</span></div>
           </div>
           <div role="group" aria-label="Time of day" className="seg timeseg">
             {TIMES.map((t) => (
@@ -36,13 +37,14 @@ export function PickView() {
             const isPlaying = preview?.index === i && playing
             const progress = preview?.index === i ? Math.max(0, Math.min(100, ((pos - preview.fromTick) / (preview.toTick - preview.fromTick)) * 100)) : 0
             const focused = focus === i
+            const feel = songFeel(song)
             return (
-              <article key={song.id} className={`cand ${focused ? 'focus' : ''}`} onClick={() => c.focusCandidate(i)}>
+              <article key={song.id} className={`cand feel-${feel.id} ${focused ? 'focus' : ''}`} style={{ '--feel': feel.color } as React.CSSProperties} onClick={() => c.focusCandidate(i)}>
                 <div className="cand-title">
                   <span className="no">{i + 1}</span>
                   <h2>{cand?.name ?? song.title}</h2>
                 </div>
-                <div className="tags">{cand?.tags.map((t) => <span key={t}>{t}</span>)}</div>
+                <div className="tags"><span className="feeltag">{feel.label} · {song.tempo} BPM</span>{cand?.tags.map((t) => <span key={t}>{t}</span>)}</div>
                 <div className="parts" aria-label="Who is playing">
                   {TRACKS.map((t) => {
                     const p = cand?.parts?.[t.id]

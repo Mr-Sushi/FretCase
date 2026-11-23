@@ -11,7 +11,8 @@ import { BarSlider, KnobDial, PauseIcon, PlayIcon } from './ui'
 
 const LEADABLE: TrackId[] = ['vocal', 'melody', 'guitar']
 
-function SoundPicker({ track }: { track: TrackId }) {
+/** The instrument of one track, as a small menu; `up` opens it upwards, `onPick` replaces the plain change. */
+export function SoundPicker({ track, up, onPick }: { track: TrackId; up?: boolean; onPick?: (id: string) => void }) {
   const { c } = useApp()
   const song = useSel((s) => s.song)!
   const cat = useSel((s) => s.catalog)
@@ -24,10 +25,10 @@ function SoundPicker({ track }: { track: TrackId }) {
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3l4 4 4-4" stroke="#BFAE98" strokeWidth="1.6" fill="none" /></svg>
       </button>
       {open && (
-        <span className="menu" role="menu">
+        <span className={`menu ${up ? 'up' : ''}`} role="menu">
           {items.map((it) => (
             <button key={it.id} type="button" role="menuitemradio" aria-checked={it.id === song.tracks[track].instrument} className={it.id === song.tracks[track].instrument ? 'on' : ''}
-              onClick={() => { setOpen(false); void c.setInstrument(track, it.id) }}>{it.label}</button>
+              onClick={() => { setOpen(false); if (onPick) onPick(it.id); else void c.setInstrument(track, it.id) }}>{it.label}</button>
           ))}
         </span>
       )}
