@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FretCase app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #141a1d;
+  --surface: #1c2428;
+  --ink: #e8eef0;
+  --muted: #92a3aa;
+  --line: #2c3a40;
+  --accent: #4dbab5;
+  --accent-ink: #05201f;
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font-body); display: flex; flex-direction: column; }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 20px 6px; }
+header h1 { margin: 0; font: 700 20px/1.2 var(--font-display); }
+header p { margin: 0; color: var(--muted); font-size: 13px; flex: 1; min-width: 0; }
+.tabs { display: flex; gap: 6px; flex: none; }
+.tabs a { font: 600 13px/1 var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; text-decoration: none; }
+.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 20px 14px; gap: 12px; }
+#stage { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.bezel { background: #0b0d0e; border-radius: 28px; padding: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 0 0 1px #2a2f32; flex: none; }
+.screen { position: relative; overflow: hidden; border-radius: 10px; background: #1a1411; }
+.screen iframe { position: absolute; left: 0; top: 0; width: 1180px; height: 820px; border: 0; transform-origin: 0 0; }
+.panel { flex: none; display: flex; align-items: center; gap: 22px; background: #5b3a22; background: linear-gradient(#6b4529, #553620); border-radius: 16px; padding: 12px 22px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.35); flex-wrap: wrap; justify-content: center; }
+.grp { display: flex; align-items: center; gap: 10px; }
+.cap { color: #f1e2c7; font-size: 11px; letter-spacing: .02em; text-align: center; margin-top: 5px; }
+.ctl { display: flex; flex-direction: column; align-items: center; }
+button { font: inherit; cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; }
+.round { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #c9a24c; background: #f1e6cf; box-shadow: 0 3px 0 #8b6a2c; transition: transform .05s, box-shadow .05s, filter .2s; }
+.round.red { background: #d64533; }
+.round:active, .round.down { transform: translateY(3px); box-shadow: 0 0 0 #8b6a2c; }
+.round.lit { filter: brightness(1.25) drop-shadow(0 0 8px rgba(255,240,200,.8)); }
+.round.red.lit { filter: brightness(1.15) drop-shadow(0 0 9px rgba(255,90,70,.9)); }
+.round.dim { filter: brightness(.7); }
+.platter { margin: 10px; position: relative; width: 74px; height: 74px; border-radius: 50%; background: radial-gradient(circle, #2d5c48 0 14%, #f1ece0 15% 46%, #1d1f22 47% 70%, #c9a24c 71% 73%, transparent 74%); }
+.ring { position: absolute; inset: -9px; pointer-events: none; }
+.ring i { position: absolute; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; background: #e9dfc8; opacity: .45; }
+.spin { width: 34px; height: 34px; border-radius: 8px; border: 1px solid #c9a24c; background: #2a1c12; color: #f1e2c7; font-size: 15px; }
+.spin:active, .spin.down { background: #c9a24c; color: #2a1c12; }
+.track { width: 32px; height: 28px; border-radius: 5px; border: 0; box-shadow: 0 3px 0 rgba(0,0,0,.4); opacity: .55; }
+.track.lit { opacity: 1; box-shadow: 0 3px 0 rgba(0,0,0,.4), 0 0 10px currentColor; }
+.track:active, .track.down { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.foot { color: var(--muted); font-size: 12px; text-align: center; margin: 0 auto 12px; padding: 0 20px; max-width: 980px; }
+kbd { font: 600 11px/1 var(--font-body); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; color: var(--ink); }
+@media (min-aspect-ratio: 3/2) and (min-width: 900px) {
+  main { flex-direction: row; align-items: stretch; padding-right: 16px; }
+  .panel { flex-direction: column; justify-content: center; gap: 26px; padding: 18px 12px; width: 236px; }
+  .panel .grp:first-child { flex-wrap: nowrap; gap: 6px; }
+  .panel .grp { flex-wrap: wrap; justify-content: center; }
+  .panel .grp:nth-child(2) { display: grid; grid-template-columns: repeat(2, auto); gap: 12px 22px; }
+  #tracks { display: grid; grid-template-columns: repeat(3, auto); gap: 10px 12px; }
+}
+@media (max-width: 760px) { header { flex-wrap: wrap; } header p { flex-basis: 100%; order: 3; } .panel { gap: 14px; padding: 10px 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>FretCase app</h1>
+  <p>The software that runs on the case's iPad, at full size, in demo mode (offline, sample photos, simulated recording). The buttons next to it stand in for the controls on the case.</p>
+  <nav class="tabs" aria-label="Pages"><a href="index.html#model">3D model</a><a href="app.html" aria-current="page">App</a><a href="index.html#wiring">Wiring</a></nav>
+</header>
+<main>
+  <div id="stage">
+    <div class="bezel"><div class="screen" id="screen"><iframe id="app" title="FretCase app (demo mode)" src="device/index.html?mock=1&amp;lyrics=online&amp;panel=sim://panel" allow="autoplay"></iframe></div></div>
+  </div>
+  <section class="panel" aria-label="Controls on the case">
+    <div class="grp">
+      <div class="ctl"><button type="button" class="spin" data-turn="-1" aria-label="Turn the platter back">◀</button><div class="cap">back</div></div>
+      <div class="ctl"><div class="platter" aria-hidden="true"><div class="ring" id="ring"></div></div><div class="cap">Platter</div></div>
+      <div class="ctl"><button type="button" class="spin" data-turn="1" aria-label="Turn the platter forward">▶</button><div class="cap">forward</div></div>
+    </div>
+    <div class="grp">
+      <div class="ctl"><button type="button" class="round red" data-key="capture" aria-label="Red key (capture, choose, hold to print)"></button><div class="cap">Capture</div></div>
+      <div class="ctl"><button type="button" class="round" data-key="play" aria-label="Play"></button><div class="cap">Play</div></div>
+      <div class="ctl"><button type="button" class="round" data-key="undo" aria-label="Undo"></button><div class="cap">Undo</div></div>
+      <div class="ctl"><button type="button" class="round" data-key="another" aria-label="Another"></button><div class="cap">Another</div></div>
+    </div>
+    <div class="grp" id="tracks"></div>
+  </section>
+</main>
+<p class="foot">Click the screen to use the app. On the case: <kbd>C</kbd> red key (hold about 1 s on the Card screen to print), <kbd>P</kbd> play, <kbd>U</kbd> undo, <kbd>A</kbd> another, <kbd>←</kbd> <kbd>→</kbd> platter, <kbd>1</kbd>–<kbd>6</kbd> track keys. If there is no sound at first, click anywhere on the screen.</p>
+<script>
+(function () {
+  'use strict';
+  var W = 1180, H = 820, BEZEL = 18;
+  var frame = document.getElementById('app'), screen = document.getElementById('screen'), stage = document.getElementById('stage');
+
+  // ---- fit the 1180 × 820 screen into the space we have ----
+  function fit() {
+    var r = stage.getBoundingClientRect();
+    var s = Math.min((r.width - 2 * BEZEL) / W, (r.height - 2 * BEZEL) / H, 1.25);
+    s = Math.max(s, 0.25);
+    screen.style.width = Math.round(W * s) + 'px';
+    screen.style.height = Math.round(H * s) + 'px';
+    frame.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // ---- the panel link, as on the 3D model page (shared/schema/panel-events.schema.json) ----
+  var open = false, seq = 0, relaySeq = 0, t0 = performance.now();
+  function now() { return Math.round(performance.now() - t0); }
+  function toDevice(m) { m.fretcaseSim = 1; try { frame.contentWindow.postMessage(m, '*'); } catch (e) { /* not loaded yet */ } }
+  function emit(type, payload) {
+    var msg = { v: 1, type: type, seq: seq++, t: now() };
+    if (payload) msg.payload = payload;
+    if (open) toDevice({ kind: 'panel', msg: msg });
+  }
+  function relay(type, payload) {
+    var msg = { v: 1, type: type, seq: relaySeq++, t: now() };
+    if (payload) msg.payload = payload;
+    toDevice({ kind: 'panel', msg: msg });
+  }
+  var TRACKS = [['vocal', 'Voice', '#E2725B'], ['melody', 'Melody', '#E3A44A'], ['guitar', 'Guitar', '#4FB3A6'], ['bass', 'Bass', '#6C93D6'], ['drums', 'Drums', '#A98BD8'], ['ambience', 'Ambient', '#86B068']];
+  function hello() {
+    relay('peer.status', { panel: true });
+    emit('hello', { role: 'panel', name: 'web' });
+    var f = {}; TRACKS.forEach(function (t) { f[t[0]] = 0.8; });
+    emit('snapshot', { faders: f, keysDown: [] });
+  }
+
+  // ---- lights, set by the app ----
+  var ringEl = document.getElementById('ring'), dots = [];
+  for (var i = 0; i < 16; i++) {
+    var d = document.createElement('i'), a = i / 16 * Math.PI * 2;
+    d.style.left = (50 + 50 * Math.sin(a)) + '%'; d.style.top = (50 - 50 * Math.cos(a)) + '%';
+    ringEl.appendChild(d); dots.push(d);
+  }
+  function setRing(px, b) {
+    dots.forEach(function (d, i) {
+      var c = px && px[i];
+      d.style.background = c || '#e9dfc8';
+      d.style.opacity = c ? String(0.45 + 0.55 * b) : '0.35';
+      d.style.boxShadow = c ? '0 0 6px ' + c : 'none';
+    });
+  }
+  var lights = {};
+  function paintLights() {
+    var t = performance.now();
+    Object.keys(lights).forEach(function (id) {
+      var L = lights[id], el = document.querySelector('[data-key="' + id + '"]');
+      if (!el) return;
+      var on = L.mode === 'on' || (L.mode === 'blink' && Math.floor(t / 250) % 2 === 0) || (L.mode === 'pulse' && Math.sin(t / 1200 * Math.PI * 2) > -0.3);
+      el.classList.toggle('lit', on);
+      el.classList.toggle('dim', !on && id.indexOf('track.') !== 0);
+    });
+    requestAnimationFrame(paintLights);
+  }
+  requestAnimationFrame(paintLights);
+  function fromApp(msg) {
+    if (!msg || typeof msg.type !== 'string') return;
+    if (msg.type === 'ping') { relay('pong'); return; }
+    var p = msg.payload || {};
+    if (msg.type === 'ring.set') setRing(p.pixels, p.brightness == null ? 0.6 : p.brightness);
+    else if (msg.type === 'key.light' && p.id) lights[p.id] = { mode: p.mode };
+  }
+  window.addEventListener('message', function (e) {
+    if (e.source !== frame.contentWindow) return;
+    var d = e.data;
+    if (!d || d.fretcaseSim !== 1) return;
+    if (d.kind === 'open') { open = true; hello(); }
+    else if (d.kind === 'close') open = false;
+    else if (d.kind === 'app') fromApp(d.msg);
+  });
+
+  // ---- the controls ----
+  var tracksEl = document.getElementById('tracks');
+  TRACKS.forEach(function (t) {
+    var c = document.createElement('div'); c.className = 'ctl';
+    c.innerHTML = '<button type="button" class="track" data-key="track.' + t[0] + '" aria-label="' + t[1] + ' track key" style="background:' + t[2] + ';color:' + t[2] + '"></button><div class="cap">' + t[1] + '</div>';
+    tracksEl.appendChild(c);
+  });
+  function resume() { toDevice({ kind: 'resume' }); }
+  var held = {};
+  function keyDown(id, el) { if (held[id]) return; held[id] = true; if (el) el.classList.add('down'); resume(); emit('key', { id: id, action: 'down' }); }
+  function keyUp(id, el) { if (!held[id]) return; held[id] = false; if (el) el.classList.remove('down'); emit('key', { id: id, action: 'up' }); }
+  var spinTimer = null;
+  function turn(delta) { resume(); emit('platter.turn', { delta: delta }); }
+  function spinStart(delta, el) { el.classList.add('down'); turn(delta); clearInterval(spinTimer); spinTimer = setInterval(function () { turn(delta); }, 90); }
+  function spinStop(el) { clearInterval(spinTimer); spinTimer = null; if (el) el.classList.remove('down'); }
+  document.querySelectorAll('[data-key]').forEach(function (el) {
+    var id = el.getAttribute('data-key');
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); el.setPointerCapture(e.pointerId); keyDown(id, el); });
+    el.addEventListener('pointerup', function () { keyUp(id, el); });
+    el.addEventListener('pointercancel', function () { keyUp(id, el); });
+    el.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); keyDown(id, el); } });
+    el.addEventListener('keyup', function (e) { if (e.key === ' ' || e.key === 'Enter') keyUp(id, el); });
+  });
+  document.querySelectorAll('[data-turn]').forEach(function (el) {
+    var delta = +el.getAttribute('data-turn');
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); el.setPointerCapture(e.pointerId); spinStart(delta, el); });
+    el.addEventListener('pointerup', function () { spinStop(el); });
+    el.addEventListener('pointercancel', function () { spinStop(el); });
+  });
+  // keyboard, when the focus is on this page rather than inside the app
+  var KEYMAP = { c: 'capture', p: 'play', u: 'undo', a: 'another', 1: 'track.vocal', 2: 'track.melody', 3: 'track.guitar', 4: 'track.bass', 5: 'track.drums', 6: 'track.ambience' };
+  function el(id) { return document.querySelector('[data-key="' + id + '"]'); }
+  window.addEventListener('keydown', function (e) {
+    if (e.target && /^(INPUT|TEXTAREA|BUTTON)$/.test(e.target.tagName)) return;
+    var id = KEYMAP[e.key.toLowerCase()];
+    if (id) { e.preventDefault(); keyDown(id, el(id)); return; }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? -1 : 1); }
+  });
+  window.addEventListener('keyup', function (e) { var id = KEYMAP[e.key.toLowerCase()]; if (id) keyUp(id, el(id)); });
+})();
+</script>
+</body>
+</html>
