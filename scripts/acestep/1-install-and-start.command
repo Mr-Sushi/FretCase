@@ -5,6 +5,9 @@
 set -e
 DIR="$HOME/ACE-Step-1.5"
 
+# Keep the Mac awake while this window is open (a sleeping Mac stops the download and the server).
+caffeinate -dims -w $$ &
+
 if [ "$(uname -m)" != "arm64" ]; then echo "This script is for Apple Silicon Macs."; exit 1; fi
 if ! command -v git >/dev/null; then echo "git is missing. Run 'xcode-select --install' first, then run this again."; exit 1; fi
 

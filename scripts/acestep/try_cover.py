@@ -76,7 +76,7 @@ def cover(strength):
         return None
     print(f"  strength {strength}: task {task}", flush=True)
     started = time.time()
-    while time.time() - started < 30 * 60:
+    while time.time() - started < 60 * 60:
         time.sleep(4)
         raw = call("POST", "/query_result", json.dumps({"task_id_list": [task]}).encode(), {"Content-Type": "application/json"})
         items = json.loads(raw).get("data") or []
@@ -103,7 +103,7 @@ def cover(strength):
             (OUT / f"cover-strength-{strength}.error.txt").write_text(json.dumps(item, indent=1), encoding="utf-8")
             return None
         print(f"    ... still working ({round(time.time() - started)} s)", flush=True)
-    print(f"  strength {strength}: gave up after 30 minutes")
+    print(f"  strength {strength}: gave up after 60 minutes")
     return None
 
 
