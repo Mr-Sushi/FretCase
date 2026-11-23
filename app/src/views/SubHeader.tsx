@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react'
 import { useApp, useSel } from '../app/context'
 import { PauseIcon, PlayIcon } from './ui'
 
 /** Top bar of the track and lyrics screens: back to the whole song, the two tabs, play, undo. */
-export function SubHeader({ tab, hint }: { tab: 'tracks' | 'lyrics'; hint: string }) {
+export function SubHeader({ tab, hint, extra }: { tab: 'tracks' | 'lyrics'; hint?: string; extra?: ReactNode }) {
   const { c } = useApp()
   const playing = useSel((s) => s.playing)
   return (
@@ -16,8 +17,9 @@ export function SubHeader({ tab, hint }: { tab: 'tracks' | 'lyrics'; hint: strin
         <button type="button" role="tab" aria-selected={tab === 'lyrics'} className={tab === 'lyrics' ? 'on' : ''} onClick={() => c.setView('lyrics')}>Lyrics</button>
       </div>
       {tab === 'tracks' && <button type="button" className="playbtn" aria-label={playing ? 'Pause' : 'Play'} onClick={() => void c.togglePlay()}>{playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}</button>}
-      <span className="hint-top">{hint}</span>
-      <button type="button" className="outline right" onClick={() => void c.undo()}>Undo</button>
+      {hint && <span className="hint-top">{hint}</span>}
+      <span className="right topextra">{extra}</span>
+      <button type="button" className="outline" onClick={() => void c.undo()}>Undo</button>
     </header>
   )
 }

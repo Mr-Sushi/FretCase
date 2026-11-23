@@ -58,7 +58,6 @@ const pitchLetter = (p: number) => noteName(p).replace(/-?\d+$/, '')
  * the voice, the note name for the melody and the bass. The block that is sounding lights up.
  */
 function NoteView({ song, track, sec, pos, playing }: { song: Song; track: TrackId; sec: Section; pos: number; playing: boolean }) {
-  const color = TRACKS.find((t) => t.id === track)!.color
   const { from, to } = sectionRange(song, sec)
   const len = to - from
   const nb = sec.endBar - sec.startBar
@@ -73,7 +72,7 @@ function NoteView({ song, track, sec, pos, playing }: { song: Song; track: Track
   if (region?.play === false) {
     body = <div className="nv-empty">Silent in this section</div>
   } else if (track === 'ambience') {
-    body = <div className="nv-amb" style={{ background: color }}><span>The sound you recorded plays underneath the whole section</span></div>
+    body = <div className="nv-amb"><span>The sound you recorded plays underneath the whole section</span></div>
   } else if (!notes.length) {
     body = <div className="nv-empty">No notes here</div>
   } else if (track === 'drums') {
@@ -84,7 +83,7 @@ function NoteView({ song, track, sec, pos, playing }: { song: Song; track: Track
             <span className="nv-lane-name">{lane.name}</span>
             {notes.filter((n) => lane.keys.includes(n.pitch)).map((n, k) => {
               const size = 7 + Math.round(((('velocity' in n && n.velocity) || 90) / 127) * 9)
-              return <span key={k} className={`nv-hit ${sounding({ ...n, duration: 90 }) ? 'now' : ''}`} style={{ left: `${x(n.start)}%`, width: size, height: size, background: color }} />
+              return <span key={k} className={`nv-hit ${sounding({ ...n, duration: 90 }) ? 'now' : ''}`} style={{ left: `${x(n.start)}%`, width: size, height: size }} />
             })}
           </div>
         ))}
@@ -94,14 +93,36 @@ function NoteView({ song, track, sec, pos, playing }: { song: Song; track: Track
     const lo = Math.min(...notes.map((n) => n.pitch)), hi = Math.max(...notes.map((n) => n.pitch))
     const span = Math.max(4, hi - lo)
     const h = Math.max(7, Math.min(16, 100 / (span + 1)))
-    body = (
-      <>
-        {notes.map((n, k) => (
-          <span key={k} className={`nv-note ${sounding(n) ? 'now' : ''}`}
-            style={{ left: `${x(n.start)}%`, width: track === 'guitar' ? `min(${Math.max(0.6, (n.duration / len) * 100)}%, 9px)` : `calc(${Math.max(0.6, (n.duration / len) * 100)}% - 2px)`, top: `calc(${(1 - (n.pitch - lo) / span) * (100 - h)}%)`, height: `${h}%`, background: color }} />
-        ))}
-      </>
-    )
+    const top = (p: number) => (1 - (p - lo) / span) * (100 - h)
+    if (track === 'guitar') {
+      // Notes struck together are one strum: a stroke from its lowest string to its highest. Single notes stay dots.
+      // (a strum is spread over a few ticks, string after string, so "together" means within a thirty-second note)
+      const groups = new Map<number, Note[]>()
+      let at = -1e9
+      for (const n of notes) {
+        if (n.start - at > 60) at = n.start
+        groups.set(at, [...(groups.get(at) ?? []), n])
+      }
+      body = (
+        <>
+          {[...groups.entries()].map(([start, g]) => {
+            const hiP = Math.max(...g.map((n) => n.pitch)), loP = Math.min(...g.map((n) => n.pitch))
+            const now = g.some(sounding)
+            return g.length >= 3
+              ? <span key={start} className={`nv-strum ${now ? 'now' : ''}`} style={{ left: `${x(start)}%`, top: `${top(hiP)}%`, height: `${top(loP) - top(hiP) + h}%` }} />
+              : g.map((n, k) => <span key={`${start}-${k}`} className={`nv-pick ${sounding(n) ? 'now' : ''}`} style={{ left: `${x(start)}%`, top: `calc(${top(n.pitch) + h / 2}% - 5px)` }} />)
+          })}
+        </>
+      )
+    } else {
+      body = (
+        <>
+          {notes.map((n, k) => (
+            <span key={k} className={`nv-note ${sounding(n) ? 'now' : ''}`} style={{ left: `${x(n.start)}%`, width: `calc(${Math.max(0.6, (n.duration / len) * 100)}% - 2px)`, top: `${top(n.pitch)}%`, height: `${h}%` }} />
+          ))}
+        </>
+      )
+    }
     if (track === 'vocal') labels = notes.map((n) => ({ l: x(n.start), text: ((n as VocalNote).lyric ?? '').replace(/-$/, '‑'), on: sounding(n) }))
     else if (track !== 'guitar') {
       const seen = new Set<number>()
@@ -122,7 +143,7 @@ function NoteView({ song, track, sec, pos, playing }: { song: Song; track: Track
       {labels.length > 0 && (
         <div className="nv-labels" aria-hidden="true">
           <span className="nv-cap">{caption}</span>
-          {labels.map((l, i) => <span key={i} className={l.on ? 'now' : ''} style={{ left: `${l.l}%`, color: l.on ? color : undefined }}>{l.text}</span>)}
+          {labels.map((l, i) => <span key={i} className={l.on ? 'now' : ''} style={{ left: `${l.l}%` }}>{l.text}</span>)}
         </div>
       )}
     </div>
@@ -130,21 +151,20 @@ function NoteView({ song, track, sec, pos, playing }: { song: Song; track: Track
 }
 
 /** Three steps of "how much", drawn so the choice can be read without the words: more dots, or taller bars. */
-function Steps({ title, low, high, value, kind, color, onPick }: { title: string; low: string; high: string; value: number; kind: 'dots' | 'bars'; color: string; onPick: (step: number) => void }) {
+function Steps({ title, low, high, value, kind, onPick }: { title: string; low: string; high: string; value: number; kind: 'dots' | 'bars'; onPick: (step: number) => void }) {
   const words = [low, 'medium', high]
   return (
-    <div className="stepctl">
-      <div className="muted13"><span>{title}</span> <b>{words[value]}</b></div>
-      <div role="radiogroup" aria-label={title}>
+    <div className="ctl">
+      <div className="ctl-label">{title}: <b>{words[value]}</b></div>
+      <div role="radiogroup" aria-label={title} className="optgroup glyphs">
         {[0, 1, 2].map((i) => (
           <button key={i} type="button" role="radio" aria-checked={value === i} aria-label={words[i]} className={value === i ? 'on' : ''} onClick={() => onPick(i)}>
             {kind === 'dots'
-              ? <span className="g-dots">{Array.from({ length: [2, 4, 7][i] }, (_, k) => <i key={k} style={{ background: value === i ? color : undefined }} />)}</span>
-              : <span className="g-bars">{[0, 1, 2].map((k) => <i key={k} className={k <= i ? 'lit' : ''} style={{ height: 6 + k * 6, background: k <= i && value === i ? color : undefined }} />)}</span>}
+              ? <span className="g-dots">{Array.from({ length: [2, 4, 7][i] }, (_, k) => <i key={k} />)}</span>
+              : <span className="g-bars">{[0, 1, 2].map((k) => <i key={k} className={k <= i ? 'lit' : ''} style={{ height: 6 + k * 6 }} />)}</span>}
           </button>
         ))}
       </div>
-      <div className="tiny between"><span>{low}</span><span>{high}</span></div>
     </div>
   )
 }
@@ -190,112 +210,120 @@ export function DetailView() {
   const pickStyle = (id: string) => change(`${who} ${verb} now set to “${styleLabel(cat, track, id).toLowerCase()}” in ${where}: ${(STYLE_HELP[track][id] ?? '').toLowerCase()}.`, () => c.setRegion(track, sec.id, { style: id }))
   const style = region?.style ?? ''
 
+  const soloed = solo === track
+  const help = STYLE_HELP[track][style]
+  const reading = track === 'vocal' ? 'Each note sings one syllable.'
+    : track === 'guitar' ? 'A tall stroke is a strum across the strings; single dots are single strings.'
+    : track === 'drums' ? 'Each dot is a hit; bigger dots are louder.'
+    : track === 'ambience' ? '' : 'Higher blocks are higher notes; longer blocks last longer.'
+
   return (
     <>
-      <SubHeader tab="tracks" hint="Tap a box to pick a player and a section. Every change plays back, so you hear what it did" />
-      <main className="detail">
-        <section aria-label="Whole song" className="whole">
-          <div className="whole-left">
-            <div className="b700">Whole song</div>
-            <div className="vol"><span>Master volume</span><BarSlider value={song.master.volume} color="#D4AE6A" label="Master volume" onInput={(v) => c.previewMaster(v)} onCommit={(v) => void c.setMaster({ volume: v })} /></div>
-          </div>
-          <div className="whole-mid" style={{ gridTemplateColumns: cols }}>
-            {song.sections.map((s) => (
-              <div key={s.id} className={`wsec ${s.id === sec.id ? 'sel' : ''}`}>
-                <span className="wname">{s.label} <small>{s.endBar - s.startBar} bars</small></span>
-                <span className="wchords" aria-label={`Chords in the ${s.label.toLowerCase()}`}>{chordsByBar(song, s, false).map((ch, i) => <span key={i}>{ch.join(' ')}</span>)}</span>
-              </div>
-            ))}
-            <div className="playhead" style={{ left: `${pct}%` }} />
-          </div>
-          <div className="whole-right">
-            <span className="muted12">Room echo</span>
-            <div role="radiogroup" aria-label="Room echo" className="space">
+      <SubHeader tab="tracks" extra={
+        <>
+          <label className="topvol"><span>Volume</span><BarSlider value={song.master.volume} color="#D4AE6A" label="Master volume" onInput={(v) => c.previewMaster(v)} onCommit={(v) => void c.setMaster({ volume: v })} /></label>
+          <span className="topecho"><span>Echo</span>
+            <span role="radiogroup" aria-label="Room echo" className="optgroup">
               {cat.spaces.map((sp) => (
                 <button key={sp.id} type="button" role="radio" aria-checked={song.master.space === sp.id} className={song.master.space === sp.id ? 'on' : ''} onClick={() => void c.setMaster({ space: sp.id as never })}>{sp.label}</button>
               ))}
+            </span>
+          </span>
+        </>
+      } />
+      <main className="detail" style={{ '--tc': t.color } as React.CSSProperties}>
+        <section aria-label="Each player, section by section" className="score">
+          <div className="score-in">
+            <div className="srow shead">
+              <div className="rhead tip">Tap a part to see its notes and change how it is played.</div>
+              <div className="cells" style={{ gridTemplateColumns: cols }}>
+                {song.sections.map((s) => {
+                  const chords = chordsByBar(song, s, false)
+                  return (
+                    <div key={s.id} className={`sec ${s.id === sec.id ? 'sel' : ''}`}>
+                      <span className="secname">{s.label}</span>
+                      <span className="secchords" aria-label={`Chords in the ${s.label.toLowerCase()}`} style={{ gridTemplateColumns: `repeat(${chords.length}, 1fr)` }}>{chords.map((ch, i) => <span key={i}>{ch.join(' ')}</span>)}</span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
+            {TRACKS.map((tk) => {
+              const m = song.tracks[tk.id]
+              const dim = m.muted || (solo !== null && solo !== tk.id)
+              return (
+                <div key={tk.id} className={`srow ${dim ? 'dim' : ''}`} style={{ '--rc': tk.color } as React.CSSProperties}>
+                  <div className="rhead">
+                    <span className="rcolor" />
+                    <span className="rname"><b>{tk.name}</b><small>{instrumentLabel(cat, tk.id, m.instrument)}</small></span>
+                    <button type="button" className={`mutebtn ${m.muted ? 'on' : ''}`} aria-pressed={m.muted} aria-label={`Mute ${tk.name.toLowerCase()}`} onClick={() => void c.toggleMute(tk.id)}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 7h2.5L9 4v10l-3.5-3H3z" fill="currentColor" />{m.muted ? <path d="M12 6.5l4 5M16 6.5l-4 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /> : <path d="M11.5 6.5a3.5 3.5 0 010 5M13.3 4.6a6 6 0 010 8.8" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />}</svg>
+                    </button>
+                  </div>
+                  <div className="cells lane" style={{ gridTemplateColumns: cols }}>
+                    {song.sections.map((s) => {
+                      const r = regionOf(song, tk.id, s.id)
+                      const on = r?.play !== false
+                      const isSel = track === tk.id && sec.id === s.id
+                      const sung = tk.id === 'vocal' && on ? sectionLines(song, s.id).map((l) => l.text).join(' / ') : ''
+                      return (
+                        <button key={s.id} type="button" aria-pressed={isSel} aria-label={`${tk.name}·${s.label}${on ? '' : ', silent'}`} className={`cell ${isSel ? 'sel' : ''} ${on ? '' : 'off'}`} onClick={() => c.selectRegion(tk.id, s.id)}>
+                          {on && marksFor(song, tk.id, s.id).map((mk, i) => <span key={i} className="mark" style={{ left: `${mk.l}%`, width: `${mk.w}%`, top: mk.t, height: mk.h }} />)}
+                          {sung && <span className="sung">{sung}</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+            <div className="playhead" style={{ left: `calc(var(--headw) + (100% - var(--headw)) * ${pct / 100})` }} />
           </div>
         </section>
 
-        <section aria-label="Each player" className="rows">
-          {TRACKS.map((tk) => {
-            const m = song.tracks[tk.id]
-            const dim = m.muted || (solo !== null && solo !== tk.id)
-            return (
-              <div key={tk.id} className="row6" style={{ opacity: dim ? 0.4 : 1 }}>
-                <div className="rhead">
-                  <span className="rcolor" style={{ background: tk.color }} />
-                  <span className="rname"><b>{tk.name}</b><small>{instrumentLabel(cat, tk.id, m.instrument)}</small></span>
-                  <button type="button" className={`sq ${m.muted ? 'on' : ''}`} aria-pressed={m.muted} aria-label={`Mute ${tk.name.toLowerCase()}`} onClick={() => void c.toggleMute(tk.id)}>Mute</button>
-                  <button type="button" className={`sq solo ${solo === tk.id ? 'on' : ''}`} aria-pressed={solo === tk.id} aria-label={`Hear ${tk.name.toLowerCase()} alone`} onClick={() => c.toggleSolo(tk.id)}>Solo</button>
-                </div>
-                <div className="cells" style={{ gridTemplateColumns: cols }}>
-                  {song.sections.map((s) => {
-                    const r = regionOf(song, tk.id, s.id)
-                    const on = r?.play !== false
-                    const isSel = track === tk.id && sec.id === s.id
-                    const sung = tk.id === 'vocal' && on ? sectionLines(song, s.id).map((l) => l.text).join(' / ') : ''
-                    return (
-                      <button key={s.id} type="button" aria-pressed={isSel} aria-label={`${tk.name}·${s.label}`} className={`cell ${isSel ? 'sel' : ''} ${on ? '' : 'off'}`} onClick={() => c.selectRegion(tk.id, s.id)}>
-                        {!on && <span className="empty">silent</span>}
-                        {on && marksFor(song, tk.id, s.id).map((mk, i) => <span key={i} className="mark" style={{ left: `${mk.l}%`, width: `${mk.w}%`, top: mk.t, height: mk.h, background: tk.color }} />)}
-                        {sung && <span className="sung">{sung}</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </section>
-
-        <section aria-label="How this section is played" className="editor">
-          <div className="edmain">
-            <div className="ed-head">
-              <h2><span style={{ color: t.color }}>{t.name}</span> in the {sec.label.toLowerCase()}</h2>
-              <button type="button" className="hearbtn" onClick={() => void c.hearRegion(track)}><PlayIcon size={11} color="#F3E9DA" /> Hear it alone</button>
-              <button type="button" className="hearbtn" onClick={() => void c.hearRegion(null)}><PlayIcon size={11} color="#F3E9DA" /> With everyone</button>
-              <span className="ed-note" role="status">{changed ?? (track === 'vocal'
-                ? <>Each note sings one syllable. <button type="button" className="linkbtn inline" onClick={() => c.setView('lyrics')}>Change the words</button></>
-                : track === 'guitar' ? 'Chord names are above the bars; each dot is one string, and a column of dots is a strum'
-                : track === 'drums' ? 'Each dot is a hit; bigger dots are louder'
-                : track === 'ambience' ? '' : 'Higher blocks are higher notes; longer blocks are held longer')}</span>
+        <section aria-label="How this part is played" className="editor">
+          <div className="ed-head">
+            <div className="ed-title">
+              <h2>{t.name} in the {sec.label.toLowerCase()}</h2>
+              <p role="status">{changed ?? <>{help ? `${styleLabel(cat, track, style)}: ${help.toLowerCase()}. ` : ''}{reading}{track === 'vocal' && <> <button type="button" className="linkbtn inline" onClick={() => c.setView('lyrics')}>Change the words</button></>}</>}</p>
             </div>
-            <NoteView song={song} track={track} sec={sec} pos={pos} playing={playing} />
-            <div className="edctl">
-              <div className="ctl-style">
-                <div className="muted13">{STYLE_TITLE[track]}</div>
-                <div role="radiogroup" aria-label={STYLE_TITLE[track]} className="chips">
-                  {(cat.styles[track] ?? []).map((st) => (
-                    <button key={st.id} type="button" role="radio" aria-checked={style === st.id} className={`chip ${style === st.id ? 'on' : ''}`} onClick={() => void pickStyle(st.id)}>{st.label}</button>
-                  ))}
-                </div>
-                <div className="tiny stylehelp">{STYLE_HELP[track][style] ?? ''}</div>
-              </div>
-              <Steps title={AXIS_TITLE[track][0]} low={words[2]} high={words[3]} value={busy} kind="dots" color={t.color}
-                onPick={(i) => void change(`${who} ${verb} now ${[words[2], 'medium', words[3]][i]} in ${where}.`, () => c.setRegion(track, sec.id, { complexity: [0.15, 0.5, 0.85][i] }))} />
-              <Steps title={AXIS_TITLE[track][1]} low={words[0]} high={words[1]} value={loud} kind="bars" color={t.color}
-                onPick={(i) => void change(`${who} ${verb} now ${[words[0], 'medium', words[1]][i]} in ${where}.`, () => c.setRegion(track, sec.id, { intensity: [0.15, 0.5, 0.85][i] }))} />
-              <div className="ctl-sound">
-                <div className="muted13">Instrument <span className="tiny">whole song</span></div>
-                <SoundPicker track={track} up onPick={(id) => void change(`${who} ${verb} now played on ${instrumentLabel(cat, track, id).toLowerCase()}, in the whole song.`, () => c.setInstrument(track, id))} />
-              </div>
-            </div>
+            <button type="button" className={`hearbtn ${soloed && playing ? 'on' : ''}`} onClick={() => void c.hearRegion(track)}><PlayIcon size={11} color="currentColor" /> Hear it alone</button>
+            <button type="button" className={`hearbtn ${!solo && playing ? 'on' : ''}`} onClick={() => void c.hearRegion(null)}><PlayIcon size={11} color="currentColor" /> With everyone</button>
           </div>
-          <div className="actcol">
-            <button type="button" className="whitebtn" onClick={() => void change(`${who} ${plays} a new version in ${where}, with the same settings. Undo brings the old one back.`, () => c.another(sec.id, track))}>
-              Try another version<small>new notes, same settings</small>
-            </button>
-            <button type="button" className="outline" onClick={() => void change(`${who} now ${plays} this way in every section.`, () => c.copyRegion(track, sec.id))}>Use in every section</button>
-            {(track === 'vocal' || track === 'melody') && hasMotif && <button type="button" className="outline" onClick={() => void change(`The tune you hummed is back in ${where}.`, () => c.revertMelody(sec.id))}>Back to my hum</button>}
-            {shiftable && (
-              <div className="row2">
-                <button type="button" className="outline" onClick={() => void change(`${who} ${verb} lower in ${where}.`, () => c.shiftRegister(track, sec.id, 'down'))}>▼ Lower</button>
-                <button type="button" className="outline" onClick={() => void change(`${who} ${verb} higher in ${where}.`, () => c.shiftRegister(track, sec.id, 'up'))}>▲ Higher</button>
+          <div className="ed-body">
+            <div className="edmain">
+              <NoteView song={song} track={track} sec={sec} pos={pos} playing={playing} />
+              <div className="edctl">
+                <div className="ctl grow">
+                  <div className="ctl-label">{STYLE_TITLE[track]}</div>
+                  <div role="radiogroup" aria-label={STYLE_TITLE[track]} className="optgroup">
+                    {(cat.styles[track] ?? []).map((st) => (
+                      <button key={st.id} type="button" role="radio" aria-checked={style === st.id} className={style === st.id ? 'on' : ''} onClick={() => void pickStyle(st.id)}>{st.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <Steps title={AXIS_TITLE[track][0]} low={words[2]} high={words[3]} value={busy} kind="dots"
+                  onPick={(i) => void change(`${who} ${verb} now ${[words[2], 'medium', words[3]][i]} in ${where}.`, () => c.setRegion(track, sec.id, { complexity: [0.15, 0.5, 0.85][i] }))} />
+                <Steps title={AXIS_TITLE[track][1]} low={words[0]} high={words[1]} value={loud} kind="bars"
+                  onPick={(i) => void change(`${who} ${verb} now ${[words[0], 'medium', words[1]][i]} in ${where}.`, () => c.setRegion(track, sec.id, { intensity: [0.15, 0.5, 0.85][i] }))} />
+                <div className="ctl ctl-sound">
+                  <div className="ctl-label">Instrument, whole song</div>
+                  <SoundPicker track={track} up onPick={(id) => void change(`${who} ${verb} now played on ${instrumentLabel(cat, track, id).toLowerCase()}, in the whole song.`, () => c.setInstrument(track, id))} />
+                </div>
               </div>
-            )}
-            <button type="button" className="outline mutedtext" style={{ marginTop: 'auto' }} onClick={() => void change(silent ? `${who} ${plays} in ${where} again.` : `${who} ${verb} silent in ${where}.`, () => c.setRegion(track, sec.id, { play: silent }))}>{silent ? 'Play in this section' : 'Silent in this section'}</button>
+            </div>
+            <div className="actcol">
+              <button type="button" className="act primary" onClick={() => void change(`${who} ${plays} a new version in ${where}, with the same settings. Undo brings the old one back.`, () => c.another(sec.id, track))}>Try another version</button>
+              <button type="button" className="act" onClick={() => void change(`${who} now ${plays} this way in every section.`, () => c.copyRegion(track, sec.id))}>Use in every section</button>
+              {(track === 'vocal' || track === 'melody') && hasMotif && <button type="button" className="act" onClick={() => void change(`The tune you hummed is back in ${where}.`, () => c.revertMelody(sec.id))}>Back to my hum</button>}
+              {shiftable && (
+                <div className="row2">
+                  <button type="button" className="act" onClick={() => void change(`${who} ${verb} lower in ${where}.`, () => c.shiftRegister(track, sec.id, 'down'))}>Lower</button>
+                  <button type="button" className="act" onClick={() => void change(`${who} ${verb} higher in ${where}.`, () => c.shiftRegister(track, sec.id, 'up'))}>Higher</button>
+                </div>
+              )}
+              <button type="button" className="act quiet" onClick={() => void change(silent ? `${who} ${plays} in ${where} again.` : `${who} ${verb} silent in ${where}.`, () => c.setRegion(track, sec.id, { play: silent }))}>{silent ? 'Play in this section' : 'Make it silent here'}</button>
+            </div>
           </div>
         </section>
       </main>
