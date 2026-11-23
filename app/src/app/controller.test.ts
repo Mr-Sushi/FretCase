@@ -4,6 +4,7 @@ import { Controller, type AudioLike } from './controller'
 import { MAX_PHOTOS, Store, initialState } from './store'
 import { previewStartTick } from '../lib/song'
 import type { Song } from '../types'
+import { syllables } from '../lib/lyrics'
 
 class FakeAudio implements AudioLike {
   loads: Song[] = []
@@ -47,14 +48,14 @@ describe('capture', () => {
     expect(c.addPhoto(photo())).toBe(false)
     expect(store.state.inputs.filter((i) => i.kind === 'photo')).toHaveLength(9)
     expect(store.state.toast?.text).toContain('9')
-    c.retakePhoto() // 重拍 frees one place
+    c.retakePhoto() // Retake frees one place
     expect(c.addPhoto(photo())).toBe(true)
   })
 
   it('text is one sentence that can be cleared, and removing an input works', () => {
     const { c, store } = ctx
-    c.setText('海边的傍晚，风很大')
-    c.setText('海边的傍晚，风很大，有点想家')
+    c.setText('Seaside at dusk, very windy')
+    c.setText('Seaside at dusk, very windy, a little homesick')
     expect(store.state.inputs.filter((i) => i.kind === 'text')).toHaveLength(1)
     c.setText('  ')
     expect(store.state.inputs).toEqual([])
@@ -68,7 +69,7 @@ describe('capture', () => {
 })
 
 describe('candidate flow', () => {
-  beforeEach(() => { ctx.c.addPhoto(photo()); ctx.c.setText('海边的傍晚，风很大，有点想家') })
+  beforeEach(() => { ctx.c.addPhoto(photo()); ctx.c.setText('Seaside at dusk, very windy, a little homesick') })
 
   it('uploads, makes a seed and shows three different candidates', async () => {
     const { c, store, api } = ctx
@@ -87,7 +88,7 @@ describe('candidate flow', () => {
     expect(list[0].card?.photoAssetIds).toHaveLength(1)
   })
 
-  it('白天 / 黄昏 / 夜晚 asks again with timeOfDay; 再来三首 sends the previous group', async () => {
+  it('Day / Dusk / Night asks again with timeOfDay; three more sends the previous group', async () => {
     const { c, store, api } = ctx
     await c.makeSong()
     const spy = vi.spyOn(api, 'candidates')
@@ -99,7 +100,7 @@ describe('candidate flow', () => {
     expect(secondGroup).not.toBe(firstGroup)
     await c.moreCandidates({ again: true })
     expect(spy.mock.calls[1][1]).toMatchObject({ timeOfDay: 'night', previousGroupId: secondGroup })
-    expect(store.state.candidates!.map((s) => s.candidate!.name)).not.toEqual(['黄昏民谣', '海风轻快', '夜里想家'])
+    expect(store.state.candidates!.map((s) => s.candidate!.name)).not.toEqual(['Dusk Folk', 'Sea Breeze', 'Homesick Night'])
   })
 
   it('a preview starts at the chorus (the vocal-led section) and stops after fifteen seconds', async () => {
@@ -141,7 +142,7 @@ describe('opening a song', () => {
     const { store, c, audio } = ctx
     expect(store.state.recentSongs[0].id).toBe(DEMO)
     await c.openSong(DEMO)
-    expect(store.state.song?.title).toBe('海边的傍晚')
+    expect(store.state.song?.title).toBe('Seaside at Dusk')
     expect(store.state.view).toBe('shape')
     expect(audio.loads).toHaveLength(1)
   })
@@ -165,7 +166,7 @@ describe('shape and track edits', () => {
     expect(store.state.song?.tracks.bass.muted).toBe(true)
   })
 
-  it('换一段 keeps locked sections and 保留 toggles the section lock', async () => {
+  it('Another take keeps locked sections and Keep toggles the section lock', async () => {
     const { c, store } = ctx
     const inVerse = () => store.state.song!.tracks.bass.notes.filter((n) => n.start >= 4 * 1920 && n.start < 8 * 1920)
     await c.another('s-verse', 'bass')
@@ -179,7 +180,7 @@ describe('shape and track edits', () => {
     expect(store.state.song!.locks).toEqual([])
   })
 
-  it('主角 sends setLead for the selected section and removing it sends null', async () => {
+  it('Lead sends setLead for the selected section and removing it sends null', async () => {
     const { c, store, api } = ctx
     const spy = vi.spyOn(api, 'edit')
     await c.setLead('s-verse', 'guitar')
@@ -236,10 +237,10 @@ describe('shape and track edits', () => {
 
   it('a stale revision replaces the song and tells the user', async () => {
     const { c, store, api } = ctx
-    await api.edit(DEMO, 0, [{ op: 'setTitle', title: '别处改的' }])
+    await api.edit(DEMO, 0, [{ op: 'setTitle', title: 'Changed elsewhere' }])
     await c.setTempo(90)
     expect(store.state.toast?.kind).toBe('error')
-    expect(store.state.song?.title).toBe('别处改的')
+    expect(store.state.song?.title).toBe('Changed elsewhere')
     expect(store.state.song?.tempo).toBe(84 > 0 ? store.state.song!.tempo : 0)
     await c.setTempo(90)
     expect(store.state.song?.tempo).toBe(90)
@@ -260,14 +261,14 @@ describe('lyrics', () => {
   it('sends a section line by line and reports the lines that do not fit', async () => {
     const { c, store, api } = ctx
     const spy = vi.spyOn(api, 'edit')
-    const bad = await c.setSectionLyrics('s-verse', ['海风吹过傍晚', '灯一盏一盏亮起来'])
+    const bad = await c.setSectionLyrics('s-verse', ['The sea wind blows', 'And one by one the lights come on'])
     expect(bad).toEqual({ ok: false, misfit: [0] })
     expect(store.state.lyrics.misfit).toEqual(['s-verse:0'])
-    const ok = await c.setSectionLyrics('s-verse', ['晚风吹过海边的岸', '灯一盏一盏亮起来'])
+    const ok = await c.setSectionLyrics('s-verse', ['The salty wind along the shore', 'And one by one the lights come on'])
     expect(ok.ok).toBe(true)
     expect(store.state.lyrics.misfit).toEqual([])
-    expect(spy.mock.calls[1][2]).toEqual([{ op: 'setLyrics', section: 's-verse', text: '晚风吹过海边的岸\n灯一盏一盏亮起来' }])
-    expect(store.state.song!.tracks.vocal.notes.find((n) => n.start === 4 * 1920)?.lyric).toBe('晚')
+    expect(spy.mock.calls[1][2]).toEqual([{ op: 'setLyrics', section: 's-verse', text: 'The salty wind along the shore\nAnd one by one the lights come on' }])
+    expect(store.state.song!.tracks.vocal.notes.find((n) => n.start === 4 * 1920)?.lyric).toBe('The')
   })
 
   it('keeps are held in the app and sent with a rewrite; 503 shows the offline note and leaves the song alone', async () => {
@@ -276,17 +277,17 @@ describe('lyrics', () => {
     c.toggleKeep('s-chorus', 0)
     c.toggleKeep('s-chorus', 0)
     expect(store.state.lyrics.keeps).toEqual({ 's-verse': [1], 's-chorus': [] })
-    c.toggleTheme('海')
+    c.toggleTheme('sea')
     const spy = vi.spyOn(api, 'lyricsRewrite')
     const rev = store.state.song!.revision
     await c.rewriteLyrics()
     expect(spy.mock.calls[0][2]).toMatchObject({ keep: { 's-verse': [1] }, tone: 'plain', rhyme: true })
     expect(store.state.lyrics.offline).toBe(true)
     expect(store.state.song!.revision).toBe(rev)
-    expect(store.state.toast?.text).toContain('联网')
+    expect(store.state.toast?.text).toContain('internet')
   })
 
-  it('换个说法 offline sets the note; online it applies a wording with setLyrics', async () => {
+  it('Other wordings offline sets the note; online it applies a wording with setLyrics', async () => {
     const { c, store } = ctx
     await c.fetchAlternatives('s-verse', 0)
     expect(store.state.lyrics.offline).toBe(true)
@@ -298,7 +299,7 @@ describe('lyrics', () => {
     await vi.waitFor(() => expect(c2.store.state.lyrics.alternatives?.length).toBe(3))
     const pick = c2.store.state.lyrics.alternatives![0].text
     await c2.applyAlternative('s-verse', 0, pick)
-    expect(c2.store.state.song!.tracks.vocal.notes.find((n) => n.start === 4 * 1920)?.lyric).toBe(pick[0])
+    expect(c2.store.state.song!.tracks.vocal.notes.find((n) => n.start === 4 * 1920)?.lyric).toBe(syllables(pick)[0])
   })
 
   it('themes come from the song', async () => {
@@ -397,7 +398,7 @@ describe('panel intents', () => {
 
   it('on the pick screen the platter moves the focus, the play key plays the focused card, another asks for more', async () => {
     const { c, store, audio } = ctx
-    c.addPhoto(photo()); c.setText('夜里想家')
+    c.addPhoto(photo()); c.setText('Homesick at night')
     await c.makeSong()
     fire(c, 'platter.turn', { delta: 8 })
     expect(store.state.focus).toBe(2)
@@ -507,7 +508,7 @@ describe('errors', () => {
     await c.openSong(DEMO)
     vi.spyOn(api, 'edit').mockRejectedValue(new ApiError('offline_unavailable', 'x', 503))
     await c.setTempo(100)
-    expect(store.state.toast?.text).toContain('联网')
+    expect(store.state.toast?.text).toContain('internet')
     expect(api.edit).toHaveBeenCalledTimes(1)
   })
 })
@@ -518,10 +519,10 @@ describe('lyrics failure reasons', () => {
     const { ApiError } = await import('../api/types')
     const err = (reason?: string) => new ApiError('offline_unavailable', 'x', 503, undefined, reason ? { reason } : undefined)
     expect(lyricsFailure(err('auth'))).toBe('auth')
-    expect(lyricsFailureText('auth')).toContain('密钥')
+    expect(lyricsFailureText('auth')).toContain('key')
     expect(lyricsFailure(err())).toBe('network')
     expect(lyricsFailure(new ApiError('timeout', 'x', 0))).toBe('network')
-    expect(lyricsFailureText('not_configured')).toContain('还没有接上')
+    expect(lyricsFailureText('not_configured')).toContain('No lyrics model')
     expect(lyricsFailureText('something-new')).toBeNull()
   })
 })

@@ -141,24 +141,24 @@ export class Controller {
       switch (e.code) {
         case 'revision_conflict':
           if (e.song) this.setSong(e.song)
-          this.toast('歌曲刚刚有了新的版本，已更新，请再试一次', 'error'); return
-        case 'offline_unavailable': this.toast(lyricsFailureText(lyricsFailure(e)) ?? '这一步需要联网，现在没有网络', 'error'); return
-        case 'network': this.toast('连不上服务器', 'error'); this.store.set({ serverOnline: false }); return
-        case 'timeout': this.toast('服务器没有及时响应', 'error'); return
+          this.toast('The song has just changed; it is up to date now, so please try again', 'error'); return
+        case 'offline_unavailable': this.toast(lyricsFailureText(lyricsFailure(e)) ?? 'This step needs the internet, and there is no connection now', 'error'); return
+        case 'network': this.toast('Cannot reach the server', 'error'); this.store.set({ serverOnline: false }); return
+        case 'timeout': this.toast('The server did not answer in time', 'error'); return
         // Server messages are English and meant for logs, so the toast stays in Chinese.
         case 'cannot_apply': {
           console.warn(e.message)
           const detail = (e as ApiError & { detail?: Record<string, unknown> }).detail ?? {}
-          if (detail.printer) { this.toast('打印机出了问题：没连上或没有相纸，请检查打印机', 'error'); return }
-          if (/range/i.test(e.message)) { this.toast('已经到这件乐器能到的最高或最低了', 'error'); return }
-          if (detail.reason === 'no_motif') { this.toast('这首歌没有哼唱，没有可以用回的旋律', 'error'); return }
-          this.toast('这一步现在做不了', 'error'); return
+          if (detail.printer) { this.toast('Something is wrong with the printer: not connected or out of film. Please check it', 'error'); return }
+          if (/range/i.test(e.message)) { this.toast('This instrument cannot go any higher or lower', 'error'); return }
+          if (detail.reason === 'no_motif') { this.toast('This song has no hum, so there is no tune to go back to', 'error'); return }
+          this.toast('That cannot be done right now', 'error'); return
         }
-        case 'not_implemented': console.warn(e.message); this.toast('这个功能还没做好', 'error'); return
-        default: console.warn(e.code, e.message); this.toast('出错了', 'error'); return
+        case 'not_implemented': console.warn(e.message); this.toast('This is not ready yet', 'error'); return
+        default: console.warn(e.code, e.message); this.toast('Something went wrong', 'error'); return
       }
     }
-    this.toast('出错了', 'error')
+    this.toast('Something went wrong', 'error')
   }
 
   // ---- navigation ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ export class Controller {
 
   setView(view: View) {
     const s = this.store.state
-    if (!this.canGo(view)) { this.toast(view === 'pick' ? '先把采集的东西做成歌' : '先选一首歌', 'info'); return }
+    if (!this.canGo(view)) { this.toast(view === 'pick' ? 'Make songs from what you captured first' : 'Choose a song first', 'info'); return }
     if (s.view === 'pick' && view !== 'pick') this.stopPreview()
     this.store.set({ view, scanning: false, showSongs: false })
     if (view === 'shape' || view === 'detail') this.ensureSelection()
@@ -231,7 +231,7 @@ export class Controller {
 
   async openSong(id: string, thenPlay = false) {
     try {
-      this.store.set({ busy: '正在打开' })
+      this.store.set({ busy: 'Opening' })
       const song = await this.api.getSong(id)
       this.stopPreview()
       this.setSong(song)
@@ -333,7 +333,7 @@ export class Controller {
     if (!sec) return
     const tr = track ?? this.store.state.selectedTrack ?? undefined
     const song = this.store.state.song
-    if (song && tr && isLocked(song, tr, sec)) this.toast(`${trackName(tr)}在这一段被保留了`, 'info')
+    if (song && tr && isLocked(song, tr, sec)) this.toast(`${trackName(tr)} is kept as it is in this section`, 'info')
     const res = await this.mutate('another', (s) => this.api.another(s.id, s.revision, sec, tr), true)
     if (res) this.store.set({ takes: { ...this.store.state.takes, [sec]: (this.store.state.takes[sec] ?? 1) + 1 } })
   }
@@ -352,14 +352,14 @@ export class Controller {
 
   /** Adds a photo to the strip; the tenth is refused. */
   addPhoto(blob: Blob): boolean {
-    if (this.photos().length >= MAX_PHOTOS) { this.toast(`最多 ${MAX_PHOTOS} 张照片，先去掉一张吧`, 'info'); return false }
+    if (this.photos().length >= MAX_PHOTOS) { this.toast(`Up to ${MAX_PHOTOS} photos. Remove one first`, 'info'); return false }
     const id = `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-    this.addInput({ id, kind: 'photo', label: '照片', blob, url: URL.createObjectURL(blob) })
+    this.addInput({ id, kind: 'photo', label: 'Photo', blob, url: URL.createObjectURL(blob) })
     this.store.set({ photoSel: id })
     this.log('photo.add', this.photos().length)
     return true
   }
-  /** 重拍: drops the selected photo (the last one by default) so the next shot replaces it. */
+  /** Retake: drops the selected photo (the last one by default) so the next shot replaces it. */
   retakePhoto() {
     const s = this.store.state
     const target = s.photoSel ?? this.photos().slice(-1)[0]?.id
@@ -384,7 +384,7 @@ export class Controller {
       this.store.set({ recording: kind })
       this.log('record.start', kind)
     } catch {
-      this.toast('不能使用麦克风，请检查权限', 'error')
+      this.toast('Cannot use the microphone. Please check the permission', 'error')
     }
   }
 
@@ -393,7 +393,7 @@ export class Controller {
     if (!kind) return
     this.store.set({ recording: null })
     const blob = await this.recorder.stop()
-    if (!blob) { this.toast('录得太短了，请按住久一点', 'info'); return }
+    if (!blob) { this.toast('That was too short. Hold it a little longer', 'info'); return }
     this.log('record.stop', kind)
     await this.handleRecording(kind, blob)
   }
@@ -403,7 +403,7 @@ export class Controller {
     const s = this.store.state
     if (kind === 'hum' && s.song && (s.view === 'shape' || s.view === 'detail')) {
       try {
-        this.store.set({ busy: '正在上传' })
+        this.store.set({ busy: 'Uploading' })
         const asset = await this.api.uploadAsset(blob, 'hum')
         const sec = s.editSection ?? this.interpreter.sectionUnderPlatter()?.id ?? s.song.sections[0].id
         await this.mutate('rehum', (song) => this.api.rehum(song.id, song.revision, sec, asset.id), true)
@@ -411,7 +411,7 @@ export class Controller {
       return
     }
     const n = s.inputs.filter((i) => i.kind === kind).length + 1
-    this.addInput({ id: `${kind}-${Date.now()}`, kind, label: kind === 'hum' ? '哼唱' : '环境声', blob, url: URL.createObjectURL(blob) })
+    this.addInput({ id: `${kind}-${Date.now()}`, kind, label: kind === 'hum' ? 'Hum' : 'Sound', blob, url: URL.createObjectURL(blob) })
     void n
   }
 
@@ -430,16 +430,16 @@ export class Controller {
     return out
   }
 
-  /** 做成歌: upload, understand (seed), then three candidates. */
+  /** Make songs: upload, understand (seed), then three candidates. */
   async makeSong() {
     const { inputs } = this.store.state
-    if (!inputs.length) { this.toast('先拍一张、哼一段或写一句话', 'info'); return }
+    if (!inputs.length) { this.toast('Take a photo, hum a tune or write a line first', 'info'); return }
     try {
-      this.store.set({ busy: '正在整理你收集的东西' })
+      this.store.set({ busy: 'Gathering what you captured' })
       const seedInputs = await this.uploadInputs()
-      this.store.set({ busy: '正在理解你收集的东西' })
+      this.store.set({ busy: 'Reading what you captured' })
       const seed: SeedCard = await this.api.createSeed(seedInputs)
-      this.store.set({ busy: '正在编三首歌', seed })
+      this.store.set({ busy: 'Making three songs', seed })
       const tod = this.store.state.timeOfDay
       const candidates = await this.api.candidates(seed, { bars: 16, timeOfDay: tod })
       this.showCandidates(candidates)
@@ -452,13 +452,13 @@ export class Controller {
     this.store.set({ candidates, focus: 0, view: 'pick' })
   }
 
-  /** 白天 / 黄昏 / 夜晚, or 都不像，再来三首 (with the previous group). */
+  /** Day / Dusk / Night, or None of these, three more (with the previous group). */
   async moreCandidates(opts: { timeOfDay?: TimeOfDay; again?: boolean } = {}) {
     const s = this.store.state
     if (!s.seed) return
     const tod = opts.timeOfDay ?? s.timeOfDay
     try {
-      this.store.set({ busy: '正在编三首歌', timeOfDay: tod })
+      this.store.set({ busy: 'Making three songs', timeOfDay: tod })
       const groupId = s.candidates?.[0]?.candidate?.groupId
       const candidates = await this.api.candidates(s.seed, { bars: 16, timeOfDay: tod, ...(opts.again && groupId ? { previousGroupId: groupId } : {}) })
       this.showCandidates(candidates)
@@ -496,7 +496,7 @@ export class Controller {
     if (!cand) return
     this.stopPreview()
     try {
-      this.store.set({ busy: '正在保存这首歌' })
+      this.store.set({ busy: 'Saving the song' })
       const song = await this.api.choose(cand.id)
       this.store.set({ candidates: null, seed: null, inputs: [], photoSel: null })
       this.setSong(song)
@@ -504,7 +504,7 @@ export class Controller {
       this.applyLoop()
       void this.refreshSongs()
       this.log('candidate.choose', index)
-      // New songs sing 啦. With a lyrics model on the server, words are written in the background right away.
+      // New songs sing "la". With a lyrics model on the server, words are written in the background right away.
       if (this.store.state.lyricsAvailable) void this.writeFirstLyrics(song.id)
     } catch (e) { this.fail(e) } finally { this.store.set({ busy: null }) }
   }
@@ -513,7 +513,7 @@ export class Controller {
     const song = this.store.state.song
     if (!song || song.id !== songId) return
     this.setLyricsUi({ writing: true })
-    this.toast('正在写词…')
+    this.toast('Writing the lyrics…')
     try {
       const themes = (await this.api.lyricsThemes(songId)).slice(0, 4).map((t) => t.text)
       const cur = this.store.state.song
@@ -522,13 +522,13 @@ export class Controller {
       // Only apply it if nothing changed meanwhile; otherwise the user's edits win and words can be asked for again.
       if (this.store.state.song?.id === songId && this.store.state.song.revision === cur.revision) {
         this.setSong(written)
-        this.toast('歌词写好了，可以在歌词页改')
+        this.toast('The lyrics are written; change them on the lyrics page')
       }
       this.log('lyrics.first', 'ok')
     } catch (e) {
       const reason = lyricsFailure(e)
       this.setLyricsUi({ offline: true, offlineReason: reason })
-      if (reason !== 'conflict') this.toast(`没写成歌词：${lyricsFailureText(reason) ?? '可以在歌词页再试'}`, 'error')
+      if (reason !== 'conflict') this.toast(`No lyrics this time: ${lyricsFailureText(reason) ?? 'try again on the lyrics page'}`, 'error')
       this.log('lyrics.first', reason)
     } finally { this.setLyricsUi({ writing: false }) }
   }
@@ -578,7 +578,7 @@ export class Controller {
     const key = (i: number) => `${section}:${i}`
     const rest = this.store.state.lyrics.misfit.filter((k) => !k.startsWith(`${section}:`))
     this.setLyricsUi({ misfit: [...rest, ...misfit.map(key)] })
-    if (!res && misfit.length) this.toast('有的句子字数和音数对不上', 'error')
+    if (!res && misfit.length) this.toast('Some lines do not have as many syllables as notes', 'error')
     return { ok: !!res, misfit }
   }
 
@@ -613,7 +613,7 @@ export class Controller {
     if (r.ok) { this.playLine(section, index); void this.fetchAlternatives(section, index) }
   }
 
-  /** "按这些重写没保留的句子", or one section only (整段重写, which ignores that section's keeps). */
+  /** "Rewrite the lines not kept", or one section only (rewrite the whole section, which ignores that section's keeps). */
   async rewriteLyrics(sections?: string[]) {
     const l = this.store.state.lyrics
     const keep = { ...l.keeps }
@@ -720,7 +720,7 @@ export class Controller {
       if (!s.song?.card?.frontAssetId) return
     }
     const res = await this.mutate('card.print', (song) => this.api.cardPrint(song.id, song.revision), true)
-    if (res?.card?.printedAt) { this.toast('卡片正在印出来', 'info'); void this.refreshPrinter() }
+    if (res?.card?.printedAt) { this.toast('The card is printing', 'info'); void this.refreshPrinter() }
   }
 
   // ---- scanning ----------------------------------------------------------------------------------
@@ -786,7 +786,7 @@ export class Controller {
         this.setCaptureMode('photo')
         const blob = await this.photoSource?.()
         if (blob) this.addPhoto(blob)
-        else this.toast('先打开相机', 'info')
+        else this.toast('Turn on the camera first', 'info')
         return
       }
       case 'play.toggle':
@@ -799,7 +799,7 @@ export class Controller {
       case 'pick.focus': this.focusCandidate(i.index); return
       case 'pick.choose': if (s.view === 'pick') void this.chooseCandidate(i.index); return
       case 'card.print': if (s.view === 'card' && !s.cardBusy) void this.printCard(); return
-      case 'card.printHint': if (s.view === 'card') this.toast('按住红键约 1 秒，就会印出来', 'info'); return
+      case 'card.printHint': if (s.view === 'card') this.toast('Hold the red key for about a second to print', 'info'); return
       case 'region.section': {
         const sec = s.song?.sections[i.index]
         if (sec) this.selectSection(sec.id, s.looping)
@@ -851,12 +851,12 @@ export function lyricsFailure(e: unknown): string {
 /** Plain words for each reason; null when the generic network text fits. */
 export function lyricsFailureText(reason: string | null): string | null {
   switch (reason) {
-    case 'not_configured': return '还没有接上写词的模型'
-    case 'auth': return '写词模型的密钥不对，请检查设置'
-    case 'rate_limited': return '写词模型现在太忙，过一会儿再试'
-    case 'bad_answer': return '这次没写出字数合适的句子，再试一次'
-    case 'timeout': return '写词模型太久没有回答，再试一次'
-    case 'unreachable': case 'network': return '写词需要联网，现在连不上'
+    case 'not_configured': return 'No lyrics model is connected yet'
+    case 'auth': return 'The lyrics model key is wrong. Please check the settings'
+    case 'rate_limited': return 'The lyrics model is busy. Try again in a while'
+    case 'bad_answer': return 'The lines did not come out the right length. Try again'
+    case 'timeout': return 'The lyrics model took too long. Try again'
+    case 'unreachable': case 'network': return 'Writing lyrics needs the internet, which is not available now'
     default: return null
   }
 }

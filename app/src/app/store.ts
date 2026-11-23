@@ -11,7 +11,7 @@ export interface CapturedInput {
   id: string
   kind: 'hum' | 'sound' | 'photo' | 'text'
   label: string
-  /** Set once the file has been uploaded (when "做成歌" is pressed). */
+  /** Set once the file has been uploaded (when "Make songs" is pressed). */
   assetId?: string
   text?: string
   /** Local preview URL of the recording or photo. */

@@ -6,7 +6,7 @@ export interface PageLine { text: string; from: number; to: number }
 export interface PageModel {
   title: string
   subtitle?: string
-  /** "厦门 · 2026年11月19日": the city appears only when the page JSON has one. */
+  /** "Edinburgh · 19 November 2026": the city appears only when the page JSON has one. */
   meta: string
   photos: string[]
   card?: string
@@ -18,7 +18,8 @@ export interface PageModel {
 
 export function formatDate(iso?: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '')
-  return m ? `${m[1]}年${Number(m[2])}月${Number(m[3])}日` : ''
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : ''
 }
 
 /**

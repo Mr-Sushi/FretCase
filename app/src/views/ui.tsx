@@ -109,9 +109,9 @@ export function KnobDial({ name, value, min = 0, max = 1, step, text, onCommit }
       ><span /></div>
       <div className="knob-name">{name}</div>
       <div className="knob-row">
-        <button type="button" aria-label={`${name}减一点`} onClick={() => set(shown - step)}>−</button>
+        <button type="button" aria-label={`Less ${name}`} onClick={() => set(shown - step)}>−</button>
         <span className="knob-value">{text(shown)}</span>
-        <button type="button" aria-label={`${name}加一点`} onClick={() => set(shown + step)}>+</button>
+        <button type="button" aria-label={`More ${name}`} onClick={() => set(shown + step)}>+</button>
       </div>
     </div>
   )

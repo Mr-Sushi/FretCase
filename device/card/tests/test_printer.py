@@ -8,8 +8,8 @@ from PIL import Image
 
 @pytest.fixture(scope="module")
 def png() -> bytes:
-    return render_card(CardInput("无题", "text", "https://fretcase.example/s/Ab3dEf9hJk2LmN",
-                                 "2026.11.19", line="一句话")).print_png
+    return render_card(CardInput("Untitled", "text", "https://fretcase.example/s/Ab3dEf9hJk2LmN",
+                                 "2026.11.19", line="A line")).print_png
 
 
 def test_default_is_dry_run(monkeypatch, tmp_path):

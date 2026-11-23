@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import exampleSong from '../generated/example-song.json'
 import type { Song } from '../types'
-import { countLine, finalOf, rhymeGroup, rhymeLabel, rhymeNote, sectionLines, syllables } from './lyrics'
+import { countLine, joinSyllables, rhymeLabel, rhymeNote, sectionLines, syllables } from './lyrics'
 import { describeSection } from './describe'
 import { DEFAULT_CATALOG } from './catalog'
 import { buildMockSong, VARIANT_SETS } from '../api/mockSong'
 
-const song = buildMockSong(null, VARIANT_SETS[0][0], 'grp-test-0001', 0, 'dusk', '厦门') as Song
+const song = buildMockSong(null, VARIANT_SETS[0][0], 'grp-test-0001', 0, 'dusk', 'Edinburgh') as Song
 
 describe('lyric lines', () => {
-  it('are whole lines taken from the vocal notes, never one character per note', () => {
+  it('are whole lines taken from the vocal notes, never one syllable per note', () => {
     const lines = sectionLines(song, 's-chorus')
-    expect(lines.map((l) => l.text)).toEqual(['我把想家唱给海听', '它把回答还给风'])
+    expect(lines.map((l) => l.text)).toEqual(['I sing my longing to the sea', 'The wind sings it back to me'])
     expect(lines.map((l) => l.noteCount)).toEqual([8, 7])
     expect(sectionLines(song, 's-intro')).toEqual([]) // the vocal does not play in the intro
   })
@@ -26,30 +26,33 @@ describe('lyric lines', () => {
 })
 
 describe('counting', () => {
-  it('counts characters and ignores punctuation and spaces', () => {
-    expect(syllables('我把 想家，唱给海听！')).toHaveLength(8)
-    expect(countLine('我把想家唱给海听', 8)).toMatchObject({ ok: true, label: '8 字 / 8 个音', hint: '正好' })
-    expect(countLine('灯一盏一盏亮起来', 7)).toMatchObject({ ok: false, label: '8 字 / 7 个音', hint: '多 1 字' })
-    expect(countLine('远方的灯', 6)).toMatchObject({ ok: false, hint: '少 2 字' })
+  it('counts sung syllables and ignores punctuation and spaces', () => {
+    expect(syllables('I sing my, longing to the sea!')).toEqual(['I', 'sing', 'my', 'long-', 'ing', 'to', 'the', 'sea'])
+    expect(countLine('I sing my longing to the sea', 8)).toMatchObject({ ok: true, label: '8 syl / 8 notes', hint: 'fits' })
+    expect(countLine('The wind sings it back to me', 6)).toMatchObject({ ok: false, label: '7 syl / 6 notes', hint: '1 too many' })
+    expect(countLine('Far away', 6)).toMatchObject({ ok: false, hint: '3 too few' })
+  })
+  it('a hyphen typed by the user forces a break, and joining removes it again', () => {
+    expect(syllables('Walk-ing home')).toEqual(['Walk-', 'ing', 'home'])
+    expect(joinSyllables(['walk-', 'ing', 'home'])).toBe('walking home')
+    expect(joinSyllables(syllables('And one by one the lights come on'))).toBe('And one by one the lights come on')
   })
 })
 
 describe('rhyme labels', () => {
-  it('finds the final of the last syllable', () => {
-    expect(finalOf('岸')).toBe('an')
-    expect(finalOf('来')).toBe('ai')
-    expect(finalOf('听')).toBe('ing')
-    expect(finalOf('风')).toBe('eng')
-    expect(finalOf('了')).toBe('e')
-    expect(rhymeLabel('海风吹过傍晚的岸')).toBe('韵脚 an')
-    expect(rhymeLabel('abc')).toBe('韵脚 —')
+  it('names the ending sound of the last word', () => {
+    expect(rhymeLabel('I sing my longing to the sea')).toBe('rhyme -ee')
+    expect(rhymeLabel('123')).toBe('rhyme —')
+    expect(rhymeLabel('And I walk home tonight')).toBe('rhyme -ight')
+    expect(rhymeLabel('Walking home')).toBe('rhyme -ome')
   })
-  it('ing and eng rhyme, an and ai do not', () => {
-    expect(rhymeGroup('ing')).toBe(rhymeGroup('eng'))
-    expect(rhymeGroup('an')).not.toBe(rhymeGroup('ai'))
-    expect(rhymeNote(['我把想家唱给海听', '它把回答还给风'])).toEqual({ text: 'ing / eng 押韵，很顺', good: true })
-    expect(rhymeNote(['远方的灯亮了', '我也该回去了'])).toEqual({ text: '每句都以“了”结尾，可以换一个', good: false })
-    expect(rhymeNote(['海风吹过傍晚的岸', '灯一盏一盏亮起来']).good).toBe(false)
+  it('notices rhymes, missing rhymes and a repeated last word', () => {
+    expect(rhymeNote(['I sing my longing to the sea', 'The wind sings it back to me'])).toEqual({ text: 'The lines rhyme on -ee', good: true })
+    expect(rhymeNote(['The sea wind blows across the shore', 'And one by one the lights come on']).good).toBe(false)
+    expect(rhymeNote(['Far away the lamps light', 'And I walk home tonight'])).toEqual({ text: 'The lines rhyme on -ight', good: true })
+    expect(rhymeNote(['A kite', 'The light']).good).toBe(true)
+    expect(rhymeNote(['A bit', 'The light']).good).toBe(false)
+    expect(rhymeNote(['go home', 'go home'])).toEqual({ text: 'Every line ends on “home”; try another word', good: false })
   })
 })
 
@@ -59,12 +62,12 @@ describe('what plays in a section, in plain words', () => {
     for (const t of Object.values(s.tracks)) for (const r of t.regions) if (r.section === 's-intro') r.play = false
     s.tracks.guitar.regions[0].play = true
     s.tracks.ambience.regions[0].play = true
-    expect(describeSection(s, DEFAULT_CATALOG, 's-intro')).toBe('只有吉他和海浪')
+    expect(describeSection(s, DEFAULT_CATALOG, 's-intro')).toBe('Only the guitar and the waves')
     s.tracks.guitar.regions[0].play = false
-    expect(describeSection(s, DEFAULT_CATALOG, 's-intro')).toBe('只有海浪')
+    expect(describeSection(s, DEFAULT_CATALOG, 's-intro')).toBe('Only the waves')
     for (const t of Object.values(s.tracks)) t.regions[2].play = true
-    expect(describeSection(s, DEFAULT_CATALOG, 's-chorus')).toContain('人声领着')
-    expect(describeSection(s, DEFAULT_CATALOG, 's-chorus')).toContain('大家一起上')
+    expect(describeSection(s, DEFAULT_CATALOG, 's-chorus')).toContain('The voice leads')
+    expect(describeSection(s, DEFAULT_CATALOG, 's-chorus')).toContain('everyone joins in')
   })
 })
 
@@ -77,7 +80,7 @@ describe('the lead in the section sentence', () => {
     s.tracks.bass.regions[2].play = true
     s.sections[2].lead = 'guitar'
     const text = describeSection(s, DEFAULT_CATALOG, 's-chorus')
-    expect(text).toBe('吉他领着，人声和贝斯跟着')
-    expect(text.split('吉他').length - 1).toBe(1)
+    expect(text).toBe('The guitar leads, the voice and the bass follow')
+    expect(text.split('guitar').length - 1).toBe(1)
   })
 })

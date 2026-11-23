@@ -19,7 +19,7 @@ function SoundPicker({ track }: { track: TrackId }) {
   const items = cat.instruments[track] ?? []
   return (
     <span className="sound">
-      <button type="button" aria-label={`换${TRACKS.find((t) => t.id === track)!.name}的音色`} aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" aria-label={`Change the ${TRACKS.find((t) => t.id === track)!.name.toLowerCase()} sound`} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="grow">{instrumentLabel(cat, track, song.tracks[track].instrument)}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3l4 4 4-4" stroke="#BFAE98" strokeWidth="1.6" fill="none" /></svg>
       </button>
@@ -54,18 +54,18 @@ export function ShapeView() {
       <StepHeader />
       <main className="shape">
         <div className="shape-top">
-          <button type="button" className="playbtn big" aria-label={playing ? '暂停' : '播放'} onClick={() => void c.togglePlay()}>{playing ? <PauseIcon size={20} /> : <PlayIcon size={20} />}</button>
+          <button type="button" className="playbtn big" aria-label={playing ? 'Pause' : 'Play'} onClick={() => void c.togglePlay()}>{playing ? <PauseIcon size={20} /> : <PlayIcon size={20} />}</button>
           <div>
             <h1>{song.title}</h1>
-            <div className="tiny2">{song.candidate?.name ? `${song.candidate.name} · ` : ''}{formatLong(songSeconds(song))} · {looping ? <button type="button" className="linkbtn inline" onClick={() => c.listenAll()}>现在只听这一段，点这里听整首</button> : '点一段只听那一段'}</div>
+            <div className="tiny2">{song.candidate?.name ? `${song.candidate.name} · ` : ''}{formatLong(songSeconds(song))} · {looping ? <button type="button" className="linkbtn inline" onClick={() => c.listenAll()}>Playing one section; tap here for the whole song</button> : 'Tap a section to hear only that section'}</div>
           </div>
           <div className="grow" />
-          <button type="button" className="outline" onClick={() => void c.undo()}>撤销</button>
-          <button type="button" className="outline" onClick={() => c.setView('detail')}>音轨和歌词</button>
-          <button type="button" className="gobtn small" onClick={() => c.setView('card')}>做卡</button>
+          <button type="button" className="outline" onClick={() => void c.undo()}>Undo</button>
+          <button type="button" className="outline" onClick={() => c.setView('detail')}>Tracks and lyrics</button>
+          <button type="button" className="gobtn small" onClick={() => c.setView('card')}>Make card</button>
         </div>
 
-        <section aria-label="段落" className="tiles">
+        <section aria-label="Sections" className="tiles">
           {song.sections.map((s) => {
             const on = s.id === selSec.id
             const lines = sectionLines(song, s.id)
@@ -75,16 +75,16 @@ export function ShapeView() {
                 <button type="button" aria-pressed={on} className="tile-body" onClick={() => c.selectSection(s.id)}>
                   <span className="tile-head">
                     <span className="tile-name">{s.label}</span>
-                    <span className="muted13">第 {takes[s.id] ?? 1} 版</span>
-                    {locked && <span className="kept">已保留</span>}
+                    <span className="muted13">take {takes[s.id] ?? 1}</span>
+                    {locked && <span className="kept">Kept</span>}
                   </span>
                   <span className="muted13">{describeSection(song, cat, s.id)}</span>
-                  <span className="tile-lyrics">{lines.length ? lines.map((l) => l.text).join('\n') : '（没有歌词）'}</span>
+                  <span className="tile-lyrics">{lines.length ? lines.map((l) => l.text).join('\n') : '(no lyrics)'}</span>
                 </button>
                 {on && (
                   <div className="tile-actions">
-                    <button type="button" className="whitebtn" onClick={() => void c.another(s.id)}>换一段</button>
-                    <button type="button" className={`outline ${locked ? 'fill' : ''}`} aria-pressed={locked} onClick={() => void c.toggleLock(undefined, s.id)}>{locked ? '已保留' : '保留'}</button>
+                    <button type="button" className="whitebtn" onClick={() => void c.another(s.id)}>Another take</button>
+                    <button type="button" className={`outline ${locked ? 'fill' : ''}`} aria-pressed={locked} onClick={() => void c.toggleLock(undefined, s.id)}>{locked ? 'Kept' : 'Keep'}</button>
                   </div>
                 )}
               </div>
@@ -93,10 +93,10 @@ export function ShapeView() {
         </section>
 
         <div className="shape-bottom">
-          <section aria-label="乐手" className="panel players">
+          <section aria-label="Players" className="panel players">
             <div className="panel-head">
-              <h2>乐手</h2>
-              <span className="muted13">{leadName ? `${selSec.label}由${leadName}当主角，其他乐手让一让` : `点「主角」，让一个乐手在${selSec.label}里领头`}</span>
+              <h2>Players</h2>
+              <span className="muted13">{leadName ? `${leadName} leads the ${selSec.label.toLowerCase()}; the others make room` : `Tap “Lead” to let one player lead the ${selSec.label.toLowerCase()}`}</span>
             </div>
             {TRACKS.map((t) => {
               const tr = song.tracks[t.id]
@@ -108,21 +108,21 @@ export function ShapeView() {
                   <span className="pn">{t.name}</span>
                   <SoundPicker track={t.id} />
                   {LEADABLE.includes(t.id) ? (
-                    <button type="button" className={`leadbtn ${isLead ? 'on' : ''}`} aria-pressed={isLead} onClick={() => void c.setLead(selSec.id, isLead ? null : (t.id as LeadTrack))}>主角</button>
+                    <button type="button" className={`leadbtn ${isLead ? 'on' : ''}`} aria-pressed={isLead} onClick={() => void c.setLead(selSec.id, isLead ? null : (t.id as LeadTrack))}>Lead</button>
                   ) : <span className="leadbtn ghost" />}
-                  <BarSlider value={tr.volume} color={t.color} label={`${t.name}音量`} onInput={(v) => c.previewVolume(t.id, v)} onCommit={(v) => void c.setVolume(t.id, v)} />
-                  <button type="button" className={`mutebtn ${tr.muted ? 'on' : ''}`} aria-pressed={tr.muted} onClick={() => void c.toggleMute(t.id)}>{tr.muted ? '已静音' : '静音'}</button>
+                  <BarSlider value={tr.volume} color={t.color} label={`${t.name} volume`} onInput={(v) => c.previewVolume(t.id, v)} onCommit={(v) => void c.setVolume(t.id, v)} />
+                  <button type="button" className={`mutebtn ${tr.muted ? 'on' : ''}`} aria-pressed={tr.muted} onClick={() => void c.toggleMute(t.id)}>{tr.muted ? 'Muted' : 'Mute'}</button>
                 </div>
               )
             })}
           </section>
-          <section aria-label="感觉" className="panel feel">
-            <div className="panel-head"><h2>感觉</h2><span className="muted13">对应箱子上的四个旋钮</span></div>
+          <section aria-label="Feel" className="panel feel">
+            <div className="panel-head"><h2>Feel</h2><span className="muted13">The four knobs on the case</span></div>
             <div className="knobs">
-              <KnobDial name="明暗" value={knobs.brightness} step={0.1} text={(v) => word(v, '偏暗', '适中', '偏亮')} onCommit={(v) => void c.setControl('brightness', v)} />
-              <KnobDial name="简繁" value={knobs.complexity} step={0.1} text={(v) => word(v, '简单', '适中', '丰富')} onCommit={(v) => void c.setControl('complexity', v)} />
-              <KnobDial name="疏密" value={knobs.density} step={0.1} text={(v) => word(v, '偏疏', '中等', '偏密')} onCommit={(v) => void c.setControl('density', v)} />
-              <KnobDial name="速度" value={song.tempo} min={40} max={220} step={4} text={(v) => `每分钟 ${Math.round(v)} 拍`} onCommit={(v) => void c.setTempo(Math.round(v))} />
+              <KnobDial name="Brightness" value={knobs.brightness} step={0.1} text={(v) => word(v, 'darker', 'medium', 'brighter')} onCommit={(v) => void c.setControl('brightness', v)} />
+              <KnobDial name="Complexity" value={knobs.complexity} step={0.1} text={(v) => word(v, 'simple', 'medium', 'rich')} onCommit={(v) => void c.setControl('complexity', v)} />
+              <KnobDial name="Density" value={knobs.density} step={0.1} text={(v) => word(v, 'sparse', 'medium', 'dense')} onCommit={(v) => void c.setControl('density', v)} />
+              <KnobDial name="Tempo" value={song.tempo} min={40} max={220} step={4} text={(v) => `${Math.round(v)} BPM`} onCommit={(v) => void c.setTempo(Math.round(v))} />
             </div>
           </section>
         </div>

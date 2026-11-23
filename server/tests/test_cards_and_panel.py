@@ -54,20 +54,20 @@ def test_print_needs_a_preview_of_the_current_card(api, card_module):
     assert card_module.Printer.instances[0].dry_run_dir is not None  # no printer configured: PNG files
     assert list(card_module.Printer.instances[0].dry_run_dir.glob("*.png"))
     # changing what the card shows makes the preview stale
-    edited = api.edit(printed, {"op": "setCard", "line": "海风把傍晚吹进歌里"})
+    edited = api.edit(printed, {"op": "setCard", "line": "The sea wind blows the evening into song"})
     assert api.post(edited, "card/print", expect=422)["code"] == "cannot_apply"
     again = api.post(edited, "card/preview")
     reprinted = api.post(again, "card/print")
     assert reprinted["card"]["printedAt"]
     # a title change counts too
-    retitled = api.edit(reprinted, {"op": "setTitle", "title": "另一个名字"})
+    retitled = api.edit(reprinted, {"op": "setTitle", "title": "Another name"})
     assert api.post(retitled, "card/print", expect=422)["code"] == "cannot_apply"
 
 
 def test_print_ignores_fields_that_only_appear_on_the_song_page(api):
     song = api.song()
     previewed = api.post(song, "card/preview")
-    edited = api.edit(previewed, {"op": "setCard", "message": "给你的", "showPhoto": True})
+    edited = api.edit(previewed, {"op": "setCard", "message": "For you", "showPhoto": True})
     assert "frontAssetId" not in edited["card"]
     assert api.post(edited, "card/print", expect=422)["code"] == "cannot_apply"
     assert api.post(api.post(edited, "card/preview"), "card/print")["card"]["printedAt"]
@@ -75,7 +75,7 @@ def test_print_ignores_fields_that_only_appear_on_the_song_page(api):
 
 def test_vocal_replace_notes_accepts_lyrics(api):
     song = api.song()
-    note = {"start": 0, "duration": 480, "pitch": 70, "lyric": "海", "lineEnd": True}
+    note = {"start": 0, "duration": 480, "pitch": 70, "lyric": "sea", "lineEnd": True}
     out = api.edit(song, {"op": "replaceNotes", "track": "vocal", "from": 0, "to": 480, "notes": [note]})
     assert out["tracks"]["vocal"]["notes"][0] == note
     melody_note = dict(note)
@@ -110,10 +110,10 @@ def test_photo_card_passes_the_cover_path_and_text_style_does_not(api, card_modu
     assert song["card"]["photoAssetIds"] == [photo["id"]]
     api.post(song, "card/preview")
     assert seen[-1].cover_path is not None and seen[-1].style == "xieyi"
-    text_song = api.edit(api.c.get(f"/api/songs/{song['id']}").json()["song"], {"op": "setCard", "style": "text", "line": "一行字"})
+    text_song = api.edit(api.c.get(f"/api/songs/{song['id']}").json()["song"], {"op": "setCard", "style": "text", "line": "One line"})
     assert "coverAssetId" not in text_song["card"]
     api.post(text_song, "card/preview")
-    assert seen[-1].cover_path is None and seen[-1].line == "一行字"
+    assert seen[-1].cover_path is None and seen[-1].line == "One line"
 
 
 def test_photo_style_without_a_cover_is_refused_at_preview(api):

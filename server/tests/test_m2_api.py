@@ -38,15 +38,15 @@ class FakeText:
         if "section by section" in prompt:
             structure = json.loads(re.search(r"\n(\[.*\])\n", prompt).group(1))
             out = [
-                {"id": row["id"], "chars": list("海" * (row["characters"] + (1 if wrong else 0)))}
+                {"id": row["id"], "syllables": ["sea"] * (row["syllables"] + (1 if wrong else 0))}
                 for sec in structure for row in sec["lines"]
-                if "characters" in row and row.get("note") != "not needed now"
+                if "syllables" in row and row.get("note") != "not needed now"
             ]
             return "Here you go: " + json.dumps({"lines": out}, ensure_ascii=False)
-        count = int(re.search(r"each EXACTLY (\d+) characters", prompt).group(1))
+        count = int(re.search(r"each EXACTLY (\d+) syllables", prompt).group(1))
         need = int(re.search(r"Give (\d+) other", prompt).group(1))
-        words = ["山", "云", "风", "雨", "星"]
-        alts = [{"chars": list(words[i % 5] * (count + (1 if wrong else 0))), "note": "更含蓄"} for i in range(need)]
+        words = ["hill", "cloud", "wind", "rain", "star"]
+        alts = [{"syllables": [words[i % 5]] * (count + (1 if wrong else 0)), "note": "more understated"} for i in range(need)]
         return json.dumps({"alternatives": alts}, ensure_ascii=False)
 
 
@@ -58,7 +58,7 @@ def text_api(make_client):
 
 
 def candidates(api, **extra):
-    seed = api.seed([{"kind": "text", "text": "海边的傍晚 平静"}])
+    seed = api.seed([{"kind": "text", "text": "Seaside at dusk, calm"}])
     r = api.c.post("/api/candidates", json={"seed": seed, **extra})
     assert r.status_code == 201, r.text
     songs = r.json()["candidates"]
@@ -114,7 +114,7 @@ def test_another_round_avoids_the_previous_combinations(api):
 
 
 def test_time_of_day_changes_the_arrangement(api):
-    seed = api.seed([{"kind": "text", "text": "海边的傍晚"}])
+    seed = api.seed([{"kind": "text", "text": "Seaside at dusk"}])
     by = {}
     for tod in ("day", "night"):
         by[tod] = api.c.post("/api/candidates", json={"seed": seed, "timeOfDay": tod}).json()["candidates"]
@@ -141,7 +141,7 @@ def test_candidates_use_a_hum_a_sound_and_photos(api):
     hum = api.upload(wav_bytes([261.6, 293.7, 329.6, 349.2], 3.0), "hum", "h.wav", "audio/wav")
     sound = api.upload(wav_bytes([200.0], 1.0), "ambience", "s.wav", "audio/wav")
     photo = api.upload(png_bytes(color=(230, 150, 90)), "photo", "p.png", "image/png")
-    seed = api.seed([{"kind": "hum", "assetId": hum["id"]}, {"kind": "sound", "assetId": sound["id"]}, {"kind": "photo", "assetId": photo["id"]}, {"kind": "text", "text": "傍晚"}])
+    seed = api.seed([{"kind": "hum", "assetId": hum["id"]}, {"kind": "sound", "assetId": sound["id"]}, {"kind": "photo", "assetId": photo["id"]}, {"kind": "text", "text": "dusk"}])
     r = api.c.post("/api/candidates", json={"seed": seed})
     assert r.status_code == 201
     for s in r.json()["candidates"]:
@@ -231,17 +231,17 @@ def test_line_by_line_lyrics_errors_through_the_api(api):
     song = api.song()
     lines = editing.lyric_lines(editing.vocal_notes_in(song, song["sections"][1]))
     counts = [len(l) for l in lines]
-    text = "\n".join("海" * c for c in counts[:-1] + [counts[-1] + 2])
+    text = "\n".join(" ".join(["sea"] * c) for c in counts[:-1] + [counts[-1] + 2])
     error = api.edit(song, {"op": "setLyrics", "section": "s-verse", "text": text}, expect=422)
     assert error["code"] == "cannot_apply"
     assert error["detail"]["lines"] == [{"index": len(counts) - 1, "noteCount": counts[-1], "syllableCount": counts[-1] + 2}]
-    ok = api.edit(song, {"op": "setLyrics", "section": "s-verse", "text": "\n".join("海" * c for c in counts)})
-    assert {n["lyric"] for n in verse(ok, "vocal")} == {"海"}
+    ok = api.edit(song, {"op": "setLyrics", "section": "s-verse", "text": "\n".join(" ".join(["sea"] * c) for c in counts)})
+    assert {n["lyric"] for n in verse(ok, "vocal")} == {"sea"}
 
 
 def test_title_change_clears_the_preview(api):
     previewed = api.post(api.song(), "card/preview")
-    assert api.edit(previewed, {"op": "setTitle", "title": "新名字"})["card"].get("frontAssetId") is None
+    assert api.edit(previewed, {"op": "setTitle", "title": "New name"})["card"].get("frontAssetId") is None
 
 
 # ----------------------------------------------------------------------------------------------- lyrics endpoints
@@ -249,7 +249,7 @@ def test_title_change_clears_the_preview(api):
 
 def test_lyrics_endpoints_answer_503_without_a_model(api):
     song = api.song()
-    r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": 0, "themes": ["海"]})
+    r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": 0, "themes": ["sea"]})
     assert r.status_code == 503 and r.json()["error"]["code"] == "offline_unavailable"
     r = api.c.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": "s-verse", "line": 0})
     assert r.status_code == 503 and r.json()["error"]["code"] == "offline_unavailable"
@@ -258,28 +258,28 @@ def test_lyrics_endpoints_answer_503_without_a_model(api):
 
 def test_themes_come_from_the_text_and_photo_colours_offline(api):
     photo = api.upload(png_bytes(color=(230, 150, 90)), "photo", "p.png", "image/png")
-    seed = api.seed([{"kind": "text", "text": "海边的傍晚 想家"}, {"kind": "photo", "assetId": photo["id"]}])
+    seed = api.seed([{"kind": "text", "text": "Seaside at dusk, homesick"}, {"kind": "photo", "assetId": photo["id"]}])
     song = api.song(seed=seed)
     themes = api.c.get(f"/api/songs/{song['id']}/lyrics/themes").json()["themes"]
     by_text = {t["text"]: t["source"] for t in themes}
-    assert by_text["海边"] == "text" and "海" not in by_text and by_text["想家"] == "text" and by_text["暖光"] == "photo"
+    assert by_text["seaside"] == "text" and "sea" not in by_text and by_text["homesick"] == "text" and by_text["warm light"] == "photo"
     assert api.c.get("/api/songs/song-nothing-here/lyrics/themes").status_code == 404
 
 
 def test_lyrics_rewrite_with_a_model_and_keep(text_api):
     api, model = text_api
-    model.mode = "off"  # the new song keeps its 啦
+    model.mode = "off"  # the new song keeps its "la"
     song = api.song()
     model.start("good")
     lines = editing.lyric_lines(editing.vocal_notes_in(song, song["sections"][1]))
-    song = api.edit(song, {"op": "setLyrics", "section": "s-verse", "text": "\n".join("山" * len(l) for l in lines)})
-    out = api.post(song, "lyrics", sections=["s-verse", "s-chorus"], keep={"s-verse": [0]}, themes=["海", "想家"], tone="subtle", rhyme=True)
+    song = api.edit(song, {"op": "setLyrics", "section": "s-verse", "text": "\n".join(" ".join(["hill"] * len(l)) for l in lines)})
+    out = api.post(song, "lyrics", sections=["s-verse", "s-chorus"], keep={"s-verse": [0]}, themes=["sea", "homesick"], tone="subtle", rhyme=True)
     assert out["revision"] == song["revision"] + 1
-    got = [("".join(n["lyric"] for n in l)) for l in editing.lyric_lines(editing.vocal_notes_in(out, out["sections"][1]))]
-    assert got[0] == "山" * len(lines[0]) and all(g == "海" * len(l) for g, l in zip(got[1:], lines[1:]))
+    got = [editing.join_syllables([n["lyric"] for n in l]) for l in editing.lyric_lines(editing.vocal_notes_in(out, out["sections"][1]))]
+    assert got[0] == " ".join(["hill"] * len(lines[0])) and all(g == " ".join(["sea"] * len(l)) for g, l in zip(got[1:], lines[1:]))
     untouched = [n for n in out["tracks"]["vocal"]["notes"] if n["start"] < 4 * 1920]
-    assert all(n["lyric"] == "啦" for n in untouched)  # the intro was not asked for
-    assert "海, 想家" in model.prompts[0] and "subtle" in model.prompts[0]
+    assert all(n["lyric"] == "la" for n in untouched)  # the intro was not asked for
+    assert "sea, homesick" in model.prompts[0] and "subtle" in model.prompts[0]
     for prompt in model.prompts:
         assert "section by section" in prompt
     undone = api.post(out, "undo")
@@ -303,7 +303,7 @@ def test_the_server_checks_syllable_counts_and_retries(make_client):
     out = api.post(song, "lyrics", sections=["s-verse"])
     assert len(model.prompts) == 2 and "wrong length" in model.prompts[1]
     notes = verse(out, "vocal")
-    assert all(n["lyric"] == "海" for n in notes)
+    assert all(n["lyric"] == "sea" for n in notes)
 
 
 @pytest.mark.parametrize("mode", ["wrong", "error"])
@@ -336,11 +336,11 @@ def test_alternatives_are_three_lines_of_exactly_the_right_length(text_api):
     song = api.song()
     model.start("good")
     lines = editing.lyric_lines(editing.vocal_notes_in(song, song["sections"][1]))
-    r = api.c.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": "s-verse", "line": 1, "themes": ["海"]})
+    r = api.c.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": "s-verse", "line": 1, "themes": ["sea"]})
     assert r.status_code == 200
     alts = r.json()["alternatives"]
     assert len(alts) == 3 and len({a["text"] for a in alts}) == 3
-    assert all(len(a["text"]) == len(lines[1]) and a["note"] for a in alts)
+    assert all(sum(map(len, editing.split_syllables(a["text"]))) == len(lines[1]) and a["note"] for a in alts)
     assert api.c.get(f"/api/songs/{song['id']}").json()["song"] == song  # the song does not change
     assert api.c.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": "s-verse", "line": 99}).status_code == 422
     assert api.c.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": "s-none", "line": 0}).status_code == 422
@@ -355,7 +355,7 @@ def test_alternatives_with_wrong_lengths_are_503(make_client):
 def test_a_new_song_gets_model_lyrics_when_a_model_answers(text_api):
     api, _ = text_api
     song = api.song()
-    assert any(n["lyric"] == "海" for n in song["tracks"]["vocal"]["notes"])
+    assert any(n["lyric"] == "sea" for n in song["tracks"]["vocal"]["notes"])
     assert all(n["lyric"] for n in song["tracks"]["vocal"]["notes"])
 
 
@@ -372,7 +372,7 @@ def test_the_text_model_adapter_speaks_the_messages_format(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"content": [{"type": "text", "text": "好"}]}).encode()
+            return json.dumps({"content": [{"type": "text", "text": "OK"}]}).encode()
 
     def fake_urlopen(request, timeout):
         sent.update(url=request.full_url, headers=dict(request.header_items()), body=json.loads(request.data), timeout=timeout)
@@ -380,7 +380,7 @@ def test_the_text_model_adapter_speaks_the_messages_format(monkeypatch):
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     model = AnthropicTextModel("https://models.example", "secret", "some-model")
-    assert model.complete("sys", "hi", timeout=20.0) == "好"
+    assert model.complete("sys", "hi", timeout=20.0) == "OK"
     assert sent["url"] == "https://models.example/v1/messages" and sent["timeout"] == 20.0
     assert sent["headers"]["X-api-key"] == "secret" and sent["headers"]["Anthropic-version"] == "2023-06-01"
     assert sent["body"]["model"] == "some-model" and sent["body"]["system"] == "sys" and sent["body"]["messages"] == [{"role": "user", "content": "hi"}]
@@ -401,7 +401,7 @@ def test_the_openai_adapter_speaks_the_chat_completions_format(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"choices": [{"message": {"role": "assistant", "content": "好"}}]}).encode()
+            return json.dumps({"choices": [{"message": {"role": "assistant", "content": "OK"}}]}).encode()
 
     def fake_urlopen(request, timeout):
         sent.append(dict(url=request.full_url, headers=dict(request.header_items()), body=json.loads(request.data), timeout=timeout))
@@ -410,7 +410,7 @@ def test_the_openai_adapter_speaks_the_chat_completions_format(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     model = OpenAITextModel(None, "sk-proj-secret", None)
     assert model.configured and model.name == "gpt-5-mini"
-    assert model.complete("sys", "hi", timeout=20.0) == "好"
+    assert model.complete("sys", "hi", timeout=20.0) == "OK"
     first = sent[0]
     assert first["url"] == "https://api.openai.com/v1/chat/completions" and first["timeout"] == 20.0
     assert first["headers"]["Authorization"] == "Bearer sk-proj-secret"
@@ -475,10 +475,10 @@ def shared_song(api, **card):
     photos = [api.upload(png_bytes(color=(40 * i, 120, 200)), "photo", f"{i}.png", "image/png") for i in range(3)]
     sound = api.upload(wav_bytes([200.0], 1.0), "ambience", "s.wav", "audio/wav")
     hum = api.upload(wav_bytes([261.6, 293.7, 329.6], 2.0), "hum", "h.wav", "audio/wav")
-    seed = api.seed([{"kind": "photo", "assetId": p["id"]} for p in photos] + [{"kind": "sound", "assetId": sound["id"]}, {"kind": "hum", "assetId": hum["id"]}, {"kind": "text", "text": "好听的标题"}, {"kind": "text", "text": "秘密的种子文字"}])
+    seed = api.seed([{"kind": "photo", "assetId": p["id"]} for p in photos] + [{"kind": "sound", "assetId": sound["id"]}, {"kind": "hum", "assetId": hum["id"]}, {"kind": "text", "text": "A lovely title"}, {"kind": "text", "text": "secret seed text"}])
     song = api.song(seed=seed)
-    api.c.put("/api/location", json={"city": "厦门"})
-    song = api.edit(song, {"op": "setCard", "line": "海风把傍晚吹进歌里", "message": "回来唱给你听", "city": "厦门", **card})
+    api.c.put("/api/location", json={"city": "Edinburgh"})
+    song = api.edit(song, {"op": "setCard", "line": "The sea wind blows the evening into song", "message": "I will sing it to you when I am back", "city": "Edinburgh", **card})
     song = api.post(song, "card/preview")
     return song, photos, sound, hum
 
@@ -488,11 +488,11 @@ def test_song_page_hides_city_and_photos_unless_shown(api):
     share = song["card"]["share"]["shareId"]
     body = api.c.get(f"/api/share/{share}/page").json()
     page, public = body["page"], body["song"]
-    assert page["title"] == song["title"] and page["line"] == "海风把傍晚吹进歌里" and page["message"] == "回来唱给你听"
+    assert page["title"] == song["title"] and page["line"] == "The sea wind blows the evening into song" and page["message"] == "I will sing it to you when I am back"
     assert "city" not in page and page["photos"] == []
     assert page["card"] == f"/api/share/{share}/assets/{song['card']['frontAssetId']}" and page["date"] == song["createdAt"][:10]
-    assert "厦门" not in json.dumps(body, ensure_ascii=False)
-    assert "seed" not in public and "provenance" not in public and "秘密的种子文字" not in json.dumps(body, ensure_ascii=False)
+    assert "Edinburgh" not in json.dumps(body, ensure_ascii=False)
+    assert "seed" not in public and "provenance" not in public and "secret seed text" not in json.dumps(body, ensure_ascii=False)
     assert_valid(public)
     assert photos[0]["id"] not in json.dumps(body) and hum["id"] not in json.dumps(body)
     assert {a["id"] for a in public["assets"]} == {sound["id"], song["card"]["frontAssetId"]}
@@ -511,11 +511,11 @@ def test_song_page_shows_city_and_photos_in_order_when_shown(api):
     song = api.post(api.edit(song, {"op": "setCard", "photoAssetIds": order, "coverAssetId": order[0]}), "card/preview")
     share = song["card"]["share"]["shareId"]
     body = api.c.get(f"/api/share/{share}/page").json()
-    assert body["page"]["city"] == "厦门"
+    assert body["page"]["city"] == "Edinburgh"
     assert body["page"]["photos"] == [f"/api/share/{share}/assets/{a}" for a in order]
     assert all(api.c.get(u).status_code == 200 for u in body["page"]["photos"])
     assert_valid(body["song"])
-    assert body["song"]["card"]["city"] == "厦门"
+    assert body["song"]["card"]["city"] == "Edinburgh"
 
 
 def test_song_page_card_only_after_a_preview_and_unknown_share_is_404(api):
@@ -559,7 +559,7 @@ def test_song_page_html_is_served_from_the_app_build(tmp_path, card_module):
 
 def test_undo_never_changes_a_printed_card_and_previews_are_not_undo_steps(api):
     song = api.song()
-    song = api.edit(song, {"op": "setCard", "line": "海风把傍晚吹进歌里", "message": "回来唱给你听"})
+    song = api.edit(song, {"op": "setCard", "line": "The sea wind blows the evening into song", "message": "I will sing it to you when I am back"})
     song = api.post(song, "card/preview")
     printed = api.post(song, "card/print")
     card = printed["card"]
@@ -568,7 +568,7 @@ def test_undo_never_changes_a_printed_card_and_previews_are_not_undo_steps(api):
     assert back["card"] == card and back["title"] == printed["title"]
     assert any(a["id"] == card["frontAssetId"] for a in back["assets"])
     page = api.c.get(f"/api/share/{card['share']['shareId']}/page").json()["page"]
-    assert page["line"] == "海风把傍晚吹进歌里" and page.get("card")
+    assert page["line"] == "The sea wind blows the evening into song" and page.get("card")
 
 
 def test_bass_register_moves_the_notes_that_fit(api):
@@ -598,7 +598,7 @@ class RefusingModel:
 def test_a_refused_model_call_says_why(make_client, reason):
     model = RefusingModel(reason)
     api = Api(make_client(adapters=Adapters(text_model=model)))
-    song = api.song()  # making a song tries the model once and keeps 啦
+    song = api.song()  # making a song tries the model once and keeps "la"
     r = api.c.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": song["revision"]})
     assert r.status_code == 503 and r.json()["error"]["detail"]["reason"] == reason
 
@@ -612,7 +612,7 @@ def test_without_a_model_the_reason_is_not_configured(api):
 
 def test_choosing_does_not_wait_for_the_model(text_api):
     api, model = text_api
-    made = api.c.post("/api/candidates", json={"seed": api.c.post("/api/seed", json={"inputs": [{"kind": "text", "text": "海边的傍晚"}]}).json()["seed"]}).json()["candidates"]
+    made = api.c.post("/api/candidates", json={"seed": api.c.post("/api/seed", json={"inputs": [{"kind": "text", "text": "Seaside at dusk"}]}).json()["seed"]}).json()["candidates"]
     model.start("good")
     chosen = api.c.post(f"/api/songs/{made[0]['id']}/choose", json={}).json()["song"]
     assert model.prompts == [] and chosen["candidate"]["chosen"] is True

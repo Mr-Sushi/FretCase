@@ -84,29 +84,35 @@ def test_replace_notes_rules(song_cache):
         editing.replace_notes(song, "melody", 480, 0, [])
 
 
-def test_lyrics_one_character_per_note_and_mismatch_detail(song_cache):
+def test_lyrics_one_syllable_per_note_and_mismatch_detail(song_cache):
     song = song_cache("G", "major")
     s, e = 0, 4 * bar_ticks(song["meter"])
     count = len([n for n in song["tracks"]["vocal"]["notes"] if s <= n["start"] < e])
-    text = "海" * (count - 1) + "风"
+    text = "sea " * (count - 2) + "win-dow"
     out = editing.set_lyrics(song, "s-intro", text)
     vocal = [n for n in out["tracks"]["vocal"]["notes"] if s <= n["start"] < e]
-    assert [n["lyric"] for n in vocal] == list("海" * (count - 1) + "风")
+    assert [n["lyric"] for n in vocal] == ["sea"] * (count - 2) + ["win-", "dow"]
     assert vocal[-1]["lineEnd"] is True
     with pytest.raises(CannotApply) as info:
-        editing.set_lyrics(song, "s-intro", "海风")
+        editing.set_lyrics(song, "s-intro", "sea wind")
     assert info.value.detail == {"noteCount": count, "syllableCount": 2}
 
 
 def test_lyrics_lines_and_english_words():
     # only line breaks start a new line; punctuation and spaces are ignored
-    assert editing.split_syllables("海风，吹过\n你 好") == [["海", "风", "吹", "过"], ["你", "好"]]
-    assert editing.split_syllables("sea breeze, blow") == [["sea", "breeze", "blow"]]
+    assert editing.split_syllables("sea breeze, blow\nwalking home") == [["sea", "breeze", "blow"], ["walk-", "ing", "home"]]
+    # a spelling rule splits words; a hyphen overrides it; an apostrophe stays in its word
+    assert editing.split_syllables("window little open father")[0] == ["win-", "dow", "lit-", "tle", "o-", "pen", "fa-", "ther"]
+    assert editing.split_syllables("fire fi-re don't")[0] == ["fire", "fi-", "re", "don't"]
+    assert editing.split_syllables("played wanted homes boxes")[0] == ["played", "wan-", "ted", "homes", "bo-", "xes"]
+    assert editing.join_syllables(["walk-", "ing", "by", "the", "sea"]) == "walking by the sea"
+    # Chinese still sings one character per note
+    assert editing.split_syllables("海风，吹过") == [["海", "风", "吹", "过"]]
 
 
 def test_set_sections_must_be_contiguous_and_cover_every_bar(song_cache):
     song = song_cache("G", "major")
-    good = [{"id": "s-first", "label": "一", "startBar": 0, "endBar": 6}, {"id": "s-second", "label": "二", "startBar": 6, "endBar": 16}]
+    good = [{"id": "s-first", "label": "One", "startBar": 0, "endBar": 6}, {"id": "s-second", "label": "Two", "startBar": 6, "endBar": 16}]
     out = editing.set_sections(song, good)
     assert [s["id"] for s in out["sections"]] == ["s-first", "s-second"]
     bad_cases = [
@@ -157,6 +163,6 @@ def test_exports_are_well_formed(song_cache, meter):
 def test_abc_and_musicxml_carry_lyrics(song_cache):
     song = song_cache("C", "major")
     count = len([n for n in song["tracks"]["vocal"]["notes"] if n["start"] < 4 * bar_ticks(song["meter"])])
-    out = editing.set_lyrics(song, "s-intro", "啦" * count)
+    out = editing.set_lyrics(song, "s-intro", "la " * count)
     assert "w:" in export.to_abc(out)
     assert "<lyric>" in export.to_musicxml(out)

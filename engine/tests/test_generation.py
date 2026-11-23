@@ -110,7 +110,7 @@ def test_short_motif_makes_an_eight_bar_song():
 
 def test_default_sections_and_mix(song_cache):
     song = song_cache()
-    assert [s["label"] for s in song["sections"]] == ["开头", "主歌", "副歌", "结尾"]
+    assert [s["label"] for s in song["sections"]] == ["Intro", "Verse", "Chorus", "Outro"]
     assert [(s["startBar"], s["endBar"]) for s in song["sections"]] == [(0, 4), (4, 8), (8, 12), (12, 16)]
     assert song["controls"] == {"brightness": 0.5, "complexity": 0.5, "density": 0.5}
     assert song["locks"] == []

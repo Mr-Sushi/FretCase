@@ -31,7 +31,7 @@ Options: `--midi-port NAME` (part of the controller's port name; default tries `
 | Control | MIDI |
 | --- | --- |
 | Platter | CC 16, relative, two's complement (1 to 63 forward, 127 down to 65 back) |
-| Knobs 明暗, 简繁, 疏密, 速度 | CC 17, 18, 19, 20, relative, two's complement |
+| Knobs Bright, Complex, Density, Tempo | CC 17, 18, 19, 20, relative, two's complement |
 | Faders vocal, melody, guitar, bass, drums, ambience | CC 21 to 26, absolute 0 to 127 |
 | Keys capture, play, undo, another | note 36, 37, 38, 39 (note on = down, note off or velocity 0 = up) |
 | Track keys vocal to ambience | note 40 to 45 |

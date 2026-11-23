@@ -56,7 +56,7 @@ export type VocalTrack = Mix & {
  */
 export type VocalNote = NoteFields & {
   /**
-   * Syllable sung on this note. One character for Chinese.
+   * Syllable sung on this note. A syllable that continues the same word ends with a hyphen: walk-, ing.
    */
   lyric?: string;
   /**
@@ -178,7 +178,7 @@ export interface Candidate {
   groupId: Id;
   index: number;
   /**
-   * A plain name for the arrangement, e.g. 黄昏民谣.
+   * A plain name for the arrangement, e.g. Dusk Folk.
    */
   name: string;
   /**
@@ -197,7 +197,7 @@ export interface Candidate {
        */
       level: number;
       /**
-       * Short label, e.g. 木吉他扫弦.
+       * Short label, e.g. Steel-string guitar, strum.
        */
       sound: string;
     };
@@ -381,7 +381,7 @@ export interface SeedCard {
   tempo: number;
   meter?: Meter;
   /**
-   * A short label, e.g. 平静偏暖.
+   * A short label, e.g. calm, warm.
    */
   mood: string;
   /**
@@ -426,7 +426,7 @@ export interface Note {
 export interface Section {
   id: Id;
   /**
-   * Shown on screen, e.g. 开头, 展开, 高潮, 结尾.
+   * Shown on screen, e.g. Intro, Verse, Chorus, Outro.
    */
   label: string;
   startBar: number;
@@ -545,7 +545,7 @@ export interface NoteFields {
 export interface Master {
   volume: Unit;
   /**
-   * Reverb amount for the whole song: 干净, 房间, 大厅.
+   * Reverb amount for the whole song: dry, room, hall.
    */
   space: "dry" | "room" | "hall";
 }

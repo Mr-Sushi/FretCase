@@ -4,42 +4,42 @@
   "revision": 3,
   "createdAt": "2026-11-18T18:02:11Z",
   "updatedAt": "2026-11-18T18:09:40Z",
-  "title": "海边的傍晚",
+  "title": "Seaside at Dusk",
   "candidate": {
     "groupId": "grp-hai-bian-01",
     "index": 0,
-    "name": "黄昏民谣",
+    "name": "Dusk Folk",
     "tags": [
-      "温暖",
-      "慢一点",
-      "人声在前"
+      "warm",
+      "slower",
+      "vocal-led"
     ],
-    "why": "照片里的暖色配上尼龙吉他分解和弦；副歌就是你哼的那句。",
+    "why": "The warm colours of your photo with picked nylon guitar; the chorus sings your hum.",
     "timeOfDay": "dusk",
     "parts": {
       "vocal": {
         "level": 0.9,
-        "sound": "女声"
+        "sound": "Female voice"
       },
       "melody": {
         "level": 0.4,
-        "sound": "钢琴"
+        "sound": "Piano"
       },
       "guitar": {
         "level": 0.8,
-        "sound": "尼龙吉他分解"
+        "sound": "Nylon guitar, picked"
       },
       "bass": {
         "level": 0.5,
-        "sound": "指弹贝斯"
+        "sound": "Finger bass"
       },
       "drums": {
         "level": 0.35,
-        "sound": "爵士鼓刷子"
+        "sound": "Jazz kit, brushes"
       },
       "ambience": {
         "level": 0.3,
-        "sound": "海浪"
+        "sound": "Waves"
       }
     },
     "chosen": true
@@ -92,7 +92,7 @@
       "numerator": 4,
       "denominator": 4
     },
-    "mood": "平静偏暖",
+    "mood": "calm, warm",
     "motif": [
       {
         "start": 0,
@@ -139,15 +139,15 @@
     "reasons": [
       {
         "field": "key",
-        "text": "哼唱的音落在 D 大调上"
+        "text": "The humming sits in D major"
       },
       {
         "field": "tempo",
-        "text": "海浪大约每 0.7 秒一次，取 84 拍每分"
+        "text": "Waves about every 0.7 s, so 84 beats per minute"
       },
       {
         "field": "mood",
-        "text": "画面以暖色为主，亮度中等"
+        "text": "Mostly warm colours, medium brightness"
       }
     ],
     "source": "offline"
@@ -155,26 +155,26 @@
   "sections": [
     {
       "id": "s-intro",
-      "label": "开头",
+      "label": "Intro",
       "startBar": 0,
       "endBar": 4
     },
     {
       "id": "s-verse",
-      "label": "展开",
+      "label": "Verse",
       "startBar": 4,
       "endBar": 8
     },
     {
       "id": "s-chorus",
-      "label": "高潮",
+      "label": "Chorus",
       "startBar": 8,
       "endBar": 12,
       "lead": "vocal"
     },
     {
       "id": "s-outro",
-      "label": "结尾",
+      "label": "Outro",
       "startBar": 12,
       "endBar": 16
     }
@@ -677,42 +677,42 @@
           "duration": 480,
           "pitch": 74,
           "velocity": 96,
-          "lyric": "海"
+          "lyric": "Sea"
         },
         {
           "start": 480,
           "duration": 480,
           "pitch": 76,
           "velocity": 96,
-          "lyric": "风"
+          "lyric": "wind"
         },
         {
           "start": 960,
           "duration": 960,
           "pitch": 78,
           "velocity": 96,
-          "lyric": "吹"
+          "lyric": "blows"
         },
         {
           "start": 1920,
           "duration": 480,
           "pitch": 76,
           "velocity": 96,
-          "lyric": "过"
+          "lyric": "in-"
         },
         {
           "start": 2400,
           "duration": 480,
           "pitch": 74,
           "velocity": 96,
-          "lyric": "傍"
+          "lyric": "to"
         },
         {
           "start": 2880,
           "duration": 960,
           "pitch": 71,
           "velocity": 96,
-          "lyric": "晚",
+          "lyric": "dusk",
           "lineEnd": true
         }
       ]
@@ -1144,7 +1144,7 @@
   ],
   "card": {
     "style": "ink",
-    "line": "海风把傍晚吹进歌里",
+    "line": "The sea wind blows the evening into song",
     "photoAssetIds": [
       "a-photo-01",
       "a-photo-02",

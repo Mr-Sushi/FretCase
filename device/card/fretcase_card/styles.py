@@ -45,7 +45,7 @@ def original(b: np.ndarray) -> np.ndarray:
 
 
 def xieyi(b: np.ndarray) -> np.ndarray:
-    """Watercolour (写意): flat washes, soft edges, light paper showing through, pale borders."""
+    """Watercolour (xieyi): flat washes, soft edges, light paper showing through, pale borders."""
     s = cv2.stylization(b, sigma_s=80, sigma_r=0.45)
     paper = np.empty_like(s)
     paper[:] = PAPER_BGR
@@ -57,7 +57,7 @@ def xieyi(b: np.ndarray) -> np.ndarray:
 
 
 def ink(b: np.ndarray) -> np.ndarray:
-    """Ink wash (水墨): grey-black washes on warm paper, dark brush edges, fading at the border."""
+    """Ink wash: grey-black washes on warm paper, dark brush edges, fading at the border."""
     g8 = cv2.cvtColor(cv2.edgePreservingFilter(b, flags=1, sigma_s=60, sigma_r=0.4), cv2.COLOR_BGR2GRAY)
     g8 = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4, 3)).apply(g8)  # even out dark or bright photos
     g = cv2.normalize(g8, None, 0, 255, cv2.NORM_MINMAX).astype(np.float32) / 255
@@ -88,7 +88,7 @@ def _halftone(shape, cell: float, coverage: np.ndarray) -> np.ndarray:
 
 
 def comic(b: np.ndarray) -> np.ndarray:
-    """Comic (漫画): flat saturated colour areas, halftone dots in the shadows, bold black outlines."""
+    """Comic: flat saturated colour areas, halftone dots in the shadows, bold black outlines."""
     h, w = b.shape[:2]
     smooth = b
     for _ in range(2):

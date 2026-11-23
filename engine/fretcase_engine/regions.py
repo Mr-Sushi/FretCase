@@ -158,7 +158,7 @@ def _line_ends(notes: Sequence[Note], bt: int) -> List[bool]:
 
 def vocal_from_line(song: Song, line: Sequence[Note], old: Sequence[Note], intensity: float) -> List[Note]:
     """Vocal notes for a line. Lyrics are kept by position when the note count is unchanged; otherwise every note
-    gets the placeholder syllable 啦 so the line can still be sung as a guide tone."""
+    gets the placeholder syllable "la" so the line can still be sung as a guide tone."""
     bt = bar_ticks(song["meter"])
     ordered = sorted(line, key=lambda n: n["start"])
     old_sorted = sorted(old, key=lambda n: n["start"])
@@ -168,11 +168,11 @@ def vocal_from_line(song: Song, line: Sequence[Note], old: Sequence[Note], inten
     for i, n in enumerate(ordered):
         note: Note = {**_plain(n), "velocity": velocity_scale(90, intensity)}
         if keep:
-            note["lyric"] = old_sorted[i].get("lyric") or "啦"
+            note["lyric"] = old_sorted[i].get("lyric") or "la"
             if old_sorted[i].get("lineEnd"):
                 note["lineEnd"] = True
         else:
-            note["lyric"] = "啦"
+            note["lyric"] = "la"
             if ends[i]:
                 note["lineEnd"] = True
         out.append(note)

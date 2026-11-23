@@ -238,13 +238,13 @@ def test_revert_melody_without_a_motif_is_refused(song_cache):
 def test_revert_melody_restores_the_hum_and_keeps_lyrics(seed_factory):
     motif = [{"start": i * 480, "duration": 480, "pitch": p, "velocity": 90} for i, p in enumerate([67, 69, 71, 72])]
     song = generate_song(seed_factory(motif=motif), "song-test-0009", NOW)
-    song = editing.set_lyrics(song, "s-verse", "\n".join("海" * len(l) for l in editing.lyric_lines(editing.vocal_notes_in(song, song["sections"][1]))))
+    song = editing.set_lyrics(song, "s-verse", "\n".join(" ".join(["sea"] * len(l)) for l in editing.lyric_lines(editing.vocal_notes_in(song, song["sections"][1]))))
     shifted = editing.shift_register(editing.shift_register(song, "melody", "s-verse", "up"), "vocal", "s-verse", "up")
     assert notes_in(shifted, "melody", "s-verse") != notes_in(song, "melody", "s-verse")
     back = valid(editing.revert_melody(shifted, "s-verse"))
     assert [n["pitch"] for n in notes_in(back, "melody", "s-verse")] == [n["pitch"] for n in notes_in(song, "melody", "s-verse")]
     assert [n["pitch"] for n in notes_in(back, "vocal", "s-verse")] == [n["pitch"] for n in notes_in(song, "vocal", "s-verse")]
-    assert {n["lyric"] for n in notes_in(back, "vocal", "s-verse")} == {"海"}
+    assert {n["lyric"] for n in notes_in(back, "vocal", "s-verse")} == {"sea"}
 
 
 def test_set_master(song_cache):
@@ -257,7 +257,7 @@ def test_set_master(song_cache):
 
 
 def test_set_sections_keeps_one_region_per_section(song_cache):
-    out = editing.set_sections(song_cache(), [{"id": "s-first", "label": "一", "startBar": 0, "endBar": 6}, {"id": "s-second", "label": "二", "startBar": 6, "endBar": 16}])
+    out = editing.set_sections(song_cache(), [{"id": "s-first", "label": "One", "startBar": 0, "endBar": 6}, {"id": "s-second", "label": "Two", "startBar": 6, "endBar": 16}])
     assert check_consistency(out) == []
     assert [r["section"] for r in out["tracks"]["guitar"]["regions"]] == ["s-first", "s-second"]
 

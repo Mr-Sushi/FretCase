@@ -5,7 +5,7 @@ import { formatLong, songSeconds, TRACKS } from '../lib/song'
 import type { TimeOfDay } from '../types'
 import { PauseIcon, PlayIcon } from './ui'
 
-const TIMES: { id: TimeOfDay; label: string }[] = [{ id: 'day', label: '白天' }, { id: 'dusk', label: '黄昏' }, { id: 'night', label: '夜晚' }]
+const TIMES: { id: TimeOfDay; label: string }[] = [{ id: 'day', label: 'Day' }, { id: 'dusk', label: 'Dusk' }, { id: 'night', label: 'Night' }]
 
 export function PickView() {
   const { c } = useApp()
@@ -21,10 +21,10 @@ export function PickView() {
       <main className="pick">
         <div className="pick-head">
           <div>
-            <h1>听听这三首，挑最像今天的</h1>
-            <div className="lead">三首都用了你收集的东西，只是编法不同。转唱盘在三首之间切换，按红键选定。</div>
+            <h1>Listen to these three and pick the one most like today</h1>
+            <div className="lead">All three use what you captured, arranged in different ways. Turn the platter to move between them; press the red key to choose.</div>
           </div>
-          <div role="group" aria-label="时段" className="seg timeseg">
+          <div role="group" aria-label="Time of day" className="seg timeseg">
             {TIMES.map((t) => (
               <button key={t.id} type="button" aria-pressed={tod === t.id} className={tod === t.id ? 'on' : ''} onClick={() => void c.moreCandidates({ timeOfDay: t.id })}>{t.label}</button>
             ))}
@@ -43,7 +43,7 @@ export function PickView() {
                   <h2>{cand?.name ?? song.title}</h2>
                 </div>
                 <div className="tags">{cand?.tags.map((t) => <span key={t}>{t}</span>)}</div>
-                <div className="parts" aria-label="谁在演奏">
+                <div className="parts" aria-label="Who is playing">
                   {TRACKS.map((t) => {
                     const p = cand?.parts?.[t.id]
                     return (
@@ -58,24 +58,24 @@ export function PickView() {
                 <div className="why">{cand?.why}</div>
                 <div className="cand-foot">
                   <div className="row">
-                    <button type="button" className="playbtn" aria-label={isPlaying ? '暂停' : '试听'} onClick={(e) => { e.stopPropagation(); void c.previewCandidate(i) }}>
+                    <button type="button" className="playbtn" aria-label={isPlaying ? 'Pause' : 'Listen'} onClick={(e) => { e.stopPropagation(); void c.previewCandidate(i) }}>
                       {isPlaying ? <PauseIcon /> : <PlayIcon />}
                     </button>
                     <div className="grow">
                       <div className="progress"><div style={{ width: `${progress}%` }} /></div>
-                      <div className="tiny">试听 {PREVIEW_SECONDS} 秒 · 全曲 {formatLong(songSeconds(song))}</div>
+                      <div className="tiny">{PREVIEW_SECONDS} s preview · whole song {formatLong(songSeconds(song))}</div>
                     </div>
                   </div>
-                  <button type="button" className={`ctabtn ${focused ? 'fill' : ''}`} onClick={(e) => { e.stopPropagation(); void c.chooseCandidate(i) }}>就要这首</button>
+                  <button type="button" className={`ctabtn ${focused ? 'fill' : ''}`} onClick={(e) => { e.stopPropagation(); void c.chooseCandidate(i) }}>This one</button>
                 </div>
               </article>
             )
           })}
         </div>
         <div className="pick-foot">
-          <button type="button" className="outline big" onClick={() => void c.moreCandidates({ again: true })}>都不像，再来三首</button>
-          <button type="button" className="linkbtn" onClick={() => c.setView('capture')}>回去补一张照片或再哼一段</button>
-          <span className="tiny right">选好之后每一段、每个乐手都还能再换</span>
+          <button type="button" className="outline big" onClick={() => void c.moreCandidates({ again: true })}>None of these, three more</button>
+          <button type="button" className="linkbtn" onClick={() => c.setView('capture')}>Go back to add a photo or hum again</button>
+          <span className="tiny right">After choosing, you can still change every section and every player</span>
         </div>
       </main>
     </>

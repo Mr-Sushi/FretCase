@@ -3,9 +3,9 @@ import { PanelInterpreter, type Intent, type PanelContext } from './interpreter'
 import type { Section } from '../types'
 
 const sections: Section[] = [
-  { id: 's-intro', label: '开头', startBar: 0, endBar: 4 },
-  { id: 's-verse', label: '展开', startBar: 4, endBar: 8 },
-  { id: 's-chorus', label: '高潮', startBar: 8, endBar: 16 },
+  { id: 's-intro', label: 'Intro', startBar: 0, endBar: 4 },
+  { id: 's-verse', label: 'Verse', startBar: 4, endBar: 8 },
+  { id: 's-chorus', label: 'Chorus', startBar: 8, endBar: 16 },
 ]
 
 function setup(selected: PanelContext['selectedTrack'] = null, screen = 'shape') {

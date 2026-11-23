@@ -64,22 +64,22 @@ What the controls and screens can choose from.
 ```json
 {
   "instruments": {
-    "vocal": [ { "id": "synth-male", "label": "男声" }, { "id": "synth-female", "label": "女声" }, { "id": "synth-soft", "label": "轻声" } ],
-    "melody": [ { "id": "harmonica", "label": "口琴" }, { "id": "piano", "label": "钢琴" }, { "id": "whistle", "label": "口哨" }, { "id": "flute", "label": "长笛" } ],
-    "guitar": [ { "id": "steel", "label": "木吉他" }, { "id": "nylon", "label": "尼龙吉他" }, { "id": "electric-clean", "label": "电吉他（干净）" }, { "id": "ukulele", "label": "尤克里里" } ],
-    "bass": [ { "id": "finger-bass", "label": "指弹贝斯" }, { "id": "upright-bass", "label": "低音提琴" }, { "id": "synth-bass", "label": "合成器贝斯" } ],
-    "drums": [ { "id": "jazz-kit", "label": "爵士鼓" }, { "id": "pop-kit", "label": "流行鼓" }, { "id": "hand-drum", "label": "手鼓" } ],
-    "ambience": [ { "id": "recording", "label": "原声" } ]
+    "vocal": [ { "id": "synth-male", "label": "Male voice" }, { "id": "synth-female", "label": "Female voice" }, { "id": "synth-soft", "label": "Soft voice" } ],
+    "melody": [ { "id": "harmonica", "label": "Harmonica" }, { "id": "piano", "label": "Piano" }, { "id": "whistle", "label": "Whistle" }, { "id": "flute", "label": "Flute" } ],
+    "guitar": [ { "id": "steel", "label": "Steel-string guitar" }, { "id": "nylon", "label": "Nylon guitar" }, { "id": "electric-clean", "label": "Electric guitar (clean)" }, { "id": "ukulele", "label": "Ukulele" } ],
+    "bass": [ { "id": "finger-bass", "label": "Finger bass" }, { "id": "upright-bass", "label": "Upright bass" }, { "id": "synth-bass", "label": "Synth bass" } ],
+    "drums": [ { "id": "jazz-kit", "label": "Jazz kit" }, { "id": "pop-kit", "label": "Pop kit" }, { "id": "hand-drum", "label": "Hand drum" } ],
+    "ambience": [ { "id": "recording", "label": "As recorded" } ]
   },
   "styles": {
-    "vocal": [ { "id": "plain", "label": "只唱主旋律" }, { "id": "harmony", "label": "加一层和声" } ],
-    "melody": [ { "id": "follow", "label": "跟着人声" }, { "id": "answer", "label": "人声停时才出来" } ],
-    "guitar": [ { "id": "strum", "label": "扫弦" }, { "id": "arpeggio", "label": "分解和弦" }, { "id": "muted", "label": "闷音扫弦" }, { "id": "sustain", "label": "只弹长音" } ],
-    "bass": [ { "id": "sustain", "label": "长音" }, { "id": "groove", "label": "跟着鼓点" }, { "id": "walking", "label": "走动" } ],
-    "drums": [ { "id": "brush", "label": "刷子" }, { "id": "sticks", "label": "鼓棒" }, { "id": "hand", "label": "只有手鼓" } ],
-    "ambience": [ { "id": "recording", "label": "原声" }, { "id": "soft", "label": "柔和一点" } ]
+    "vocal": [ { "id": "plain", "label": "Melody only" }, { "id": "harmony", "label": "Add a harmony" } ],
+    "melody": [ { "id": "follow", "label": "Follow the voice" }, { "id": "answer", "label": "Answer when the voice rests" } ],
+    "guitar": [ { "id": "strum", "label": "Strum" }, { "id": "arpeggio", "label": "Picked chords" }, { "id": "muted", "label": "Muted strum" }, { "id": "sustain", "label": "Long notes only" } ],
+    "bass": [ { "id": "sustain", "label": "Long notes" }, { "id": "groove", "label": "With the drums" }, { "id": "walking", "label": "Walking" } ],
+    "drums": [ { "id": "brush", "label": "Brushes" }, { "id": "sticks", "label": "Sticks" }, { "id": "hand", "label": "Hand drum only" } ],
+    "ambience": [ { "id": "recording", "label": "As recorded" }, { "id": "soft", "label": "Softer" } ]
   },
-  "spaces": [ { "id": "dry", "label": "干净" }, { "id": "room", "label": "房间" }, { "id": "hall", "label": "大厅" } ],
+  "spaces": [ { "id": "dry", "label": "Dry" }, { "id": "room", "label": "Room" }, { "id": "hall", "label": "Hall" } ],
   "rhythmPresets": "the contents of shared/data/rhythm-presets.json",
   "cardStyles": ["ink", "comic", "xieyi", "original", "text"]
 }
@@ -121,7 +121,7 @@ Offline: transcription runs locally; photo and text use colour statistics and ke
 
 Make three different arrangements of the same seed for the pick screen.
 
-Request: `{ "seed": SeedCard, "bars": 16, "timeOfDay": "dusk", "previousGroupId": "grp-…" }`. `bars`, `timeOfDay` (`day` | `dusk` | `night`) and `previousGroupId` are optional. `timeOfDay` nudges brightness, tempo and instruments (day brighter and faster, night darker, slower and sparser). With `previousGroupId` ("都不像，再来三首") the server avoids repeating the instrument and style combinations of that group.
+Request: `{ "seed": SeedCard, "bars": 16, "timeOfDay": "dusk", "previousGroupId": "grp-…" }`. `bars`, `timeOfDay` (`day` | `dusk` | `night`) and `previousGroupId` are optional. `timeOfDay` nudges brightness, tempo and instruments (day brighter and faster, night darker, slower and sparser). With `previousGroupId` ("None of these, three more") the server avoids repeating the instrument and style combinations of that group.
 
 Response: `201 { "candidates": [Song, Song, Song] }`. Each song is a draft with `candidate` set (`groupId`, `index` 0–2, `name`, `tags`, `why`, `parts`, `timeOfDay`). The three share the melody from the motif when there is one and differ in harmony colour, instruments, styles and lead. Drafts are not listed by `GET /api/songs` and are deleted 24 hours after creation unless chosen. Offline: names, tags and `why` come from rules; with a model they are written by the model.
 
@@ -135,9 +135,9 @@ Generate one song from a seed card. Kept for tools and tests; the app uses `/api
 
 Request: `{ "seed": SeedCard, "bars": 16 }`. `bars` is optional (default 16; 8 when the motif is shorter than 4 bars).
 
-Response: `201 { "song": Song }`. The new song has default sections (开头, 主歌, 副歌, 结尾 for 16 bars), all faders at 0.8, `master` at volume 0.8 and space `room`, no locks, and controls at 0.5. Every track has one region per section; a region whose track has nothing to play there has `play: false`.
+Response: `201 { "song": Song }`. The new song has default sections (Intro, Verse, Chorus, Outro for 16 bars), all faders at 0.8, `master` at volume 0.8 and space `room`, no locks, and controls at 0.5. Every track has one region per section; a region whose track has nothing to play there has `play: false`.
 
-Lyrics on a new song: every vocal note gets the syllable 啦 so the line can be sung as a guide tone, and the user can type lyrics. `POST /api/songs` (tools) also tries the model once when one is configured; drafts from `/api/candidates` never call the model.
+Lyrics on a new song: every vocal note gets the syllable "la" so the line can be sung as a guide tone, and the user can type lyrics. `POST /api/songs` (tools) also tries the model once when one is configured; drafts from `/api/candidates` never call the model.
 
 ### `GET /api/songs`
 
@@ -173,10 +173,10 @@ Response: `{ "song": Song }`.
 | `setTitle` | `title` | |
 | `setCard` | any of `style`, `line`, `message`, `photoAssetIds`, `coverAssetId`, `showPhoto`, `city`, `showCity` | Card fields shown on the preview. `coverAssetId` must be one of `photoAssetIds`; setting `style` to `text` removes `coverAssetId`, and setting a photo style without a cover picks the first photo. Changing any field clears `frontAssetId`, so a new preview is needed before printing |
 | `setRegion` (M2) | `track`, `section`, any of `play`, `complexity`, `intensity`, `style` | How one track plays in one section (the XY pad and style chips). Regenerates that track in that section and locks it there. `play: false` removes its notes in that section |
-| `copyRegion` (M2) | `track`, `section` | "每一段都这样": copies that region's `complexity`, `intensity` and `style` to every section of the track (keeping each section's `play`), regenerates, and locks the track |
+| `copyRegion` (M2) | `track`, `section` | "Same in every section": copies that region's `complexity`, `intensity` and `style` to every section of the track (keeping each section's `play`), regenerates, and locks the track |
 | `setLead` (M2) | `section`, `track`: `vocal` \| `melody` \| `guitar` \| `null` | Who carries the section. Raises the lead's intensity by about 0.15 and lowers the others' by about 0.1 in unlocked regions of that section; when the vocal leads, an unlocked melody region switches to `answer`. `null` removes the lead and restores the regions' previous values |
-| `shiftRegister` (M2) | `track`, `section`, `direction`: `up` \| `down` | "高一点 / 低一点". Vocal and melody: every note in the section moves one scale step in the song's key. Guitar: the next voicing up or down the neck. Bass: one octave, within E1–G3; notes that would leave that range stay where they are. Not allowed on drums and ambience (`422`); `422` too when nothing can move without leaving the instrument's range |
-| `revertMelody` (M2) | `section` | "用回我哼的": restores the melody and vocal pitches of that section from the seed motif, keeping lyrics where the note count is unchanged. `422` when the song has no motif |
+| `shiftRegister` (M2) | `track`, `section`, `direction`: `up` \| `down` | "Higher / Lower". Vocal and melody: every note in the section moves one scale step in the song's key. Guitar: the next voicing up or down the neck. Bass: one octave, within E1–G3; notes that would leave that range stay where they are. Not allowed on drums and ambience (`422`); `422` too when nothing can move without leaving the instrument's range |
+| `revertMelody` (M2) | `section` | "Back to my hum": restores the melody and vocal pitches of that section from the seed motif, keeping lyrics where the note count is unchanged. `422` when the song has no motif |
 | `setMaster` (M2) | any of `volume` 0–1, `space`: `dry` \| `room` \| `hall` | Whole-song volume and reverb |
 | `setVocalTake` (v2) | `assetId` | Uses the user's own recording as the vocal track: `source = "recording"`, `renderAssetId = assetId` |
 
@@ -192,7 +192,7 @@ If the song's meter has no preset at the requested rhythm level (in `rhythm-pres
 
 ### `POST /api/songs/{id}/another`
 
-"Another take" (再演一次 / 换一段). Regenerates the unlocked content of one section, keeping each region's `play`, `complexity`, `intensity` and `style`.
+"Another take" (Play it again / Another take). Regenerates the unlocked content of one section, keeping each region's `play`, `complexity`, `intensity` and `style`.
 
 Request: `{ "baseRevision": 12, "section": "s-verse", "track": "guitar" }`. `track` is optional: without it, every unlocked track in the section is regenerated; with it, only that track. The app sends `track` when a track key is selected.
 
@@ -218,7 +218,7 @@ Request: `{ "baseRevision": 12 }`. Takes back the most recent action that has no
 
 Rewrite lyrics with a model, one syllable per vocal note, so the result always fits the melody.
 
-Request: `{ "baseRevision", "sections"?: [id], "keep"?: { "<sectionId>": [lineIndex] }, "themes": ["海", "想家"], "tone": "plain" | "subtle" | "playful", "rhyme": true }`. Without `sections`, every section with vocal notes is rewritten. Lines listed in `keep` stay as they are ("保留"). Response: `{ "song": Song }`. Typing lyrics with `setLyrics` always works.
+Request: `{ "baseRevision", "sections"?: [id], "keep"?: { "<sectionId>": [lineIndex] }, "themes": ["sea", "homesick"], "tone": "plain" | "subtle" | "playful", "rhyme": true }`. Without `sections`, every section with vocal notes is rewritten. Lines listed in `keep` stay as they are ("Keep"). Response: `{ "song": Song }`. Typing lyrics with `setLyrics` always works.
 
 The server sends the model the captured text, what the photos suggested, the mood, the place (only when `showCity`), the time of day and the title, plus the song's structure: each section with its role (verse sets the scene, chorus is the heart, outro comes back softly) and each line's exact number of characters. The model answers each line as an array of single characters. Lines with the wrong length are asked for again with the exact counts, up to three model calls in all, each limited to 20 s and all of them to 45 s together.
 
@@ -235,13 +235,13 @@ Failures answer `503 offline_unavailable` with `error.detail.reason`:
 
 ### `POST /api/songs/{id}/lyrics/alternatives` (M2)
 
-Up to three other wordings of one lyric line, each with exactly that line's number of notes ("换个说法"). Same limits and failure reasons as above; fewer than three come back when only some had the right length.
+Up to three other wordings of one lyric line, each with exactly that line's number of notes ("Other wordings"). Same limits and failure reasons as above; fewer than three come back when only some had the right length.
 
-Request: `{ "section", "line": lineIndex, "themes"?, "tone"?, "rhyme"? }`. Response: `{ "alternatives": [ { "text": "我把乡愁说给海听", "note": "更含蓄" } ] }`. The song does not change; the app applies a choice with `setLyrics`. Offline: `503`.
+Request: `{ "section", "line": lineIndex, "themes"?, "tone"?, "rhyme"? }`. Response: `{ "alternatives": [ { "text": "I tell the sea I miss my home", "note": "more direct" } ] }`. The song does not change; the app applies a choice with `setLyrics`. Offline: `503`.
 
 ### `GET /api/songs/{id}/lyrics/themes` (M2)
 
-Suggested themes for the lyrics page, with where each came from: `{ "themes": [ { "text": "海", "source": "photo" | "text" | "sound" | "hum" } ] }`. Offline: keywords from the text input and the photos' colour labels.
+Suggested themes for the lyrics page, with where each came from: `{ "themes": [ { "text": "sea", "source": "photo" | "text" | "sound" | "hum" } ] }`. Offline: keywords from the text input and the photos' colour labels.
 
 ### Vocal playback before synthesis
 
@@ -292,15 +292,15 @@ What the song page shows, with nothing private:
 ```json
 {
   "page": {
-    "title": "海边的傍晚",
-    "subtitle": "黄昏民谣",
-    "line": "海风把傍晚吹进歌里",
-    "city": "厦门",
+    "title": "Seaside at Dusk",
+    "subtitle": "Dusk Folk",
+    "line": "The sea wind blows the evening into song",
+    "city": "Edinburgh",
     "date": "2026-11-19",
-    "message": "在厦门给你写了首歌，回来唱给你听。",
+    "message": "I wrote you a song by the sea. I will sing it to you when I am back.",
     "photos": ["/api/share/k3Hq9xV2mPzT/assets/a-photo-01"],
     "card": "/api/share/k3Hq9xV2mPzT/assets/a-card-print-01",
-    "lyrics": [ { "section": "主歌", "lines": ["海风吹过傍晚的岸", "灯一盏一盏亮起来"] } ]
+    "lyrics": [ { "section": "Verse", "lines": ["The sea wind blows across the shore", "And one by one the lights come on"] } ]
   },
   "song": Song
 }

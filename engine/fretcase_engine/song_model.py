@@ -109,7 +109,8 @@ class Section(BaseModel):
     label: Annotated[
         str,
         Field(
-            description="Shown on screen, e.g. 开头, 展开, 高潮, 结尾.", max_length=24
+            description="Shown on screen, e.g. Intro, Verse, Chorus, Outro.",
+            max_length=24,
         ),
     ]
     startBar: Annotated[int, Field(ge=0)]
@@ -330,7 +331,7 @@ class SeedCard(BaseModel):
     tempo: Annotated[float, Field(ge=40.0, le=220.0)]
     meter: Meter | None = None
     mood: Annotated[
-        str, Field(description="A short label, e.g. 平静偏暖.", max_length=24)
+        str, Field(description="A short label, e.g. calm, warm.", max_length=24)
     ]
     motif: Annotated[
         list[Note] | None,
@@ -496,12 +497,12 @@ class Master(BaseModel):
     )
     volume: Annotated[float, Field(ge=0.0, le=1.0)]
     space: Annotated[
-        Space, Field(description="Reverb amount for the whole song: 干净, 房间, 大厅.")
+        Space, Field(description="Reverb amount for the whole song: dry, room, hall.")
     ]
 
 
 class Tag(RootModel[str]):
-    root: Annotated[str, Field(max_length=8)]
+    root: Annotated[str, Field(max_length=16)]
 
 
 class TimeOfDay(StrEnum):
@@ -523,7 +524,10 @@ class Parts(BaseModel):
         ),
     ]
     sound: Annotated[
-        str, Field(description="Short label, e.g. 木吉他扫弦.", max_length=16)
+        str,
+        Field(
+            description="Short label, e.g. Steel-string guitar, strum.", max_length=40
+        ),
     ]
 
 
@@ -536,8 +540,8 @@ class Candidate(BaseModel):
     name: Annotated[
         str,
         Field(
-            description="A plain name for the arrangement, e.g. 黄昏民谣.",
-            max_length=12,
+            description="A plain name for the arrangement, e.g. Dusk Folk.",
+            max_length=24,
         ),
     ]
     tags: Annotated[list[Tag], Field(max_length=4)]
@@ -545,7 +549,7 @@ class Candidate(BaseModel):
         str,
         Field(
             description="One sentence linking the arrangement to the captured inputs.",
-            max_length=80,
+            max_length=160,
         ),
     ]
     timeOfDay: TimeOfDay | None = None
@@ -560,7 +564,7 @@ class VocalNote(NoteFields):
     lyric: Annotated[
         str | None,
         Field(
-            description="Syllable sung on this note. One character for Chinese.",
+            description="Syllable sung on this note. A syllable that continues the same word ends with a hyphen: walk-, ing.",
             max_length=12,
         ),
     ] = None

@@ -4,7 +4,7 @@
   "revision": 3,
   "createdAt": "2026-11-18T18:02:11Z",
   "updatedAt": "2026-11-18T18:09:40Z",
-  "title": "海边的傍晚",
+  "title": "Seaside at Dusk",
   "key": {
     "tonic": "Bb",
     "mode": "major"
@@ -29,13 +29,13 @@
   "sections": [
     {
       "id": "s-first",
-      "label": "开头",
+      "label": "Intro",
       "startBar": 0,
       "endBar": 4
     },
     {
       "id": "s-second",
-      "label": "结尾",
+      "label": "Outro",
       "startBar": 4,
       "endBar": 8
     }

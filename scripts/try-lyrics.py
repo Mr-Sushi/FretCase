@@ -1,6 +1,6 @@
 """Try lyric writing with a real text model, through the real HTTP API, in a throwaway data folder.
 
-    uv run python scripts/try-lyrics.py "海边的傍晚，风很大，有点想家"
+    uv run python scripts/try-lyrics.py "Seaside at dusk, very windy, a little homesick"
 
 Needs FRETCASE_TEXT_MODEL_KEY, in the environment or in the gitignored .env at the repository root
 (FRETCASE_TEXT_MODEL_API, FRETCASE_TEXT_MODEL_NAME and FRETCASE_TEXT_MODEL_URL are optional; an OpenAI key works too).
@@ -35,7 +35,7 @@ def lines_of(song: dict) -> list[tuple[str, list[str], list[int]]]:
 
 
 def main() -> int:
-    text = sys.argv[1] if len(sys.argv) > 1 else "海边的傍晚，风很大，有点想家"
+    text = sys.argv[1] if len(sys.argv) > 1 else "Seaside at dusk, very windy, a little homesick"
     with tempfile.TemporaryDirectory() as data:
         settings = Settings(data_dir=Path(data))
         if not settings.text_model_key:
@@ -61,7 +61,7 @@ def main() -> int:
         print(f"song: {song['title']} ({song['candidate']['name']})\n")
 
         themes = [t["text"] for t in client.get(f"/api/songs/{song['id']}/lyrics/themes").json()["themes"]][:4]
-        print("themes:", "、".join(themes))
+        print("themes:", ", ".join(themes))
         started = time.monotonic()
         r = client.post(f"/api/songs/{song['id']}/lyrics", json={"baseRevision": song["revision"], "themes": themes, "tone": "plain", "rhyme": True})
         took = time.monotonic() - started
@@ -73,9 +73,10 @@ def main() -> int:
         for label, texts, counts in lines_of(song):
             print(f"[{label}]")
             for t, c in zip(texts, counts):
-                print(f"  {t}   ({len(t)} 字 / {c} 个音{'' if len(t) == c else '  MISMATCH'})")
+                n = sum(len(line) for line in editing.split_syllables(t))
+                print(f"  {t}   ({n} syllables / {c} notes{'' if n == c else '  MISMATCH'})")
 
-        chorus = next((s for s in song["sections"] if s["label"] in ("副歌", "高潮")), song["sections"][1])
+        chorus = next((s for s in song["sections"] if s["label"] == "Chorus"), song["sections"][1])
         started = time.monotonic()
         r = client.post(f"/api/songs/{song['id']}/lyrics/alternatives", json={"section": chorus["id"], "line": 0, "themes": themes})
         took = time.monotonic() - started

@@ -13,10 +13,10 @@ from fretcase_server import hum
 
 # keyword -> (mood label, mode, tempo delta, hint)  Chinese and English
 KEYWORDS: List[Tuple[Tuple[str, ...], str, str, int]] = [
-    (("雨", "夜", "孤", "想念", "思念", "伤", "难过", "安静", "rain", "night", "alone", "miss", "quiet", "sad", "blue"), "安静偏冷", "minor", -12),
-    (("海", "风", "傍晚", "黄昏", "夕阳", "温柔", "平静", "sea", "wind", "sunset", "evening", "calm", "gentle"), "平静偏暖", "major", -6),
-    (("笑", "开心", "快乐", "阳光", "春", "朋友", "节日", "happy", "sun", "spring", "friend", "party", "joy", "dance"), "明亮轻快", "major", 14),
-    (("路", "旅", "出发", "远方", "山", "road", "travel", "journey", "mountain", "away"), "开阔向前", "major", 6),
+    (("rain", "night", "alone", "lonely", "miss", "missing", "quiet", "sad", "blue", "tears"), "quiet, cool", "minor", -12),
+    (("sea", "wind", "breeze", "sunset", "evening", "dusk", "calm", "gentle", "soft"), "calm, warm", "major", -6),
+    (("happy", "laugh", "sun", "sunny", "sunshine", "spring", "friend", "friends", "party", "joy", "dance"), "bright, upbeat", "major", 14),
+    (("road", "travel", "journey", "mountain", "mountains", "away", "far", "leaving", "train"), "open, onward", "major", 6),
 ]
 KEY_FOR_MOOD = {
     ("major", "warm"): {"tonic": "G", "mode": "major"},
@@ -37,8 +37,8 @@ def analyse_text(text: str) -> Dict[str, Any]:
             if chosen is None or len(hits) > scores.get(chosen[0], 0):
                 chosen = (mood, mode, delta)
     if chosen is None:
-        return {"mood": None, "mode": None, "tempo_delta": 0, "reason": "没有找到情绪关键词，沿用默认"}
-    return {"mood": chosen[0], "mode": chosen[1], "tempo_delta": chosen[2], "reason": f"文字里的词指向“{chosen[0]}”"}
+        return {"mood": None, "mode": None, "tempo_delta": 0, "reason": "No mood words found; using the default"}
+    return {"mood": chosen[0], "mode": chosen[1], "tempo_delta": chosen[2], "reason": f"Words in the text point to “{chosen[0]}”"}
 
 
 def analyse_photo(data: bytes) -> Optional[Dict[str, Any]]:
@@ -119,51 +119,51 @@ def build_seed(
                 mode_votes.append(("major" if bright >= 0.45 else "minor", 1.0 + abs(bright - 0.45)))
                 tempo_votes.append(70 + 40 * stats["saturation"] * (0.5 + bright))
                 if mood is None:
-                    mood = ("明亮" if bright >= 0.55 else "安静") + ("偏暖" if stats["warmth"] > 0 else "偏冷")
-                reasons.append({"field": "mood", "text": f"照片{'偏亮' if bright >= 0.55 else '偏暗'}、{'偏暖' if stats['warmth'] > 0 else '偏冷'}，饱和度{stats['saturation']:.2f}"})
+                    mood = ("bright" if bright >= 0.55 else "quiet") + (", warm" if stats["warmth"] > 0 else ", cool")
+                reasons.append({"field": "mood", "text": f"Photos look {'bright' if bright >= 0.55 else 'dark'} and {'warm' if stats['warmth'] > 0 else 'cool'}, saturation {stats['saturation']:.2f}"})
                 instruments["guitar"] = "nylon" if stats["warmth"] > 0 else "steel"
             else:
-                reasons.append({"field": "mood", "text": "照片无法读取，没有用它"})
+                reasons.append({"field": "mood", "text": "A photo could not be read, so it was not used"})
         elif kind == "sound":
             info, path = asset_loader(item["assetId"])
             stats = analyse_sound(path)
             if stats and stats["tempo"]:
                 sound_tempo = clamp(stats["tempo"], 60, 120)
-                reasons.append({"field": "tempo", "text": f"声音里有大约每分钟 {sound_tempo:.0f} 拍的节拍"})
+                reasons.append({"field": "tempo", "text": f"The sound has a beat of about {sound_tempo:.0f} per minute"})
             elif stats:
                 tempo_votes.append(76 if stats["rms"] < 0.08 else 96)
-                reasons.append({"field": "tempo", "text": "声音没有清楚的节拍，按响度定速度"})
+                reasons.append({"field": "tempo", "text": "The sound has no clear beat; tempo set from its loudness"})
             instruments["ambience"] = "recording"
         elif kind == "hum":
             info, path = asset_loader(item["assetId"])
             result = transcribe(path, None)
             if result is None:
                 hum_missing = True
-                reasons.append({"field": "motif", "text": "这台设备上无法转写哼唱，先不带旋律"})
+                reasons.append({"field": "motif", "text": "Humming cannot be transcribed on this device, so no tune yet"})
             elif not result["motif"]:
-                reasons.append({"field": "motif", "text": "没有听到清楚的音高，先不带旋律"})
+                reasons.append({"field": "motif", "text": "No clear pitch heard, so no tune yet"})
             else:
                 motif = result["motif"]
                 hum_key = result["key"]
                 hum_tempo = result["tempo"] if result["tempoFromHum"] else None
-                reasons.append({"field": "motif", "text": f"从哼唱转写出 {result['noteCount']} 个音"})
+                reasons.append({"field": "motif", "text": f"Transcribed {result['noteCount']} notes from the humming"})
     # tempo: sound beat > hum > votes > default
     if sound_tempo:
         tempo = sound_tempo
     elif hum_tempo:
         tempo = hum_tempo
-        reasons.append({"field": "tempo", "text": f"按哼唱的节奏定为每分钟 {tempo:.0f} 拍"})
+        reasons.append({"field": "tempo", "text": f"Tempo {tempo:.0f} beats per minute, from the humming"})
     elif tempo_votes:
         tempo = clamp(sum(tempo_votes) / len(tempo_votes), 60, 120)
-        reasons.append({"field": "tempo", "text": f"由情绪定为每分钟 {tempo:.0f} 拍"})
+        reasons.append({"field": "tempo", "text": f"Tempo {tempo:.0f} beats per minute, from the mood"})
     else:
         tempo = 90.0
-        reasons.append({"field": "tempo", "text": "没有线索，用默认的每分钟 90 拍"})
+        reasons.append({"field": "tempo", "text": "No clues, so the default 90 beats per minute"})
     tempo = float(round(tempo))
     # key: hum > mood
     if hum_key:
         key = hum_key
-        reasons.append({"field": "key", "text": f"哼唱落在 {key['tonic']}{'小调' if key['mode'] == 'minor' else '大调'}"})
+        reasons.append({"field": "key", "text": f"The humming sits in {key['tonic']} {'minor' if key['mode'] == 'minor' else 'major'}"})
     else:
         mode = "major"
         if mode_votes:
@@ -172,12 +172,12 @@ def build_seed(
                 weight[m] += w
             mode = "minor" if weight["minor"] > weight["major"] else "major"
         key = KEY_FOR_MOOD[(mode, "warm" if warm >= 0 else "cool")]
-        reasons.append({"field": "key", "text": f"由情绪定为 {key['tonic']}{'小调' if mode == 'minor' else '大调'}"})
+        reasons.append({"field": "key", "text": f"{key['tonic']} {'minor' if mode == 'minor' else 'major'}, from the mood"})
     if mood is None:
-        mood = "安静偏暖" if key["mode"] == "major" else "安静偏冷"
-    reasons.append({"field": "meter", "text": "默认 4/4"})
+        mood = "quiet, warm" if key["mode"] == "major" else "quiet, cool"
+    reasons.append({"field": "meter", "text": "4/4 by default"})
     if instruments:
-        reasons.append({"field": "instruments", "text": "按照片冷暖和声音选乐器"})
+        reasons.append({"field": "instruments", "text": "Instruments chosen from the photo colours and the sound"})
     del hum_missing
     seed: Dict[str, Any] = {
         "inputs": [dict(i) for i in inputs],

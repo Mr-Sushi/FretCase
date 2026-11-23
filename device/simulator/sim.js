@@ -4,24 +4,24 @@
 
   var NS = 'http://www.w3.org/2000/svg';
   var TRACKS = [
-    { id: 'vocal', label: '人声', color: '#e2725b' },
-    { id: 'melody', label: '旋律', color: '#e3a14a' },
-    { id: 'guitar', label: '吉他', color: '#49b8b3' },
-    { id: 'bass', label: '贝斯', color: '#5b8dd6' },
-    { id: 'drums', label: '鼓', color: '#9a7bd1' },
-    { id: 'ambience', label: '环境声', color: '#7fae6a' }
+    { id: 'vocal', label: 'Voice', color: '#e2725b' },
+    { id: 'melody', label: 'Melody', color: '#e3a14a' },
+    { id: 'guitar', label: 'Guitar', color: '#49b8b3' },
+    { id: 'bass', label: 'Bass', color: '#5b8dd6' },
+    { id: 'drums', label: 'Drums', color: '#9a7bd1' },
+    { id: 'ambience', label: 'Ambience', color: '#7fae6a' }
   ];
   var KNOBS = [
-    { id: 'brightness', label: '明暗' },
-    { id: 'complexity', label: '简繁' },
-    { id: 'density', label: '疏密' },
-    { id: 'tempo', label: '速度' }
+    { id: 'brightness', label: 'Bright' },
+    { id: 'complexity', label: 'Complex' },
+    { id: 'density', label: 'Density' },
+    { id: 'tempo', label: 'Tempo' }
   ];
   var ROUND_KEYS = [
-    { id: 'capture', label: '采集', color: '#d0332b', glow: '#ff5a4d', fixed: true, hotkey: 'c' },
-    { id: 'play', label: '播放', color: '#f1e6c8', glow: '#ffffff', hotkey: 'p' },
-    { id: 'undo', label: '撤销', color: '#f1e6c8', glow: '#ffffff', hotkey: 'u' },
-    { id: 'another', label: '换一个', color: '#f1e6c8', glow: '#ffffff', hotkey: 'a' }
+    { id: 'capture', label: 'Capture', color: '#d0332b', glow: '#ff5a4d', fixed: true, hotkey: 'c' },
+    { id: 'play', label: 'Play', color: '#f1e6c8', glow: '#ffffff', hotkey: 'p' },
+    { id: 'undo', label: 'Undo', color: '#f1e6c8', glow: '#ffffff', hotkey: 'u' },
+    { id: 'another', label: 'Another', color: '#f1e6c8', glow: '#ffffff', hotkey: 'a' }
   ];
   var DETENTS_PER_TURN = 24;      // platter: one detent every 15 degrees
   var KNOB_PX_PER_DETENT = 8;     // vertical drag distance for one knob detent
@@ -93,7 +93,7 @@
   var platterRot = el('g', {}, platter);
   el('line', { x1: RING.cx, y1: RING.cy - 100, x2: RING.cx, y2: RING.cy - 58, class: 'platter-mark' }, platterRot);
   el('circle', { cx: RING.cx, cy: RING.cy, r: 14, fill: '#b8923f', stroke: '#5c4719', 'stroke-width': 2 }, platter);
-  text('唱盘', RING.cx, RING.cy + 90, 'sublabel', svg);
+  text('Platter', RING.cx, RING.cy + 90, 'sublabel', svg);
   var platterAngle = 0;
 
   var platterDrag = null;
@@ -296,10 +296,10 @@
   var linkBadge = document.getElementById('link-badge');
   var appBadge = document.getElementById('app-badge');
   function showStatus(s) {
-    var text = { offline: '离线（只记录消息）', connecting: '正在连接…', connected: '已连接服务器' }[s.link];
+    var text = { offline: 'Offline (log only)', connecting: 'Connecting…', connected: 'Connected to server' }[s.link];
     linkBadge.textContent = text;
     linkBadge.dataset.state = s.link === 'connected' ? 'ok' : s.link === 'connecting' ? 'wait' : '';
-    appBadge.textContent = s.app === null ? 'iPad 未知' : s.app ? 'iPad 在线' : 'iPad 未连接';
+    appBadge.textContent = s.app === null ? 'iPad unknown' : s.app ? 'iPad online' : 'iPad not connected';
     appBadge.dataset.state = s.app ? 'ok' : '';
   }
 

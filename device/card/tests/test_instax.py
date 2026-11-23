@@ -54,7 +54,7 @@ def test_print_packets_layout():
 
 
 def test_encode_image_size_limit_and_dimensions(photo):
-    out = render_card(CardInput("无题", "original", "https://x.example/s/abc", "2026.11.19", cover_path=photo))
+    out = render_card(CardInput("Untitled", "original", "https://x.example/s/abc", "2026.11.19", cover_path=photo))
     jpeg = instax.encode_image(out.print_png)
     assert len(jpeg) <= instax.MAX_JPEG_BYTES and jpeg[:2] == b"\xff\xd8"
     assert Image.open(io.BytesIO(jpeg)).size == (1260, 840)
@@ -123,7 +123,7 @@ def printer_with(fake: FakeBle, spec="instax:AA:BB:CC:DD:EE:FF") -> Printer:
 
 @pytest.fixture(scope="module")
 def print_png(photo):
-    return render_card(CardInput("无题", "xieyi", "https://x.example/s/abc", "2026.11.19", cover_path=photo)).print_png
+    return render_card(CardInput("Untitled", "xieyi", "https://x.example/s/abc", "2026.11.19", cover_path=photo)).print_png
 
 
 def test_spec_parsing():
@@ -189,4 +189,4 @@ def test_no_printer_found_message(monkeypatch):
     monkeypatch.setattr(bleak.BleakScanner, "find_device_by_filter", staticmethod(none))
     with pytest.raises(PrinterError, match="no Instax printer"):
         Printer("instax").print_card(
-            render_card(CardInput("无题", "text", "https://x.example/s/abc", "2026.11.19")).print_png)
+            render_card(CardInput("Untitled", "text", "https://x.example/s/abc", "2026.11.19")).print_png)

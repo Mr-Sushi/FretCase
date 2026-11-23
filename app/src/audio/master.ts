@@ -2,7 +2,7 @@ import * as Tone from 'tone'
 import type { SpaceId } from '../types'
 import { faderGain } from './schedule'
 
-/** Reverb settings for the master "空间感". */
+/** Reverb settings for the master "space". */
 export const SPACES: Record<SpaceId, { roomSize: number; wet: number }> = {
   dry: { roomSize: 0.2, wet: 0 },
   room: { roomSize: 0.55, wet: 0.14 },

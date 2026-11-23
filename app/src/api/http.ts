@@ -22,7 +22,7 @@ export class HttpApi implements Api {
       let json: any = {}
       try { json = text ? JSON.parse(text) : {} } catch {
         // A plain-text or HTML body (a crash page, a proxy error) still means the server answered.
-        throw new ApiError('http_error', `服务器出错（${res.status}）`, res.status)
+        throw new ApiError('http_error', `Server error (${res.status})`, res.status)
       }
       if (!res.ok) {
         const e = json.error ?? {}
@@ -31,8 +31,8 @@ export class HttpApi implements Api {
       return json as T
     } catch (e) {
       if (e instanceof ApiError) throw e
-      if ((e as Error).name === 'AbortError') throw new ApiError('timeout', '服务器没有响应', 0)
-      throw new ApiError('network', '连不上服务器', 0)
+      if ((e as Error).name === 'AbortError') throw new ApiError('timeout', 'The server did not answer', 0)
+      throw new ApiError('network', 'Cannot reach the server', 0)
     } finally {
       clearTimeout(timer)
     }

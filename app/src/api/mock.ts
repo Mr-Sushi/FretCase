@@ -50,11 +50,11 @@ export class MockApi implements Api {
   private blobs = new Map<string, string>()
   private photoData = new Map<string, string>()
   private groups = 0
-  private city = '纽卡斯尔'
+  private city = 'Newcastle'
   private film = 7
   /** The mock has no model: wordings come from a small pool when `online` is set (?lyrics=online), else they answer 503 like the offline server. */
   constructor(private latency = 0, private online = false) {
-    const demo = buildMockSong(null, VARIANT_SETS[0][0], 'grp-demo-0001', 0, 'dusk', '厦门')
+    const demo = buildMockSong(null, VARIANT_SETS[0][0], 'grp-demo-0001', 0, 'dusk', 'Edinburgh')
     demo.id = 'song-demo-0001'
     demo.candidate!.chosen = true
     demo.assets.push({ id: 'a-card-print-demo01', role: 'card_print', mime: 'image/svg+xml' })
@@ -65,7 +65,7 @@ export class MockApi implements Api {
   private async tick() { if (this.latency) await new Promise((r) => setTimeout(r, this.latency)) }
   private get(id: string): Stored {
     const s = this.songs.get(id) ?? this.drafts.get(id)
-    if (!s) throw new ApiError('not_found', '没有这首歌', 404)
+    if (!s) throw new ApiError('not_found', 'No such song', 404)
     return s
   }
   private checkRev(st: Stored, base: number) {
@@ -105,17 +105,17 @@ export class MockApi implements Api {
   async createSeed(inputs: SeedInput[]): Promise<SeedCard> {
     await this.tick()
     const text = inputs.filter((i) => i.kind === 'text').map((i) => i.text ?? '').join(' ')
-    const sad = /(雨|夜|想|难过|孤|冷)/.test(text)
+    const sad = /(rain|night|miss|sad|alone|lonely|cold)/i.test(text)
     const hasHum = inputs.some((i) => i.kind === 'hum')
     const key = { tonic: sad ? 'A' : 'D', mode: sad ? 'minor' : 'major' } as const
     const motif: Note[] = [0, 2, 4, 2, 0, -1, 0, 2].map((d, i) => ({ start: i * 480, duration: 480, pitch: 62 + d + (sad ? 3 : 0), velocity: 90 }))
     return {
       inputs: inputs as SeedCard['inputs'], key, tempo: sad ? 72 : 88, meter: { numerator: 4, denominator: 4 },
-      mood: sad ? '安静偏冷' : '平静偏暖', ...(hasHum ? { motif } : {}),
+      mood: sad ? 'quiet, cool' : 'calm, warm', ...(hasHum ? { motif } : {}),
       instruments: { melody: 'piano', guitar: 'nylon', drums: 'jazz-kit' },
       reasons: [
-        { field: 'key', text: sad ? '文字偏忧伤，所以用小调' : '没有特别的线索，用明亮的大调' },
-        { field: 'tempo', text: sad ? '情绪偏慢，所以速度放慢' : '中速，适合边走边听' },
+        { field: 'key', text: sad ? 'The words sound sad, so a minor key' : 'No special clues, so a bright major key' },
+        { field: 'tempo', text: sad ? 'A slower mood, so a slower tempo' : 'Medium tempo, good for listening on a walk' },
       ],
       source: 'offline',
     }
@@ -138,7 +138,7 @@ export class MockApi implements Api {
   async choose(id: string): Promise<Song> {
     await this.tick()
     const st = this.drafts.get(id)
-    if (!st) throw new ApiError('not_found', '没有这首歌', 404)
+    if (!st) throw new ApiError('not_found', 'No such song', 404)
     const gid = st.song.candidate!.groupId
     for (const [k, d] of this.drafts) if (d.song.candidate?.groupId === gid) this.drafts.delete(k)
     const song = this.commit(st, (s) => { s.candidate!.chosen = true }, false)
@@ -164,7 +164,7 @@ export class MockApi implements Api {
     await this.tick()
     const st = this.get(id)
     this.checkRev(st, baseRevision)
-    if (!st.song.sections.some((s) => s.id === section)) throw new ApiError('cannot_apply', '没有这一段', 422)
+    if (!st.song.sections.some((s) => s.id === section)) throw new ApiError('cannot_apply', 'No such section', 422)
     const key = `${section}:${track ?? '*'}`
     const n = (st.takes[key] = (st.takes[key] ?? 0) + 1)
     return this.commit(st, (s) => regenerateUnlocked(s, section, track, n))
@@ -174,7 +174,7 @@ export class MockApi implements Api {
     await this.tick()
     const st = this.get(id)
     this.checkRev(st, baseRevision)
-    if (!st.song.sections.some((s) => s.id === section)) throw new ApiError('cannot_apply', '没有这一段', 422)
+    if (!st.song.sections.some((s) => s.id === section)) throw new ApiError('cannot_apply', 'No such section', 422)
     return this.commit(st, () => { /* mock: melody unchanged */ })
   }
 
@@ -183,7 +183,7 @@ export class MockApi implements Api {
     const st = this.get(id)
     this.checkRev(st, baseRevision)
     const prev = st.history.pop()
-    if (!prev) throw new ApiError('cannot_apply', '没有可撤销的操作', 422)
+    if (!prev) throw new ApiError('cannot_apply', 'Nothing to undo', 422)
     const restored = clone(prev)
     restored.revision = st.song.revision + 1
     restored.updatedAt = now()
@@ -225,9 +225,9 @@ export class MockApi implements Api {
     const out: LyricsTheme[] = []
     const text = song.seed?.inputs.find((i) => i.kind === 'text')?.text
     if (text) for (const w of text.split(/[，。,.！!？?\s]+/).filter(Boolean).slice(0, 4)) out.push({ text: w.slice(0, 6), source: 'text' })
-    if (song.seed?.inputs.some((i) => i.kind === 'photo')) out.push({ text: '暖色', source: 'photo' })
-    if (song.seed?.inputs.some((i) => i.kind === 'sound')) out.push({ text: '海浪', source: 'sound' })
-    if (!out.length) out.push({ text: '海', source: 'photo' }, { text: '风', source: 'text' }, { text: '傍晚', source: 'text' }, { text: '想家', source: 'text' })
+    if (song.seed?.inputs.some((i) => i.kind === 'photo')) out.push({ text: 'warm colours', source: 'photo' })
+    if (song.seed?.inputs.some((i) => i.kind === 'sound')) out.push({ text: 'waves', source: 'sound' })
+    if (!out.length) out.push({ text: 'sea', source: 'photo' }, { text: 'wind', source: 'text' }, { text: 'dusk', source: 'text' }, { text: 'homesick', source: 'text' })
     return out
   }
 
@@ -249,7 +249,7 @@ export class MockApi implements Api {
     await this.tick()
     const st = this.get(id)
     this.checkRev(st, baseRevision)
-    if (!st.song.card?.frontAssetId || st.previewSig !== cardSig(st.song)) throw new ApiError('cannot_apply', '请先预览', 422)
+    if (!st.song.card?.frontAssetId || st.previewSig !== cardSig(st.song)) throw new ApiError('cannot_apply', 'Preview the card first', 422)
     this.film = Math.max(0, this.film - 1)
     const song = this.commit(st, (s) => { s.card = { ...s.card!, printedAt: now() } }, false)
     this.announcePrint(song)
@@ -276,7 +276,7 @@ export class MockApi implements Api {
 
   async resolveShare(shareId: string): Promise<string> {
     const st = [...this.songs.values()].find((s) => s.song.card?.share?.shareId === shareId)
-    if (!st) throw new ApiError('not_found', '这张卡片的歌不在这台设备上', 404)
+    if (!st) throw new ApiError('not_found', 'The song for this card is not on this device', 404)
     return st.song.id
   }
   async sharePage(shareId: string): Promise<{ page: SharePage; song: Song }> {
@@ -304,7 +304,7 @@ export class MockApi implements Api {
 
   private setLyricsText(s: Song, sectionId: string, text: string) {
     const sec = s.sections.find((x) => x.id === sectionId)
-    if (!sec) throw new ApiError('cannot_apply', '没有这一段', 422)
+    if (!sec) throw new ApiError('cannot_apply', 'No such section', 422)
     const r = sectionRange(s, sec)
     const lines = sectionLines(s, sectionId)
     const notes = s.tracks.vocal.notes.filter((n) => n.start >= r.from && n.start < r.to).sort((a, b) => a.start - b.start)
@@ -323,7 +323,7 @@ export class MockApi implements Api {
 
   private applyOp(st: Stored, s: Song, op: EditOp): void {
     const secIds = new Set(s.sections.map((x) => x.id))
-    const needSection = (id: string) => { if (!secIds.has(id)) throw new ApiError('cannot_apply', '没有这一段', 422) }
+    const needSection = (id: string) => { if (!secIds.has(id)) throw new ApiError('cannot_apply', 'No such section', 422) }
     switch (op.op) {
       case 'setControl': s.controls[op.control] = clamp(op.value, 0, 1); return
       case 'setTempo': s.tempo = clamp(op.tempo, 40, 220); return
@@ -331,7 +331,7 @@ export class MockApi implements Api {
       case 'setTrackMute': s.tracks[op.track].muted = op.muted; return
       case 'setInstrument': s.tracks[op.track].instrument = op.instrument; return
       case 'replaceNotes': {
-        if (op.track === 'ambience') throw new ApiError('cannot_apply', '环境声不能改音符', 422)
+        if (op.track === 'ambience') throw new ApiError('cannot_apply', 'The ambience has no notes to change', 422)
         const tr = s.tracks[op.track]
         const kept = (tr.notes as Note[]).filter((n) => n.start < op.from || n.start >= op.to)
         ;(tr as { notes: Note[] }).notes = [...kept, ...op.notes.map((n) => ({ velocity: 90, ...n }))].sort((a, b) => a.start - b.start || a.pitch - b.pitch)
@@ -345,7 +345,7 @@ export class MockApi implements Api {
       case 'setRhythm': s.tracks.guitar.rhythm = { family: op.family, presetId: op.presetId }; return
       case 'lock':
       case 'unlock': {
-        if (!op.track && !op.section) throw new ApiError('invalid_request', '需要音轨或段落', 400)
+        if (!op.track && !op.section) throw new ApiError('invalid_request', 'A track or a section is needed', 400)
         if (op.section) needSection(op.section)
         if (op.op === 'lock') { if (!hasExactLock(s, op.track, op.section)) s.locks.push({ ...(op.track ? { track: op.track } : {}), ...(op.section ? { section: op.section } : {}) }) }
         else s.locks = s.locks.filter((l) => !(l.track === op.track && l.section === op.section))
@@ -353,8 +353,8 @@ export class MockApi implements Api {
       }
       case 'setSections': {
         let bar = 0
-        for (const sec of op.sections) { if (sec.startBar !== bar) throw new ApiError('cannot_apply', '段落必须连续', 422); bar = sec.endBar }
-        if (bar !== s.bars) throw new ApiError('cannot_apply', '段落必须覆盖全部小节', 422)
+        for (const sec of op.sections) { if (sec.startBar !== bar) throw new ApiError('cannot_apply', 'Sections must follow each other', 422); bar = sec.endBar }
+        if (bar !== s.bars) throw new ApiError('cannot_apply', 'Sections must cover every bar', 422)
         s.sections = op.sections as Song['sections']
         return
       }

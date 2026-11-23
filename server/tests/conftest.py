@@ -96,7 +96,7 @@ class Api:
         assert r.status_code == 200, r.text
         return r.json()["seed"]
 
-    def song(self, text="海边的傍晚 平静", key=None, bars=None, seed=None):
+    def song(self, text="Seaside at dusk, calm", key=None, bars=None, seed=None):
         seed = seed or self.seed([{"kind": "text", "text": text}])
         if key:
             seed["key"] = key

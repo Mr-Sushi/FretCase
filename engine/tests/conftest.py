@@ -17,14 +17,14 @@ def song_validator():
     return Draft202012Validator(schema, format_checker=FormatChecker())
 
 
-def make_seed(tonic="C", mode="minor" if False else "major", meter="4/4", motif=None, tempo=90, text="海边的傍晚"):
+def make_seed(tonic="C", mode="minor" if False else "major", meter="4/4", motif=None, tempo=90, text="Seaside at dusk"):
     n, d = METERS[meter]
     seed = {
         "inputs": [{"kind": "text", "text": text}],
         "key": {"tonic": tonic, "mode": mode},
         "tempo": tempo,
         "meter": {"numerator": n, "denominator": d},
-        "mood": "平静偏暖",
+        "mood": "calm, warm",
         "reasons": [{"field": "key", "text": "test"}],
         "source": "offline",
     }

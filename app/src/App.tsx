@@ -57,10 +57,10 @@ export function App() {
 }
 
 const STEPS: { view: View; no: string; label: string }[] = [
-  { view: 'capture', no: '①', label: '采集' },
-  { view: 'pick', no: '②', label: '选一首' },
-  { view: 'shape', no: '③', label: '打磨' },
-  { view: 'card', no: '④', label: '做卡' },
+  { view: 'capture', no: '①', label: 'Capture' },
+  { view: 'pick', no: '②', label: 'Pick' },
+  { view: 'shape', no: '③', label: 'Shape' },
+  { view: 'card', no: '④', label: 'Card' },
 ]
 const STEP_OF: Record<View, View> = { capture: 'capture', pick: 'pick', shape: 'shape', detail: 'shape', lyrics: 'shape', card: 'card' }
 
@@ -79,7 +79,7 @@ export function StepHeader({ right }: { right?: React.ReactNode }) {
   return (
     <header className="topbar">
       <div className="brand">FretCase</div>
-      <nav aria-label="步骤" className="steps">
+      <nav aria-label="Steps" className="steps">
         {STEPS.map((s) => (
           <button key={s.view} type="button" className={`step ${active === s.view ? 'on' : ''}`} disabled={!enabled(s.view)} aria-current={active === s.view ? 'step' : undefined} onClick={() => c.setView(s.view)}>
             {s.no} {s.label}
@@ -88,11 +88,11 @@ export function StepHeader({ right }: { right?: React.ReactNode }) {
       </nav>
       <div className="status">
         {right}
-        {mock && <span className="pill">演示</span>}
-        {server === false && <span className="pill bad">连不上服务器</span>}
-        <span className="pill">{net ? '联网' : '没有网络'}</span>
-        <span className="pill">{panel ? '面板已连接' : '没有面板'}</span>
-        <button type="button" className="ghostbtn" onClick={() => c.store.set({ scanning: true })}>扫卡片</button>
+        {mock && <span className="pill">Demo</span>}
+        {server === false && <span className="pill bad">Server unreachable</span>}
+        <span className="pill">{net ? 'Online' : 'Offline'}</span>
+        <span className="pill">{panel ? 'Panel connected' : 'No panel'}</span>
+        <button type="button" className="ghostbtn" onClick={() => c.store.set({ scanning: true })}>Scan card</button>
       </div>
     </header>
   )

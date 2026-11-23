@@ -13,13 +13,13 @@ async function load(patch: (s: Song) => void = () => {}) {
 describe('the song page', () => {
   it('shows what the page JSON gives: title, city and date, photos, message, lyrics, card', async () => {
     const { page, model } = await load()
-    expect(model.title).toBe('海边的傍晚')
-    expect(model.meta).toBe('厦门 · 2026年11月19日'.replace('2026年11月19日', formatDate(page.date)))
+    expect(model.title).toBe('Seaside at Dusk')
+    expect(model.meta).toBe(`Edinburgh · ${formatDate(page.date)}`)
     expect(model.photos).toHaveLength(3)
-    expect(model.message).toContain('厦门')
+    expect(model.message).toContain('sing it to you')
     expect(model.card).toBeTruthy()
-    expect(model.lyrics.map((g) => g.section)).toEqual(['主歌', '副歌', '结尾'])
-    expect(model.lyrics[1].lines.map((l) => l.text)).toEqual(['我把想家唱给海听', '它把回答还给风'])
+    expect(model.lyrics.map((g) => g.section)).toEqual(['Verse', 'Chorus', 'Outro'])
+    expect(model.lyrics[1].lines.map((l) => l.text)).toEqual(['I sing my longing to the sea', 'The wind sings it back to me'])
   })
 
   it('has no city when the page has none, and no photos when the page lists none, even if the song knows them', async () => {
@@ -28,11 +28,11 @@ describe('the song page', () => {
     delete hidden.city
     const model = buildModel(hidden, song)
     expect(model.meta).toBe(formatDate(hidden.date))
-    expect(JSON.stringify(model)).not.toContain('厦门' + ' ·')
+    expect(JSON.stringify(model)).not.toContain('Edinburgh' + ' ·')
     expect(model.photos).toEqual([])
     // The song JSON still carries the card's city; the page must not read it.
-    expect(song.card?.city).toBe('厦门')
-    expect(model.meta).not.toContain('厦门')
+    expect(song.card?.city).toBe('Edinburgh')
+    expect(model.meta).not.toContain('Edinburgh')
   })
 
   it('the mock page JSON itself follows the privacy rules', async () => {
@@ -45,7 +45,7 @@ describe('the song page', () => {
     expect(r.page.photos).toEqual([])
     expect(r.song.seed).toBeUndefined()
     expect(r.song.provenance).toBeUndefined()
-    expect(JSON.stringify(r.page)).not.toContain('厦门 ·')
+    expect(JSON.stringify(r.page)).not.toContain('Edinburgh ·')
   })
 
   it('highlights the line being sung', async () => {
@@ -58,7 +58,7 @@ describe('the song page', () => {
 
   it('spreads lines evenly when the page and the song disagree on how many there are', async () => {
     const { page, song } = await load()
-    const model = buildModel({ ...page, lyrics: [{ section: '副歌', lines: ['一', '二', '三'] }] }, song)
+    const model = buildModel({ ...page, lyrics: [{ section: 'Chorus', lines: ['one', 'two', 'three'] }] }, song)
     const ls = model.lyrics[0].lines
     expect(ls[0].from).toBe(8 * 1920)
     expect(ls[2].to).toBe(12 * 1920)

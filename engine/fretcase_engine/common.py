@@ -9,7 +9,7 @@ TPQ = 480  # ticks per quarter note
 TRACKS = ("vocal", "melody", "guitar", "bass", "drums", "ambience")
 ENGINE_VERSION = "0.1.0"
 
-DEFAULT_SECTION_LABELS = [("s-intro", "开头"), ("s-verse", "主歌"), ("s-chorus", "副歌"), ("s-outro", "结尾")]
+DEFAULT_SECTION_LABELS = [("s-intro", "Intro"), ("s-verse", "Verse"), ("s-chorus", "Chorus"), ("s-outro", "Outro")]
 
 Song = Dict[str, Any]
 
@@ -102,7 +102,7 @@ def is_locked(song: Song, track: str, section_id: str) -> bool:
 
 
 def default_sections(bars: int) -> List[Dict[str, Any]]:
-    """Up to four sections (开头, 展开, 高潮, 结尾) of near-equal length."""
+    """Up to four sections (Intro, Verse, Chorus, Outro) of near-equal length."""
     count = min(4, max(1, bars))
     base, extra = divmod(bars, count)
     labels = DEFAULT_SECTION_LABELS

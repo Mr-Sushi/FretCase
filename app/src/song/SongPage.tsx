@@ -16,13 +16,13 @@ export function SongPage() {
   const api = useMemo(() => (mock ? new MockApi(0) : new HttpApi('')), [mock])
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   useEffect(() => {
-    if (!shareId) { setLoad({ state: 'error', text: '这个链接不完整，请重新扫一次卡片上的二维码。' }); return }
+    if (!shareId) { setLoad({ state: 'error', text: 'This link is incomplete. Please scan the QR code on the card again.' }); return }
     api.sharePage(shareId).then(
       (r) => setLoad({ state: 'ready', page: r.page, song: r.song }),
-      (e) => setLoad({ state: 'error', text: e instanceof ApiError && e.status === 404 ? '找不到这首歌。它可能还没有分享出来。' : '现在打不开这首歌，请稍后再试。' }),
+      (e) => setLoad({ state: 'error', text: e instanceof ApiError && e.status === 404 ? 'This song cannot be found. It may not be shared yet.' : 'This song cannot be opened right now. Please try again later.' }),
     )
   }, [api, shareId])
-  if (load.state === 'loading') return <div className="sp-wrap"><div className="sp-msg">正在打开…</div></div>
+  if (load.state === 'loading') return <div className="sp-wrap"><div className="sp-msg">Opening…</div></div>
   if (load.state === 'error') return <div className="sp-wrap"><div className="sp-msg">{load.text}</div></div>
   return <Ready page={load.page} song={load.song} assetUrl={(id) => (mock ? api.assetUrl(id) : `/api/share/${encodeURIComponent(shareId!)}/assets/${encodeURIComponent(id)}`)} />
 }
@@ -64,15 +64,15 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
       a.download = `${model.title || 'FretCase'}.wav`
       document.body.appendChild(a); a.click(); a.remove()
       setTimeout(() => URL.revokeObjectURL(a.href), 10000)
-      flash('已保存，在“下载”里可以找到')
-    } catch { flash('保存没有成功，请再试一次') } finally { setSaving(false) }
+      flash('Saved. You will find it in Downloads')
+    } catch { flash('Saving did not work. Please try again') } finally { setSaving(false) }
   }
   const share = async () => {
     const link = location.href
     try {
       if (navigator.share) await navigator.share({ title: model.title, text: model.line ?? model.title, url: link })
-      else { await navigator.clipboard.writeText(link); flash('链接已复制') }
-    } catch (e) { if ((e as Error).name !== 'AbortError') flash('转发没有成功') }
+      else { await navigator.clipboard.writeText(link); flash('Link copied') }
+    } catch (e) { if ((e as Error).name !== 'AbortError') flash('Sharing did not work') }
   }
 
   return (
@@ -80,11 +80,11 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
       <div className="sp">
         {model.photos.length > 0 && (
           <>
-            <img className="sp-hero" src={model.photos[photo] ?? model.photos[0]} alt="写歌时拍下的照片" />
+            <img className="sp-hero" src={model.photos[photo] ?? model.photos[0]} alt="Photo taken while writing the song" />
             {model.photos.length > 1 && (
-              <div role="group" aria-label="写歌时拍的照片" className="sp-thumbs">
+              <div role="group" aria-label="Photos taken while writing the song" className="sp-thumbs">
                 {model.photos.map((p, i) => (
-                  <button key={p} type="button" aria-label={`看第 ${i + 1} 张`} aria-pressed={i === photo} className={i === photo ? 'on' : ''} onClick={() => setPhoto(i)}><img src={p} alt="" /></button>
+                  <button key={p} type="button" aria-label={`See photo ${i + 1}`} aria-pressed={i === photo} className={i === photo ? 'on' : ''} onClick={() => setPhoto(i)}><img src={p} alt="" /></button>
                 ))}
               </div>
             )}
@@ -96,9 +96,9 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
           {model.meta && <div className="sp-meta">{model.meta}</div>}
         </div>
 
-        <section aria-label="播放" className="sp-player">
+        <section aria-label="Player" className="sp-player">
           <div className="sp-row">
-            <button type="button" className="sp-play" aria-label={playing ? '暂停' : '播放'} onClick={() => void toggle()}>
+            <button type="button" className="sp-play" aria-label={playing ? 'Pause' : 'Play'} onClick={() => void toggle()}>
               {playing ? <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><rect x="3" y="2" width="4" height="14" fill="#1C1410" /><rect x="11" y="2" width="4" height="14" fill="#1C1410" /></svg>
                 : <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2l12 7-12 7z" fill="#1C1410" /></svg>}
             </button>
@@ -113,17 +113,17 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
         </section>
 
         {model.lyrics.length > 0 && (
-          <section aria-label="歌词" className="sp-lyrics">
+          <section aria-label="Lyrics" className="sp-lyrics">
             {model.lyrics.flatMap((g) => g.lines).map((l, i) => <p key={i} className={i === curLine ? 'now' : i < curLine ? 'past' : ''}>{l.text}</p>)}
           </section>
         )}
 
-        {model.message && <section aria-label="留言" className="sp-msg-card"><p>{model.message}</p></section>}
-        {model.card && <section aria-label="这张卡片" className="sp-card"><img src={model.card} alt="印出来的卡片" /></section>}
+        {model.message && <section aria-label="Message" className="sp-msg-card"><p>{model.message}</p></section>}
+        {model.card && <section aria-label="This card" className="sp-card"><img src={model.card} alt="The printed card" /></section>}
 
         <div className="sp-actions">
-          <button type="button" className="sp-save" onClick={() => void save()} disabled={saving}>{saving ? '正在保存…' : '保存这首歌'}</button>
-          <button type="button" className="sp-share" onClick={() => void share()}>转给别人</button>
+          <button type="button" className="sp-save" onClick={() => void save()} disabled={saving}>{saving ? 'Saving…' : 'Save this song'}</button>
+          <button type="button" className="sp-share" onClick={() => void share()}>Share</button>
         </div>
         {note && <div className="sp-note" role="status">{note}</div>}
         <div className="sp-foot">FretCase</div>

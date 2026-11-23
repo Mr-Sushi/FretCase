@@ -129,7 +129,7 @@
       "required": ["id", "label", "startBar", "endBar"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "label": { "type": "string", "maxLength": 24, "description": "Shown on screen, e.g. 开头, 展开, 高潮, 结尾." },
+        "label": { "type": "string", "maxLength": 24, "description": "Shown on screen, e.g. Intro, Verse, Chorus, Outro." },
         "startBar": { "type": "integer", "minimum": 0 },
         "endBar": { "type": "integer", "minimum": 1, "description": "Exclusive." },
         "lead": {
@@ -204,7 +204,7 @@
         "lyric": {
           "type": "string",
           "maxLength": 12,
-          "description": "Syllable sung on this note. One character for Chinese."
+          "description": "Syllable sung on this note. A syllable that continues the same word ends with a hyphen: walk-, ing."
         },
         "lineEnd": { "type": "boolean", "default": false, "description": "True on the last note of a lyric line." }
       }
@@ -371,7 +371,7 @@
         "key": { "$ref": "#/$defs/key" },
         "tempo": { "type": "number", "minimum": 40, "maximum": 220 },
         "meter": { "$ref": "#/$defs/meter" },
-        "mood": { "type": "string", "maxLength": 24, "description": "A short label, e.g. 平静偏暖." },
+        "mood": { "type": "string", "maxLength": 24, "description": "A short label, e.g. calm, warm." },
         "motif": {
           "type": "array",
           "items": { "$ref": "#/$defs/note" },
@@ -504,7 +504,7 @@
         "space": {
           "type": "string",
           "enum": ["dry", "room", "hall"],
-          "description": "Reverb amount for the whole song: 干净, 房间, 大厅."
+          "description": "Reverb amount for the whole song: dry, room, hall."
         }
       }
     },
@@ -518,13 +518,13 @@
         "index": { "type": "integer", "minimum": 0, "maximum": 2 },
         "name": {
           "type": "string",
-          "maxLength": 12,
-          "description": "A plain name for the arrangement, e.g. 黄昏民谣."
+          "maxLength": 24,
+          "description": "A plain name for the arrangement, e.g. Dusk Folk."
         },
-        "tags": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 8 } },
+        "tags": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 16 } },
         "why": {
           "type": "string",
-          "maxLength": 80,
+          "maxLength": 160,
           "description": "One sentence linking the arrangement to the captured inputs."
         },
         "timeOfDay": { "type": "string", "enum": ["day", "dusk", "night"] },
@@ -540,7 +540,7 @@
                 "$ref": "#/$defs/unit",
                 "description": "How much this track plays overall, for the bars on the pick screen."
               },
-              "sound": { "type": "string", "maxLength": 16, "description": "Short label, e.g. 木吉他扫弦." }
+              "sound": { "type": "string", "maxLength": 40, "description": "Short label, e.g. Steel-string guitar, strum." }
             }
           }
         },

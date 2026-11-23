@@ -1,7 +1,7 @@
 """Lyrics through the text-model adapter, with the guarantee that every line has exactly the right number of syllables.
 
-The model proposes; the server checks. A line is accepted only when it has as many syllables (Chinese characters,
-punctuation ignored) as the lyric line has notes. Lines that fail are asked for again with the exact counts, up to
+The model proposes; the server checks. A line is accepted only when it has as many sung syllables as the lyric line
+has notes. The model gives each line as an array of syllables ("walk-", "ing"), so the count is never guessed. Lines that fail are asked for again with the exact counts, up to
 three calls within 45 s; if any still fail the call ends with ``503 offline_unavailable`` and ``detail.reason``
 ``bad_answer``. Nothing here is used when no model is configured (``reason: not_configured``).
 """
@@ -21,22 +21,21 @@ LYRICS_TIMEOUT_S = 20.0      # one model call
 LYRICS_DEADLINE_S = 45.0     # everything one request may spend, retries included
 LYRICS_ATTEMPTS = 3
 SYSTEM = (
-    "You write Chinese song lyrics for people who are not musicians, to be sung on a melody that already exists. "
-    "Each Chinese character is sung on exactly one note, so every line must have EXACTLY the number of characters "
-    "you are given: no punctuation, spaces, digits or Latin letters. Use everyday words and concrete images from what "
-    "the person saw, heard and wrote; avoid clichés and big abstract words. Keep lines natural to say aloud. "
-    "Write each line as a JSON array of single characters, which makes the count easy to check. Answer with JSON only."
+    "You write English song lyrics for people who are not musicians, to be sung on a melody that already exists. "
+    "Each syllable is sung on exactly one note, so every line must have EXACTLY the number of syllables you are given. "
+    "Write each line as a JSON array of its syllables in order, as they would be sung, marking a syllable that "
+    "continues the same word with a trailing hyphen: \"walking by the sea\" is [\"walk-\", \"ing\", \"by\", \"the\", \"sea\"]. "
+    "No punctuation or digits. Use everyday words and concrete images from what the person saw, heard and wrote; "
+    "avoid clichés and big abstract words. Keep lines natural to say aloud. Answer with JSON only."
 )
 TONES = {"plain": "plain and direct, like talking to a friend", "subtle": "subtle and understated, showing rather than saying", "playful": "light and playful"}
 ROLES = {
-    "开头": "intro: usually instrumental; if it has words, a quiet first image",
-    "主歌": "verse: set the scene with concrete details of the place and moment",
-    "展开": "verse: set the scene with concrete details of the place and moment",
-    "副歌": "chorus: the emotional heart; the simplest, most memorable lines, easy to sing along",
-    "高潮": "chorus: the emotional heart; the simplest, most memorable lines, easy to sing along",
-    "结尾": "outro: come back softly, an ending image or a quiet echo of the chorus",
+    "Intro": "intro: usually instrumental; if it has words, a quiet first image",
+    "Verse": "verse: set the scene with concrete details of the place and moment",
+    "Chorus": "chorus: the emotional heart; the simplest, most memorable lines, easy to sing along",
+    "Outro": "outro: come back softly, an ending image or a quiet echo of the chorus",
 }
-PLACEHOLDER = "啦"
+PLACEHOLDER = "la"
 
 
 def lyric_lines(song: Dict[str, Any], section: Dict[str, Any]) -> List[List[Dict[str, Any]]]:
@@ -44,7 +43,7 @@ def lyric_lines(song: Dict[str, Any], section: Dict[str, Any]) -> List[List[Dict
 
 
 def line_text(notes: Sequence[Dict[str, Any]]) -> str:
-    return "".join(n.get("lyric") or "" for n in notes)
+    return editing.join_syllables([n.get("lyric") or "" for n in notes])
 
 
 def syllable_count(text: str) -> int:
@@ -52,14 +51,14 @@ def syllable_count(text: str) -> int:
 
 
 def _is_placeholder(text: str) -> bool:
-    return not text or set(text) <= {PLACEHOLDER}
+    return not text or set(text.lower().split()) <= {PLACEHOLDER}
 
 
 def inspiration(song: Dict[str, Any]) -> str:
     """What the person captured, in words the model can use. Never includes coordinates."""
     seed = song.get("seed") or {}
     texts = [i["text"] for i in seed.get("inputs", []) if i.get("kind") == "text" and i.get("text")]
-    photos = [r["text"] for r in seed.get("reasons", []) if "照片" in r.get("text", "")]
+    photos = [r["text"] for r in seed.get("reasons", []) if "photo" in r.get("text", "").lower()]
     kinds = {i.get("kind") for i in seed.get("inputs", [])}
     parts = []
     if texts:
@@ -116,14 +115,30 @@ def _ask(adapters: Adapters, prompt: str, timeout: float) -> Any:
         return None
 
 
-def _line_from(value: Any) -> str:
-    """A line as the model gave it, either an array of characters or a string, as one run of syllables."""
+def _line_from(value: Any) -> List[str]:
+    """A line as the model gave it, as its sung syllables: an array of syllables is taken as given (each one cleaned,
+    a hyphen kept where the word goes on), a string is split by the spelling rule."""
     if isinstance(value, dict):
-        value = value.get("chars", value.get("text", ""))
+        value = value.get("syllables", value.get("chars", value.get("text", "")))
     if isinstance(value, list):
-        value = "".join(str(v) for v in value)
+        out = []
+        for v in value:
+            syl = re.sub(r"[^\w'’\-]", "", str(v)).strip("'’")
+            if syl.strip("-"):
+                out.append(syl.lstrip("-"))
+        return out
     parts = editing.split_syllables(str(value or ""))
-    return "".join(parts[0]) if len(parts) == 1 else ""
+    return parts[0] if len(parts) == 1 else []
+
+
+def _as_text(syllables: Sequence[str]) -> str:
+    """Syllables written so that ``editing.split_syllables`` gives exactly them back: "walk-ing by the sea"."""
+    out = ""
+    for syl in syllables:
+        if out and not out.endswith("-"):
+            out += " "
+        out += syl
+    return out.rstrip("-")
 
 
 def _style_text(themes: Sequence[str], tone: str, rhyme: bool) -> str:
@@ -131,7 +146,7 @@ def _style_text(themes: Sequence[str], tone: str, rhyme: bool) -> str:
     if themes:
         parts.append(f"Themes to draw on: {', '.join(themes)}.")
     parts.append(
-        "Within each section, end the lines on the same rhyme (同韵, the same final vowel), preferably an open one that is easy to hold."
+        "Within each section, make the line endings rhyme, preferably on an open vowel that is easy to hold."
         if rhyme else "Rhyme is not needed."
     )
     return " ".join(parts)
@@ -188,19 +203,19 @@ def write_lyrics(
                 if (sid, i) in results:
                     rows.append({"id": f"{sid}:{i}", "fixed": results[(sid, i)]})
                 elif (sid, i) in pending:
-                    rows.append({"id": f"{sid}:{i}", "characters": count})
+                    rows.append({"id": f"{sid}:{i}", "syllables": count})
                 elif not _is_placeholder(p["current"][i]):
                     rows.append({"id": f"{sid}:{i}", "fixed": p["current"][i]})
                 else:
-                    rows.append({"id": f"{sid}:{i}", "characters": count, "note": "not needed now"})
+                    rows.append({"id": f"{sid}:{i}", "syllables": count, "note": "not needed now"})
             structure.append({"section": p["label"], "role": role, "lines": rows})
         prompt = (
             f"{inspiration(song)}\n{_style_text(themes, tone, rhyme)}\n\n"
             "The song, section by section. Lines marked \"fixed\" stay as they are; write every line that gives a "
-            "number of \"characters\" (skip lines marked \"not needed now\").\n"
+            "number of \"syllables\" (skip lines marked \"not needed now\").\n"
             f"{json.dumps(structure, ensure_ascii=False)}\n\n"
-            + ("Your last answer had lines of the wrong length:\n" + "\n".join(feedback) + "\nCount the characters again.\n\n" if feedback else "")
-            + 'Answer as JSON: {"lines": [{"id": "s-verse:0", "chars": ["海", "风", "..."]}]}'
+            + ("Your last answer had lines of the wrong length:\n" + "\n".join(feedback) + "\nCount the syllables again.\n\n" if feedback else "")
+            + 'Answer as JSON: {"lines": [{"id": "s-verse:0", "syllables": ["walk-", "ing", "..."]}]}'
         )
         answer = _ask(adapters, prompt, min(timeout, left))
         given: Dict[str, Any] = {}
@@ -211,12 +226,12 @@ def write_lyrics(
             given = {f"{sid}:{i}": v for sid, d in items.items() if isinstance(d, dict) for i, v in d.items()}
         feedback = []
         for sid, i in pending:
-            text = _line_from(given.get(f"{sid}:{i}"))
+            syls = _line_from(given.get(f"{sid}:{i}"))
             want = plan[sid]["counts"][i]
-            if text and len(text) == want:
-                results[(sid, i)] = text
+            if syls and len(syls) == want:
+                results[(sid, i)] = _as_text(syls)
             else:
-                feedback.append(f"- {sid}:{i} needs {want} characters, you wrote {len(text)}: {text or '(nothing)'}")
+                feedback.append(f"- {sid}:{i} needs {want} syllables, you wrote {len(syls)}: {json.dumps(syls) if syls else '(nothing)'}")
     if any(key not in results for key in todo):
         raise _unavailable("bad_answer")
     out = {}
@@ -257,25 +272,26 @@ def alternatives(
         prompt = (
             f"{inspiration(song)}\n{_style_text(themes, tone, rhyme)}\n\n"
             f"Section: {section['label']} ({ROLES.get(section['label'], '')}). Other lines in it: {json.dumps(neighbours, ensure_ascii=False)}\n"
-            f"This line {now}.\nGive {need + 1} other wordings of this line, each EXACTLY {count} characters, "
-            "each with a very short note (2 to 4 characters) saying how it differs, e.g. 更含蓄, 多些画面.\n"
-            + ("These had the wrong length: " + "; ".join(wrong) + f". Each must be {count} characters.\n" if wrong else "")
-            + 'Answer as JSON: {"alternatives": [{"chars": ["我", "..."], "note": "..."}]}'
+            f"This line {now}.\nGive {need + 1} other wordings of this line, each EXACTLY {count} syllables, "
+            "each with a very short note (2 to 4 words) saying how it differs, e.g. more understated, more images.\n"
+            + ("These had the wrong length: " + "; ".join(wrong) + f". Each must be {count} syllables.\n" if wrong else "")
+            + 'Answer as JSON: {"alternatives": [{"syllables": ["walk-", "ing", "..."], "note": "..."}]}'
         )
         answer = _ask(adapters, prompt, min(timeout, left))
         wrong = []
         for item in (answer.get("alternatives") if isinstance(answer, dict) else None) or []:
             if not isinstance(item, dict):
                 continue
-            text = _line_from(item)
-            if len(text) != count:
-                if text:
-                    wrong.append(f"{text} ({len(text)})")
+            syls = _line_from(item)
+            if len(syls) != count:
+                if syls:
+                    wrong.append(f"{json.dumps(syls)} ({len(syls)})")
                 continue
+            text = _as_text(syls)
             if text in seen:
                 continue
             seen.add(text)
-            found.append({"text": text, "note": str(item.get("note", ""))[:12]})
+            found.append({"text": text, "note": str(item.get("note", ""))[:32]})
     if len(found) < 3:
         if found:
             return found  # fewer than three is still useful
@@ -285,14 +301,18 @@ def alternatives(
 
 # ------------------------------------------------------------------------------------------- themes (offline)
 
-PHOTO_THEMES = [("偏暖", "暖光"), ("偏冷", "清冷"), ("偏亮", "白天"), ("偏暗", "夜晚")]
-# Words that make good lyric themes. Longer words first, so 海风 wins over 海 and 风.
+PHOTO_THEMES = [("warm", "warm light"), ("cool", "cool air"), ("bright", "daylight"), ("dark", "night")]
+# Words that make good lyric themes. Longer phrases first, so "sea breeze" wins over "sea".
 THEME_WORDS = sorted(set("""
-海 海边 海风 海浪 沙滩 港口 船 桥 岸 潮水 风 晚风 雨 雪 雾 云 天空 星星 星空 月亮 太阳 夕阳 阳光 山 河 江 湖 树 花 草地
-清晨 早晨 午后 傍晚 黄昏 夜 夜晚 深夜 春天 夏天 秋天 冬天 灯 路灯 街道 小巷 城市 路 远方 火车 飞机 车站 旅行 窗
-家 想家 回家 故乡 朋友 妈妈 爸爸 孩子 爱 想你 思念 告别 再见 相遇 等待 梦 时间 自由 孤单 温暖 安静 咖啡 猫 狗
-""".split()), key=len, reverse=True)
-_CLAUSE = re.compile(r"[，。！？；、,.!?;:：\s]+")
+sea seaside sea breeze waves beach harbour harbor boat ship bridge shore tide wind breeze rain snow fog mist cloud clouds sky
+stars starry sky moon sun sunset sunrise sunlight mountain mountains river lake trees tree flowers grass
+morning afternoon evening dusk night midnight spring summer autumn winter lights street lights street streets alley
+city road far away train plane station travel journey window home homesick going home hometown friends friend mum mom
+dad child love missing you goodbye meeting waiting dream dreams time freedom lonely warm quiet coffee cat dog
+""".strip().replace("street lights", "street-lights").replace("starry sky", "starry-sky").replace("sea breeze", "sea-breeze")
+    .replace("far away", "far-away").replace("going home", "going-home").replace("missing you", "missing-you").split()), key=len, reverse=True)
+THEME_WORDS = [w.replace("-", " ") for w in THEME_WORDS]
+_CLAUSE = re.compile(r"[，。！？；、,.!?;:：\n]+")
 
 
 def themes(song: Dict[str, Any]) -> List[Dict[str, str]]:
@@ -304,7 +324,7 @@ def themes(song: Dict[str, Any]) -> List[Dict[str, str]]:
     out: List[Dict[str, str]] = []
 
     def add(text: str, source: str) -> None:
-        # Skip a theme that repeats one already listed (海 after 海边, 想家了 after 想家).
+        # Skip a theme that repeats one already listed ("sea" after "seaside", "home" after "going home").
         if text and not any(text in t["text"] or t["text"] in text for t in out):
             out.append({"text": text, "source": source})
 
@@ -312,33 +332,35 @@ def themes(song: Dict[str, Any]) -> List[Dict[str, str]]:
         if item.get("kind") != "text":
             continue
         text = item.get("text", "")
-        rest = text
+        low = " " + re.sub(r"[^a-z' ]+", " ", text.lower()) + " "
+        rest = low
         for w in THEME_WORDS:
-            if w in rest:
+            if f" {w} " in rest:
                 add(w, "text")
-                rest = rest.replace(w, " ")
+                rest = rest.replace(f" {w} ", " ")
         for words, _, _, _ in KEYWORDS:
             for w in words:
-                if w in text and re.match(r"^[一-鿿]+$", w):
+                if f" {w} " in low:
                     add(w, "text")
-        # A short clause on its own (2 to 4 characters) is a theme as written; longer ones are never cut.
+        # A short clause on its own (one to three words) is a theme as written; longer ones are never cut.
         for clause in _CLAUSE.split(text):
-            if 2 <= len(clause) <= 4 and re.match(r"^[一-鿿]+$", clause):
-                add(clause, "text")
-    reasons = " ".join(r.get("text", "") for r in seed.get("reasons", []) if "照片" in r.get("text", ""))
+            words = clause.strip().split()
+            if 1 <= len(words) <= 3 and all(re.match(r"^[A-Za-z'’]+$", w) for w in words):
+                add(" ".join(words).lower(), "text")
+    reasons = " ".join(r.get("text", "") for r in seed.get("reasons", []) if "photo" in r.get("text", "").lower())
     if any(i.get("kind") == "photo" for i in inputs):
         for marker, label in PHOTO_THEMES:
-            if marker in reasons:
+            if marker in reasons.lower():
                 add(label, "photo")
     if any(i.get("kind") == "sound" for i in inputs):
-        add("身边的声音", "sound")
+        add("the sounds around", "sound")
     if seed.get("motif"):
-        add("哼过的旋律", "hum")
+        add("the tune I hummed", "hum")
     return out[:8]
 
 
 def initial_texts(adapters: Adapters, song: Dict[str, Any]) -> Dict[str, str]:
-    """Lyrics for a new song when a model is configured and answers in time; otherwise nothing (啦 stays)."""
+    """Lyrics for a new song when a model is configured and answers in time; otherwise nothing ("la" stays)."""
     model = adapters.text_model
     if not getattr(model, "configured", True) or not hasattr(model, "complete"):
         return {}

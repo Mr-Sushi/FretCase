@@ -12,8 +12,8 @@ C_MAJOR_PHRASE = [261.63, 293.66, 329.63, 349.23, 392.0, 329.63, 293.66, 261.63]
 
 
 def test_text_seed_card_has_reasons_and_is_offline(api):
-    seed = api.seed([{"kind": "text", "text": "海边的傍晚，很平静"}])
-    assert seed["source"] == "offline" and seed["mood"] == "平静偏暖"
+    seed = api.seed([{"kind": "text", "text": "Seaside at dusk, very calm"}])
+    assert seed["source"] == "offline" and seed["mood"] == "calm, warm"
     assert seed["key"]["mode"] == "major" and 40 <= seed["tempo"] <= 220
     assert {r["field"] for r in seed["reasons"]} >= {"mood", "tempo", "key", "meter"}
     assert "motif" not in seed
@@ -28,7 +28,7 @@ def test_photo_seed_card_uses_colour_statistics(api):
     dark_seed = api.seed([{"kind": "photo", "assetId": dark["id"]}])
     assert bright_seed["key"]["mode"] == "major" and dark_seed["key"]["mode"] == "minor"
     assert bright_seed["instruments"]["guitar"] == "nylon" and dark_seed["instruments"]["guitar"] == "steel"
-    assert any("照片" in r["text"] for r in bright_seed["reasons"])
+    assert any("photo" in r["text"].lower() for r in bright_seed["reasons"])
 
 
 def test_sound_seed_card_finds_a_beat(api):
@@ -70,7 +70,7 @@ def test_seed_without_a_transcriber_has_no_motif_but_still_works(make_client):
     audio = api.upload(wav_bytes([440.0]), "hum", "h.wav", "audio/wav")
     seed = api.seed([{"kind": "hum", "assetId": audio["id"]}, {"kind": "text", "text": "quiet night"}])
     assert "motif" not in seed
-    assert any(r["field"] == "motif" and "无法转写" in r["text"] for r in seed["reasons"])
+    assert any(r["field"] == "motif" and "cannot be transcribed" in r["text"] for r in seed["reasons"])
     assert_valid(api.song(seed=seed))
 
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FretCase 3D 模型</title>
+<title>FretCase 3D model</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -195,83 +195,83 @@ body.show-wiring .wiring { display: block; }
 </head>
 <body>
 <main class="app">
-  <section class="stage" id="stage" aria-label="FretCase 三维模型">
+  <section class="stage" id="stage" aria-label="FretCase 3D model">
     <canvas id="c"></canvas>
     <div id="markers" aria-hidden="true" style="display:none"></div>
-    <div class="views" role="group" aria-label="视角">
-      <button type="button" data-view="screen">屏幕特写</button>
-      <button type="button" data-view="operate">操作</button>
-      <button type="button" data-view="front">正面</button>
-      <button type="button" data-view="top">俯视控件</button>
-      <button type="button" data-view="back">背面镜头</button>
-      <button type="button" data-view="side">侧面接口</button>
+    <div class="views" role="group" aria-label="Views">
+      <button type="button" data-view="screen">Screen close-up</button>
+      <button type="button" data-view="operate">Play</button>
+      <button type="button" data-view="front">Front</button>
+      <button type="button" data-view="top">Controls from above</button>
+      <button type="button" data-view="back">Rear camera</button>
+      <button type="button" data-view="side">Side ports</button>
     </div>
-    <nav class="tabs" aria-label="页面"><a href="#model" aria-current="page">3D 模型</a><a href="#wiring">电路图</a></nav>
-    <p class="hint" id="hint">直接点 iPad 屏幕和箱上的控件；拖动空白处旋转，滚轮或双指缩放</p>
+    <nav class="tabs" aria-label="Pages"><a href="#model" aria-current="page">3D model</a><a href="#wiring">Wiring</a></nav>
+    <p class="hint" id="hint">Tap the iPad screen and the controls on the case; drag empty space to rotate, scroll or pinch to zoom</p>
   </section>
   <aside class="panel">
     <header>
       <h1>FretCase</h1>
-      <p class="sub">打开就能写歌的复古皮箱。模型按采购清单里的零件尺寸搭建；iPad 屏幕里跑的是软件本身，箱上的控件能按、能拖，和真机一样把消息发给软件。</p>
+      <p class="sub">A vintage suitcase you open to write a song. The model is built from the sizes of the parts on the shopping list; the iPad screen runs the real software, and the controls on the case can be pressed and dragged, sending messages to the software just like the real device.</p>
     </header>
     <section>
-      <h2>怎么玩</h2>
+      <h2>How to play</h2>
       <ol class="howto">
-        <li>点左上角<b>屏幕特写</b>，直接在 iPad 上点：屏幕里跑的是 FretCase 软件本身（演示模式，不联网）。</li>
-        <li><b>采集</b>：在屏幕上选拍照、哼一段、录声音或写一句，再按箱上的<b>红键</b>。拍照按一下；哼一段和录声音按一下开始、再按一下结束，也可以按住不放。镜头里是三张样片，录音是模拟的。</li>
-        <li>点<b>做成歌</b>，转唱盘在三首之间切换，按<b>红键</b>选定（也可以点屏幕）；之后<b>唱盘、旋钮、推子、播放、撤销、换一个、彩色方键</b>都像真机一样把消息发给软件，灯环和键灯由软件点亮。<b>播放时转唱盘</b>就像搓黑胶：转得快歌就快、往回转就倒放，音高跟着变，松手后回到正常速度（开始播放后要等几秒准备好）。</li>
-        <li>屏幕顶上的 ①②③④ 可以跳回走过的那一步。</li>
-        <li>在“做卡”点<b>印出来</b>，或者<b>按住红键约 1 秒</b>，卡片从右侧出卡口出来；<b>点一下卡片</b>，它就插到卡片架上。</li>
+        <li>Click <b>Screen close-up</b> at the top left and tap the iPad directly: it runs the FretCase software itself (demo mode, offline).</li>
+        <li><b>Capture</b>: choose Photo, Hum, Sound or Write on the screen, then press the <b>red key</b> on the case. One press takes a photo; for Hum and Sound, press once to start and again to stop, or hold it down. The camera shows three sample photos, and recording is simulated.</li>
+        <li>Tap <b>Make songs</b>, turn the platter to move between the three songs, and press the <b>red key</b> to choose (or tap the screen). From then on the <b>platter, knobs, faders, Play, Undo, Another and the coloured track keys</b> send messages to the software just like the real device, and the software lights the ring and the keys. <b>Turning the platter while a song plays</b> is like scratching vinyl: faster turns speed the song up, turning back plays it backwards, the pitch follows, and it returns to normal speed when you let go (give it a few seconds to get ready after playback starts).</li>
+        <li>①②③④ at the top of the screen jump back to a step you have already done.</li>
+        <li>On the Card screen tap <b>Print</b>, or <b>hold the red key for about a second</b>: the card comes out of the slot on the right. <b>Click the card</b> to put it in the card stand.</li>
       </ol>
     </section>
     <section>
-      <h2>演示</h2>
+      <h2>Demo</h2>
       <div class="demo">
-        <button type="button" id="demo-screen" class="primary">屏幕特写</button>
-        <button type="button" id="demo-restart">重新开始</button>
+        <button type="button" id="demo-screen" class="primary">Screen close-up</button>
+        <button type="button" id="demo-restart">Start again</button>
       </div>
-      <p class="note" id="demo-note">第一次播放前若没有声音，在屏幕上随便点一下（浏览器要求先在页面里点过才出声）。</p>
+      <p class="note" id="demo-note">If there is no sound the first time, tap anywhere on the screen (browsers only play sound after a click on the page).</p>
     </section>
     <section>
-      <h2>箱盖开合</h2>
+      <h2>Lid</h2>
       <div class="lidrow">
-        <input type="range" id="lid" min="0" max="115" step="1" value="100" aria-label="箱盖角度">
+        <input type="range" id="lid" min="0" max="115" step="1" value="100" aria-label="Lid angle">
         <output id="lid-out" for="lid">100°</output>
       </div>
-      <p class="note">合上前卡片架会向后放平。</p>
+      <p class="note">The card stand folds back flat before the lid closes.</p>
     </section>
     <section class="toggles">
-      <label for="tg-labels"><input type="checkbox" id="tg-labels" checked> 显示部件编号</label>
-      <label for="tg-inside"><input type="checkbox" id="tg-inside"> 透视箱底夹层（主机、充电宝、打印机、控制板）</label>
+      <label for="tg-labels"><input type="checkbox" id="tg-labels" checked> Show part numbers</label>
+      <label for="tg-inside"><input type="checkbox" id="tg-inside"> See inside the base (computer, power bank, printer, controller)</label>
     </section>
     <section>
-      <h2>部件，以及要买和要打印的东西</h2>
+      <h2>Parts, and what to buy and print</h2>
       <ol class="legend" id="legend"></ol>
-      <p class="note">全箱通用、没有单独列出的：M3 热熔铜螺母、螺丝和铜柱、导线、排针、3D 打印耗材。价格和链接见采购表。</p>
+      <p class="note">Used throughout and not listed separately: M3 heat-set inserts, screws and standoffs, wire, pin headers, 3D printing filament. Prices and links are in the shopping list.</p>
     </section>
     <section>
-      <h2>面板消息（实时）</h2>
-      <p class="note msgnote">每个操作发出的消息，格式和 shared/schema/panel-events.schema.json 一致。</p>
+      <h2>Panel messages (live)</h2>
+      <p class="note msgnote">The message each action sends, in the format of shared/schema/panel-events.schema.json.</p>
       <ol class="evlog" id="evlog" aria-live="off"></ol>
     </section>
-    <p class="foot">箱体按 320 × 240 × 106 毫米（合箱）建模：箱底内深 76 毫米，才放得下 49 毫米厚的充电宝和面板下约 11 毫米深的控件；箱盖内深约 20 毫米放 iPad。零件尺寸来自厂商规格：iPad 11 寸（A16）248.6 × 179.5 × 7，Instax Link Wide 139 × 127.5 × 33.7，Anker A1695 157 × 54 × 49，Raspberry Pi 5 85 × 56，宽幅相纸 108 × 86。</p>
+    <p class="foot">The case is modelled at 320 × 240 × 106 mm (closed). The base is 76 mm deep inside, enough for the 49 mm power bank and the controls that reach about 11 mm below the panel; the lid is about 20 mm deep inside for the iPad. Part sizes come from the makers' specifications: iPad 11-inch (A16) 248.6 × 179.5 × 7, Instax Link Wide 139 × 127.5 × 33.7, Anker A1695 157 × 54 × 49, Raspberry Pi 5 85 × 56, Wide film 108 × 86.</p>
   </aside>
 </main>
-<section class="wiring" id="wiring-view" aria-label="电路图">
+<section class="wiring" id="wiring-view" aria-label="Wiring">
   <div class="wrap">
     <div class="bar">
-      <h1>FretCase 电路图</h1>
-      <nav class="tabs" aria-label="页面"><a href="#model">3D 模型</a><a href="#wiring" aria-current="page">电路图</a></nav>
+      <h1>FretCase wiring</h1>
+      <nav class="tabs" aria-label="Pages"><a href="#model">3D model</a><a href="#wiring" aria-current="page">Wiring</a></nav>
     </div>
-    <img src="wiring.svg" alt="FretCase 接线图：Teensy 4.1 接编码器、推子、按键和两条灯链；Raspberry Pi 5 接 Teensy、GPS、电源键和拍立得打印机；充电宝给 Pi、iPad 和打印机供电；iPad 经转接头出耳机声音。">
+    <img src="wiring.svg" alt="FretCase wiring diagram: the Teensy 4.1 reads the encoders, faders and keys and drives two LED chains; the Raspberry Pi 5 connects to the Teensy, the GPS, the power button and the instant printer; the power bank powers the Pi, the iPad and the printer; the iPad sends headphone audio through an adapter.">
     <ol class="notes">
-      <li>引脚号和 <code>device/firmware/fretcase_controller/pins.h</code> 一致；改接线时只改那个文件。</li>
-      <li>编码器、按键都接地，用 Teensy 内部上拉；推子两端接 3.3 V 和地，推到顶读到 3.3 V。Teensy 4.1 的引脚不能接 5 V。</li>
-      <li>两条灯链的数据线经 74AHCT125 升到 5 V，再各串一个 330 Ω 电阻；灯的 5 V 和地之间并一个 1000 µF 电容。</li>
-      <li>灯的 5 V 先取自 Teensy 的 USB 5 V（来自 Pi）。Pi 5 用充电宝的 5 V 3 A 供电时，USB 口总共只给 600 mA：上电后实测电流，超过约 0.5 A 就在固件里限亮度，或者改用充电宝 USB-A 口单独给灯供 5 V，并和 Teensy 共地。</li>
-      <li>电源键接 Pi 5 板上的 J2 两个焊盘（焊两针排针）：按一下开机，再按一下正常关机。灯圈接 Pi 的 3.3 V，并在 EEPROM 设 POWER_OFF_ON_HALT=1，关机后才熄灭。</li>
-      <li>iPad 和 Pi 走无线：连同一个手机热点。拍立得打印机走蓝牙，平时由充电宝的 USB-A 口补电。</li>
-      <li>总音量是无源的：Belkin 转接头的耳机输出接双联对数电位器，再到面板耳机口；左右声道各走一联，地线直通。</li>
+      <li>Pin numbers match <code>device/firmware/fretcase_controller/pins.h</code>; when the wiring changes, change only that file.</li>
+      <li>Encoders and keys switch to ground and use the Teensy's internal pull-ups; the faders run between 3.3 V and ground and read 3.3 V at the top. Teensy 4.1 pins must never see 5 V.</li>
+      <li>The data lines of both LED chains are shifted to 5 V by a 74AHCT125, each through a 330 Ω series resistor; a 1000 µF capacitor sits across the LEDs' 5 V and ground.</li>
+      <li>The LEDs first take 5 V from the Teensy's USB 5 V (from the Pi). When the Pi 5 runs from the power bank's 5 V 3 A, its USB ports give only 600 mA in total: measure the current after power-up, and above about 0.5 A limit the brightness in the firmware, or feed the LEDs 5 V from the power bank's USB-A port with a ground shared with the Teensy.</li>
+      <li>The power button goes to the two J2 pads on the Pi 5 (solder a two-pin header): press once to start, again for a clean shutdown. Its light ring runs from the Pi's 3.3 V, with POWER_OFF_ON_HALT=1 set in the EEPROM so it goes dark after shutdown.</li>
+      <li>The iPad and the Pi talk over Wi-Fi on the same phone hotspot. The instant printer uses Bluetooth and is topped up from the power bank's USB-A port.</li>
+      <li>The master volume is passive: the Belkin adapter's headphone output goes through a dual log potentiometer to the panel headphone socket, one gang per channel, with ground passed straight through.</li>
     </ol>
   </div>
 </section>
@@ -293,7 +293,7 @@ body.show-wiring .wiring { display: block; }
   var T = window.THREE;
   var stage = document.getElementById('stage');
   var canvas = document.getElementById('c');
-  if (!T) { stage.insertAdjacentHTML('beforeend', '<p class="hint" style="top:64px;bottom:auto">三维库没有加载成功，请检查网络后刷新。</p>'); return; }
+  if (!T) { stage.insertAdjacentHTML('beforeend', '<p class="hint" style="top:64px;bottom:auto">The 3D library did not load. Check the connection and reload.</p>'); return; }
 
   // ---- dimensions (mm) ----
   // base 80 + lid 26 = 106 mm closed: the 49 mm power bank and the ~11 mm of switch, fader and
@@ -303,8 +303,8 @@ body.show-wiring .wiring { display: block; }
   var IPAD = { w: 248.6, h: 179.5, t: 7.0, dw: 226.5, dh: 157.4 };   // iPad 11-inch (A16)
   var CARD_W = 108, CARD_H = 86, CARD_T = 1.6;                      // instax WIDE print
   var TRACKS = [
-    { n: '人声', c: '#e2725b' }, { n: '旋律', c: '#e3a14a' }, { n: '吉他', c: '#49b8b3' },
-    { n: '贝斯', c: '#5b8dd6' }, { n: '鼓', c: '#9a7bd1' }, { n: '环境', c: '#7fae6a' }
+    { n: 'Voice', c: '#e2725b' }, { n: 'Melody', c: '#e3a14a' }, { n: 'Guitar', c: '#49b8b3' },
+    { n: 'Bass', c: '#5b8dd6' }, { n: 'Drums', c: '#9a7bd1' }, { n: 'Ambient', c: '#7fae6a' }
   ];
   var TRACK_IDS = ['vocal', 'melody', 'guitar', 'bass', 'drums', 'ambience'];
   var KNOB_IDS = ['brightness', 'complexity', 'density', 'tempo'];
@@ -477,10 +477,10 @@ body.show-wiring .wiring { display: block; }
     }
     c.fillStyle = '#f3e6c8';
     label('FretCase', -141, -101, 6.2, 'left', 700);
-    ['明暗', '简繁', '疏密', '速度'].forEach(function (s, i) { label(s, KNOB_X[i], -50, 4.6, 'center', 600); });
+    ['Bright', 'Complex', 'Density', 'Tempo'].forEach(function (s, i) { label(s, KNOB_X[i], -50, 4.6, 'center', 600); });
     TRACKS.forEach(function (t, i) { label(t.n, TRACK_X[i], 51, 4.6, 'center', 600); });
-    label('电量', -2, 110, 3.6, 'center', 600);
-    ['采集', '播放', '撤销', '换一个'].forEach(function (s, i) { label(s, ACT_X[i], 95, 4.6, 'center', 600); });
+    label('Battery', -2, 110, 3.6, 'center', 600);
+    ['Capture', 'Play', 'Undo', 'Another'].forEach(function (s, i) { label(s, ACT_X[i], 95, 4.6, 'center', 600); });
   })();
   var silkPlane = new T.Mesh(new T.PlaneGeometry(PW, PD), new T.MeshBasicMaterial({ map: tex(silk), transparent: true }));
   silkPlane.rotation.x = -Math.PI / 2;
@@ -775,24 +775,24 @@ body.show-wiring .wiring { display: block; }
   camAnchor.userData.n = new T.Vector3(0, 1, 0);
   // buy / print name the rows of the purchase sheet and of its 3D-print sheet
   var PARTS = [
-    { t: '屏幕：iPad 11 寸', d: '装在箱盖里，显示软件的六屏；前置镜头扫卡片上的二维码', buy: 'iPad 11 寸（已有就不买）、Belkin 音频 + 充电转接头', print: 'iPad 箱盖框', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0), view: 'screen' },
-    { t: '后置镜头开孔与滑盖', d: '在箱盖背面一角，开孔向外扩；滑盖合上就拍不了', print: '后置镜头开孔环和滑盖', a: camAnchor, view: 'back' },
-    { t: '唱盘与灯环', d: '转动唱盘在歌里前后移动；16 颗灯一圈是整首歌', buy: '旋转编码器 ×1（可再买一个无格的比手感）、转盘轴承、WS2812B 灯珠 ×16', print: '唱盘和轴心连接件、灯环座和柔光圈', a: anchor(base, PX + 30, PY + 9, PZ - 30, 0, 1, 0), view: 'top' },
-    { t: '采集、播放、撤销、换一个', d: '红键按屏幕上选的方式采集：拍照按一下，哼唱和录音按一下开始、再按一下结束（也可以按住）；选歌时红键是“选定”，做卡时按住 1 秒是“印出来”；不满意就换一个，后悔了就撤销', buy: '机械轴 ×4、NeoKey 轴座小板 ×4', print: '圆形功能键帽 ×4、键轴定位板', a: anchor(base, -84, PY + 10, 78, 0, 1, 0), view: 'top' },
-    { t: '四个旋钮', d: '明暗、简繁、疏密、速度', buy: '旋转编码器 ×4', print: '旋钮帽 ×4', a: anchor(base, 74, PY + 19, -70, 0, 1, 0), view: 'top' },
-    { t: '六路小调音台', d: '每条音轨一个彩色方键和一个推子：方键选中或静音，推子调这一轨的音量', buy: '直滑电位器 ×6、机械轴 ×6、NeoKey 轴座小板 ×6、半透明键帽', print: '推子帽 ×6、键轴定位板', a: anchor(base, 74, PY + 12, -8, 0, 1, 0), view: 'top' },
-    { t: '卡片架', d: '印好的宽幅相纸斜插在这里，最前面一张是当前这首歌；合箱前向后放平', buy: 'Instax Wide 相纸', print: '卡片架和卡片仓', a: anchor(base, CX + 40, PY + PLINTH_H + 70, CZ - 20, 0, 0, 1), view: 'front' },
-    { t: '出卡口', d: '在箱子右侧，拍立得打印机从这里吐出卡片', buy: 'Instax Link Wide', print: '出卡口框', a: anchor(base, W / 2 + 6, 20, -38, 1, 0, 0), view: 'side' },
-    { t: '耳机口与总音量', d: '在箱子右侧；滚轮调耳机的总音量', buy: '3.5 mm 面板耳机延长线、10k 双联电位器、3.5 mm 音频线', print: '侧面接口板、音量滚轮', a: anchor(base, W / 2 + 6, 22, 68, 1, 0, 0), view: 'side' },
-    { t: '充电口与电源键', d: '一个 USB-C 口给整只箱子充电；金属按钮按一下开机、再按一下关机，灯圈亮着就是开着', buy: 'USB-C 面板延长线、16 mm 金属按钮、65W 充电器（已有就不买）', print: '侧面接口板', a: anchor(base, W / 2 + 6, 40, 58, 1, 0, 0), view: 'side' },
-    { t: '电量小窗', d: '透过它看充电宝自带的电量显示', print: '电量小窗框', a: anchor(base, -2, PY + 3, 100, 0, 1, 0), view: 'top' },
-    { t: '控制面板', d: '所有控件装在一块打印的底板上，表面可以贴胡桃木木皮', buy: '胡桃木木皮（可选）', print: '控制面板底板', a: anchor(base, -10, PY + 1, -100, 0, 1, 0), view: 'top' },
-    { t: '箱体、提手与箱盖撑', d: '复古棕色皮箱；两根箱盖撑让箱盖停在约 100°', buy: '复古皮箱、箱盖撑', a: anchor(base, -24, HB - 22, D / 2 + 28, 0, 0, 1), view: 'front' },
-    { t: '主机：Raspberry Pi 5', d: '跑后端、读控制板、用蓝牙连打印机', buy: 'Pi 5、主动散热器、时钟电池、microSD 卡', print: '箱底夹层托架', a: anchor(inside, -107, WALL + 20, -80, 0, 1, 0), inside: true },
-    { t: '控制板：Teensy 4.1', d: '读所有控件、点亮两条灯链，用 USB 接 Pi；接线见电路图', buy: 'Teensy 4.1、74AHCT125、洞洞板、USB 数据线、330 Ω 电阻和电容', print: '箱底夹层托架', a: anchor(inside, -112, WALL + 12, -14, 0, 1, 0), inside: true },
-    { t: '充电宝', d: '给 Pi、iPad 和打印机供电，可以边充边放', buy: 'Anker 25K 充电宝、USB-A 转 USB-C 短线', print: '箱底夹层托架', a: anchor(inside, 58, WALL + 50, 85, 0, 1, 0), inside: true },
-    { t: '拍立得打印机', d: '平放在箱底，出纸口对着右侧的出卡口', buy: 'Instax Link Wide、相纸', print: '箱底夹层托架、出卡口框', a: anchor(inside, 86, WALL + 35, -38, 0, 1, 0), inside: true },
-    { t: 'GPS（可选）', d: '给卡片提供城市；不装就让用户说一句地名', buy: 'VK-162 USB GPS', a: anchor(inside, -40, WALL + 17, -5, 0, 1, 0), inside: true }
+    { t: 'Screen: iPad 11-inch', d: 'Sits in the lid and shows the six screens of the software; the front camera scans the QR code on a card', buy: 'iPad 11-inch (skip if you have one), Belkin audio + charge adapter', print: 'iPad lid frame', a: anchor(lid, 0, RIM - 3, D / 2 - 40, 0, -1, 0), view: 'screen' },
+    { t: 'Rear camera opening and slide cover', d: 'In a corner of the back of the lid, flared outwards; with the cover closed the camera sees nothing', print: 'Rear camera ring and slide cover', a: camAnchor, view: 'back' },
+    { t: 'Platter and light ring', d: 'Turn the platter to move through the song; the ring of 16 lights is the whole song', buy: 'Rotary encoder ×1 (buy a detent-free one too to compare the feel), turntable bearing, WS2812B LEDs ×16', print: 'Platter and hub coupler, light-ring base and diffuser', a: anchor(base, PX + 30, PY + 9, PZ - 30, 0, 1, 0), view: 'top' },
+    { t: 'Capture, Play, Undo, Another', d: 'The red key captures in the way chosen on screen: one press for a photo; for Hum and Sound, press to start and again to stop (or hold). On the Pick screen it chooses; on the Card screen, holding it for a second prints. Not happy? Another. Changed your mind? Undo', buy: 'Mechanical switches ×4, NeoKey socket boards ×4', print: 'Round keycaps ×4, switch plate', a: anchor(base, -84, PY + 10, 78, 0, 1, 0), view: 'top' },
+    { t: 'Four knobs', d: 'Brightness, complexity, density, tempo', buy: 'Rotary encoders ×4', print: 'Knob caps ×4', a: anchor(base, 74, PY + 19, -70, 0, 1, 0), view: 'top' },
+    { t: 'Six-channel mixer', d: 'Each track has a coloured square key and a fader: the key selects or mutes, the fader sets that track\'s volume', buy: 'Slide potentiometers ×6, mechanical switches ×6, NeoKey socket boards ×6, translucent keycaps', print: 'Fader caps ×6, switch plate', a: anchor(base, 74, PY + 12, -8, 0, 1, 0), view: 'top' },
+    { t: 'Card stand', d: 'Printed Wide cards lean here, the front one is the current song; folds back flat before closing', buy: 'Instax Wide film', print: 'Card stand and card tray', a: anchor(base, CX + 40, PY + PLINTH_H + 70, CZ - 20, 0, 0, 1), view: 'front' },
+    { t: 'Card slot', d: 'On the right side of the case; the instant printer pushes cards out here', buy: 'Instax Link Wide', print: 'Card slot frame', a: anchor(base, W / 2 + 6, 20, -38, 1, 0, 0), view: 'side' },
+    { t: 'Headphone socket and master volume', d: 'On the right side; the wheel sets the headphone volume', buy: '3.5 mm panel-mount headphone extension, 10k dual potentiometer, 3.5 mm audio cable', print: 'Side port plate, volume wheel', a: anchor(base, W / 2 + 6, 22, 68, 1, 0, 0), view: 'side' },
+    { t: 'Charging port and power button', d: 'One USB-C port charges the whole case; press the metal button once to start and again to shut down; a lit ring means it is on', buy: 'USB-C panel-mount extension, 16 mm metal button, 65 W charger (skip if you have one)', print: 'Side port plate', a: anchor(base, W / 2 + 6, 40, 58, 1, 0, 0), view: 'side' },
+    { t: 'Battery window', d: 'Shows the power bank\'s own charge display', print: 'Battery window frame', a: anchor(base, -2, PY + 3, 100, 0, 1, 0), view: 'top' },
+    { t: 'Control panel', d: 'All controls sit on one printed plate, which can be faced with walnut veneer', buy: 'Walnut veneer (optional)', print: 'Control panel plate', a: anchor(base, -10, PY + 1, -100, 0, 1, 0), view: 'top' },
+    { t: 'Case, handle and lid stays', d: 'A vintage brown suitcase; two lid stays hold the lid at about 100°', buy: 'Vintage suitcase, lid stays', a: anchor(base, -24, HB - 22, D / 2 + 28, 0, 0, 1), view: 'front' },
+    { t: 'Computer: Raspberry Pi 5', d: 'Runs the back end, reads the controller and talks to the printer over Bluetooth', buy: 'Pi 5, active cooler, RTC battery, microSD card', print: 'Base tray', a: anchor(inside, -107, WALL + 20, -80, 0, 1, 0), inside: true },
+    { t: 'Controller: Teensy 4.1', d: 'Reads every control, drives both LED chains and connects to the Pi over USB; see the wiring page', buy: 'Teensy 4.1, 74AHCT125, perfboard, USB data cable, 330 Ω resistors and capacitor', print: 'Base tray', a: anchor(inside, -112, WALL + 12, -14, 0, 1, 0), inside: true },
+    { t: 'Power bank', d: 'Powers the Pi, the iPad and the printer, and can charge while in use', buy: 'Anker 25K power bank, short USB-A to USB-C cable', print: 'Base tray', a: anchor(inside, 58, WALL + 50, 85, 0, 1, 0), inside: true },
+    { t: 'Instant printer', d: 'Lies flat in the base with its output facing the card slot on the right', buy: 'Instax Link Wide, film', print: 'Base tray, card slot frame', a: anchor(inside, 86, WALL + 35, -38, 0, 1, 0), inside: true },
+    { t: 'GPS (optional)', d: 'Gives the card its city; without it the user just says the place', buy: 'VK-162 USB GPS', a: anchor(inside, -40, WALL + 17, -5, 0, 1, 0), inside: true }
   ];
   var markerBox = document.getElementById('markers');
   var legend = document.getElementById('legend');
@@ -808,7 +808,7 @@ body.show-wiring .wiring { display: block; }
     b.innerHTML = '<span class="n">' + (i + 1) + '</span><span><span class="t"></span><span class="d"></span></span>';
     b.querySelector('.t').textContent = p.t;
     b.querySelector('.d').textContent = p.d;
-    [['买', p.buy], ['印', p.print]].forEach(function (row) {
+    [['Buy', p.buy], ['Print', p.print]].forEach(function (row) {
       if (!row[1]) { return; }
       var line = document.createElement('span'); line.className = 'm';
       var tag = document.createElement('b'); tag.textContent = row[0];
@@ -889,7 +889,7 @@ body.show-wiring .wiring { display: block; }
     cssRenderer.domElement.className = 'css3d';
     stage.insertBefore(cssRenderer.domElement, canvas);
     frameEl = document.createElement('iframe');
-    frameEl.title = 'FretCase 软件（演示模式）';
+    frameEl.title = 'FretCase software (demo mode)';
     frameEl.setAttribute('allow', 'autoplay');
     frameEl.style.cssText = 'width:' + APP_W + 'px;height:' + APP_H + 'px;border:0;background:#16120e;backface-visibility:hidden';
     cssObj = new T.CSS3DObject(frameEl);
@@ -916,7 +916,7 @@ body.show-wiring .wiring { display: block; }
       scr.mesh.material = new T.MeshBasicMaterial({ map: tex(cv) });
     };
     im.src = 'screens/capture.jpg';
-    noteEl.textContent = '屏幕里的软件没有加载出来，先显示一张截图；箱上的控件照样发出面板消息。';
+    noteEl.textContent = 'The software on the screen did not load, so a screenshot is shown; the controls on the case still send panel messages.';
   }
   function loadDevice() {
     device.ready = false; device.failed = false; device.open = false;
@@ -948,7 +948,7 @@ body.show-wiring .wiring { display: block; }
       li = document.createElement('li'); li.setAttribute('data-type', type); li.setAttribute('data-n', 1);
     }
     li.className = from;
-    var tag = document.createElement('span'); tag.className = 'dir'; tag.textContent = from === 'panel' ? '面板 → app' : 'app → 面板';
+    var tag = document.createElement('span'); tag.className = 'dir'; tag.textContent = from === 'panel' ? 'panel → app' : 'app → panel';
     var code = document.createElement('code'); code.textContent = JSON.stringify(payload ? { type: type, payload: payload } : { type: type });
     if (+li.getAttribute('data-n') > 1) { var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = '×' + li.getAttribute('data-n'); tag.appendChild(cnt); }
     li.appendChild(tag); li.appendChild(code);
@@ -1104,7 +1104,7 @@ body.show-wiring .wiring { display: block; }
       ejectCard.position.x = EJECT_IN;
       ejectCard.visible = true;
       printJob = { start: performance.now() };
-      setHint('正在打印：卡片从箱子右侧的出卡口出来');
+      setHint('Printing: the card comes out of the slot on the right of the case');
       flyTo('front');
     }
     if (d.photo) {
@@ -1129,7 +1129,7 @@ body.show-wiring .wiring { display: block; }
       // the printer takes a moment to start, then the film comes out over about 3 s (the real one takes ~15 s in all)
       var k = reduce ? 1 : Math.max(0, Math.min(1, ((t - printJob.start) / 1000 - 0.8) / 3));
       ejectCard.position.x = EJECT_IN + ease(k) * (EJECT_OUT - EJECT_IN);
-      if (k >= 1) { printJob = null; waiting = true; setHint('印好了：点一下出卡口的卡片，把它插到卡片架上'); }
+      if (k >= 1) { printJob = null; waiting = true; setHint('Printed: click the card in the slot to put it in the card stand'); }
     }
     if (flying) {
       var f = reduce ? 1 : Math.min(1, (t - flying.start) / 1400), e = ease(f);
@@ -1141,7 +1141,7 @@ body.show-wiring .wiring { display: block; }
       if (f >= 1) {
         flying = null; flyer.visible = false;
         landOnRack();
-        setHint('卡片插在卡片架上了。真机上扫卡片的二维码就能打开这首歌');
+        setHint('The card is in the stand. On the real device, scanning its QR code opens the song');
       }
     }
   }

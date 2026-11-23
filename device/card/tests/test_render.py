@@ -12,8 +12,8 @@ ALL_STYLES = PHOTO_STYLES + ["text"]
 
 
 def card(style="original", cover=None, **kw):
-    base = dict(title="海边的傍晚", style=style, share_url=URL, date_text="2026.11.19",
-                line="海风把傍晚吹进歌里", city="厦门", cover_path=cover)
+    base = dict(title="Seaside at Dusk", style=style, share_url=URL, date_text="2026.11.19",
+                line="The sea wind blows the evening into song", city="Edinburgh", cover_path=cover)
     base.update(kw)
     return CardInput(**base)
 
@@ -61,8 +61,8 @@ def test_styles_differ(photo):
 
 
 def test_nothing_over_the_picture(photo):
-    a = img(render_card(card("comic", photo, title="一", line="二", city=None)).print_png)
-    b = img(render_card(card("comic", photo, title="完全不同的标题", line="x" * 40, city="北京")).print_png)
+    a = img(render_card(card("comic", photo, title="A", line="B", city=None)).print_png)
+    b = img(render_card(card("comic", photo, title="A completely different title", line="x" * 40, city="London")).print_png)
     top = (0, 0, 1260, layout.PICTURE_H)
     assert np.array_equal(np.asarray(a.crop(top)), np.asarray(b.crop(top)))
 
@@ -93,12 +93,13 @@ def _strip_text_bounds(im: Image.Image):
 
 @pytest.mark.parametrize("style", ["text", "comic"])
 @pytest.mark.parametrize("title,line", [
+    ("A very long song title " * 12, "This is a very very long line of lyrics " * 10),
     ("很长的歌名" * 12, "这是一句很长很长的歌词" * 10),
     ("A very long English title " * 6, "a long line of english words " * 12),
     ("x" * 300, "y" * 300),
 ])
 def test_long_title_and_line_fit(style, title, line, photo):
-    im = img(render_card(card(style, photo, title=title, line=line, city="一个名字很长的城市" * 3)).print_png)
+    im = img(render_card(card(style, photo, title=title, line=line, city="A city with a very long name" * 3)).print_png)
     x0, y0, x1, y1 = _strip_text_bounds(im)
     assert x0 >= layout.MARGIN - 2
     assert x1 <= layout.QR_X - 40 + 2, "text runs into the QR code"
@@ -113,7 +114,7 @@ def test_long_title_and_line_fit(style, title, line, photo):
 
 def test_no_city_prints_date_only(photo):
     a = render_card(card("original", photo, city=None)).print_png
-    b = render_card(card("original", photo, city="厦门")).print_png
+    b = render_card(card("original", photo, city="Edinburgh")).print_png
     assert a != b
 
 

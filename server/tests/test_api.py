@@ -35,7 +35,7 @@ def test_create_list_get(api):
     listed = api.c.get("/api/songs").json()["songs"]
     assert [s["id"] for s in listed] == [song["id"]]
     assert api.c.get(f"/api/songs/{song['id']}").json()["song"] == song
-    other = api.song(text="雨夜 想念")
+    other = api.song(text="rainy night, missing you")
     assert [s["id"] for s in api.c.get("/api/songs").json()["songs"]][0] == other["id"] or True
     assert len(api.c.get("/api/songs").json()["songs"]) == 2
 
@@ -53,12 +53,12 @@ def test_simple_edit_ops_return_the_whole_song_and_one_revision(api):
         {"op": "setTrackVolume", "track": "drums", "volume": 0.45},
         {"op": "setTrackMute", "track": "bass", "muted": True},
         {"op": "setTempo", "tempo": 100},
-        {"op": "setTitle", "title": "新的名字"},
+        {"op": "setTitle", "title": "A new name"},
         {"op": "setInstrument", "track": "guitar", "instrument": "steel"},
     )
     assert out["revision"] == 1
     assert out["tracks"]["drums"]["volume"] == 0.45 and out["tracks"]["bass"]["muted"] is True
-    assert out["tempo"] == 100 and out["title"] == "新的名字" and out["tracks"]["guitar"]["instrument"] == "steel"
+    assert out["tempo"] == 100 and out["title"] == "A new name" and out["tracks"]["guitar"]["instrument"] == "steel"
     assert out["tracks"]["melody"]["notes"] == song["tracks"]["melody"]["notes"]
 
 
@@ -143,11 +143,11 @@ def test_replace_notes_adds_locks_and_ambience_is_refused(api):
 def test_lyrics_and_syllable_mismatch(api):
     song = api.song()
     count = len([n for n in song["tracks"]["vocal"]["notes"] if n["start"] < 4 * bar_ticks(song["meter"])])
-    assert all(n["lyric"] == "啦" for n in song["tracks"]["vocal"]["notes"])  # a new song sings 啦 on every note
-    error = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "短"}, expect=422)
+    assert all(n["lyric"] == "la" for n in song["tracks"]["vocal"]["notes"])  # a new song sings "la" on every note
+    error = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "short"}, expect=422)
     assert error["detail"] == {"noteCount": count, "syllableCount": 1}
-    out = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": "，".join(["海"] * count)})  # punctuation is ignored
-    assert sum(1 for n in out["tracks"]["vocal"]["notes"] if n.get("lyric") == "海") == count
+    out = api.edit(song, {"op": "setLyrics", "section": "s-intro", "text": ", ".join(["sea"] * count)})  # punctuation is ignored
+    assert sum(1 for n in out["tracks"]["vocal"]["notes"] if n.get("lyric") == "sea") == count
 
 
 def test_lock_unlock_and_sections(api):
@@ -158,11 +158,11 @@ def test_lock_unlock_and_sections(api):
     assert {"track": "vocal"} not in out["locks"] and len(out["locks"]) == 2
     assert api.edit(out, {"op": "unlock", "track": "vocal"}, expect=422)["code"] == "cannot_apply"
     assert api.edit(out, {"op": "lock"}, expect=400)["code"] == "invalid_request"  # lock has minProperties: 1
-    new_sections = [{"id": "s-first", "label": "前", "startBar": 0, "endBar": 10}, {"id": "s-second", "label": "后", "startBar": 10, "endBar": 16}]
+    new_sections = [{"id": "s-first", "label": "First", "startBar": 0, "endBar": 10}, {"id": "s-second", "label": "Second", "startBar": 10, "endBar": 16}]
     out = api.edit(out, {"op": "setSections", "sections": new_sections})
     assert [s["id"] for s in out["sections"]] == ["s-first", "s-second"]
     assert all("section" not in lk or lk["section"] in {"s-first", "s-second"} for lk in out["locks"])
-    gap = [{"id": "s-first", "label": "前", "startBar": 0, "endBar": 9}, {"id": "s-second", "label": "后", "startBar": 10, "endBar": 16}]
+    gap = [{"id": "s-first", "label": "First", "startBar": 0, "endBar": 9}, {"id": "s-second", "label": "Second", "startBar": 10, "endBar": 16}]
     assert api.edit(out, {"op": "setSections", "sections": gap}, expect=422)["code"] == "cannot_apply"
 
 
@@ -188,7 +188,7 @@ def test_undo_chain_is_not_an_action(api):
     song = api.song()
     s1 = api.edit(song, {"op": "setTempo", "tempo": 101})
     s2 = api.edit(s1, {"op": "setTempo", "tempo": 102})
-    s3 = api.edit(s2, {"op": "setTitle", "title": "三"})
+    s3 = api.edit(s2, {"op": "setTitle", "title": "Three"})
     u1 = api.post(s3, "undo")
     assert u1["revision"] == 4 and u1["title"] == song["title"] and u1["tempo"] == 102
     u2 = api.post(u1, "undo")

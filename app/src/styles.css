@@ -159,7 +159,7 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .tags span { padding: 5px 12px; border-radius: 999px; background: var(--line); color: #E8DCCB; font-size: 14px; }
 .parts { display: flex; flex-direction: column; gap: 7px; }
 .part { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
-.pname { width: 44px; flex: none; }
+.pname { width: 62px; flex: none; }
 .pbar { flex: 1; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; display: flex; }
 .pbar span { border-radius: 5px; }
 .psound { width: 108px; text-align: right; color: #E8DCCB; font-size: 12px; line-height: 1.25; flex: none; }
@@ -192,7 +192,7 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .panel-head h2 { font-family: var(--sans); font-size: 18px; font-weight: 700; }
 .player { display: flex; align-items: center; gap: 12px; height: 48px; position: relative; }
 .pcolor { width: 12px; height: 28px; border-radius: 4px; flex: none; }
-.pn { width: 44px; font-size: 15px; font-weight: 700; flex: none; }
+.pn { width: 74px; font-size: 15px; font-weight: 700; flex: none; }
 .sound { position: relative; width: 150px; flex: none; }
 .sound > button { width: 100%; height: 44px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface2); text-align: left; padding: 0 12px; display: flex; align-items: center; font-size: 14px; }
 .menu { position: absolute; z-index: 20; left: 0; top: 46px; min-width: 190px; background: var(--surface2); border: 1px solid var(--line2); border-radius: 12px; padding: 6px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -271,10 +271,10 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .lyr-sec-head .outline { margin-left: auto; }
 .lyr-line { display: flex; align-items: center; gap: 10px; padding: 3px 6px; border-radius: 12px; border: 1px solid transparent; }
 .lyr-line.sel { background: var(--surface3); border-color: var(--brass); }
-.lyr-line input { flex: 1; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); font-size: 21px; padding: 0 12px; }
+.lyr-line input { flex: 1; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); font-size: 18px; padding: 0 12px; }
 .lyr-line input[aria-invalid] { border-color: var(--warn); }
 .lcount { width: 108px; font-size: 12px; line-height: 1.4; white-space: pre-line; flex: none; }
-.lrhyme { width: 70px; font-size: 12px; color: var(--muted); flex: none; }
+.lrhyme { width: 64px; font-size: 12px; color: var(--muted); flex: none; }
 .keepbtn { width: 64px; height: 44px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; color: var(--muted); font-size: 13px; flex: none; }
 .keepbtn.on { background: var(--brass); color: var(--bg); border-color: var(--brass); }
 .empty-note { padding: 40px; text-align: center; color: var(--muted); font-size: 17px; }

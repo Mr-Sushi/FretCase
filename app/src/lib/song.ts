@@ -3,12 +3,12 @@ import type { Key, Meter, Note, Section, Song, TrackId } from '../types'
 export const TPQ = 480
 
 export const TRACKS: { id: TrackId; name: string; color: string }[] = [
-  { id: 'vocal', name: '人声', color: '#E2725B' },
-  { id: 'melody', name: '旋律', color: '#E3A44A' },
-  { id: 'guitar', name: '吉他', color: '#4FB3A6' },
-  { id: 'bass', name: '贝斯', color: '#6C93D6' },
-  { id: 'drums', name: '鼓', color: '#A98BD8' },
-  { id: 'ambience', name: '环境', color: '#86B068' },
+  { id: 'vocal', name: 'Voice', color: '#E2725B' },
+  { id: 'melody', name: 'Melody', color: '#E3A44A' },
+  { id: 'guitar', name: 'Guitar', color: '#4FB3A6' },
+  { id: 'bass', name: 'Bass', color: '#6C93D6' },
+  { id: 'drums', name: 'Drums', color: '#A98BD8' },
+  { id: 'ambience', name: 'Ambience', color: '#86B068' },
 ]
 export const TRACK_IDS = TRACKS.map((t) => t.id)
 export const trackColor = (id: TrackId) => TRACKS.find((t) => t.id === id)!.color
@@ -91,10 +91,10 @@ export function songSeconds(song: Pick<Song, 'meter' | 'bars' | 'tempo'>): numbe
 export const ticksToSeconds = (ticks: number, tempo: number) => (ticks / TPQ) * (60 / tempo)
 export const secondsToTicks = (sec: number, tempo: number) => Math.round((sec * tempo * TPQ) / 60)
 
-/** "1 分 40 秒" */
+/** "1 min 40 s" */
 export function formatLong(sec: number): string {
   const s = Math.round(sec)
-  return s >= 60 ? `${Math.floor(s / 60)} 分 ${s % 60} 秒` : `${s} 秒`
+  return s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`
 }
 /** "1:40" */
 export function formatClock(sec: number): string {

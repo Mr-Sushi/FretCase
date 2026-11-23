@@ -22,9 +22,9 @@ def test_three_valid_drafts_with_different_parts(seed_factory):
         assert check_consistency(song) == []
         c = song["candidate"]
         assert c["groupId"] == "grp-test-0001" and c["index"] == index and c["timeOfDay"] == "dusk" and c["chosen"] is False
-        assert 0 < len(c["name"]) <= 12 and len(c["tags"]) <= 4 and all(len(t) <= 8 for t in c["tags"]) and 0 < len(c["why"]) <= 80
+        assert 0 < len(c["name"]) <= 24 and len(c["tags"]) <= 4 and all(len(t) <= 16 for t in c["tags"]) and 0 < len(c["why"]) <= 160
         assert set(c["parts"]) == {"vocal", "melody", "guitar", "bass", "drums", "ambience"}
-        assert all(len(p["sound"]) <= 16 and 0 <= p["level"] <= 1 for p in c["parts"].values())
+        assert all(len(p["sound"]) <= 40 and 0 <= p["level"] <= 1 for p in c["parts"].values())
     sounds = [tuple(p["sound"] for p in s["candidate"]["parts"].values()) for s in songs]
     assert len(set(sounds)) == 3
     assert len({s["tracks"]["guitar"]["instrument"] for s in songs}) == 3
@@ -37,7 +37,7 @@ def test_three_valid_drafts_with_different_parts(seed_factory):
 def test_no_jargon_in_the_texts(seed_factory):
     for song, _ in make(seed_factory()):
         text = " ".join([song["candidate"]["name"], song["candidate"]["why"], *song["candidate"]["tags"], *(p["sound"] for p in song["candidate"]["parts"].values())])
-        for word in ("major", "minor", "arpeggio", "BPM", "大调", "小调", "和弦", "调"):
+        for word in ("major", "minor", "arpeggio", "BPM", "chord", "key"):
             assert word not in text
 
 

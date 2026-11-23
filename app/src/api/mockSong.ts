@@ -2,6 +2,7 @@ import exampleSong from '../generated/example-song.json'
 import type { Note, Region, SeedCard, Song, TimeOfDay, TrackId, VocalNote } from '../types'
 import { barTicks, clamp, isLocked, sectionRange, snapToKey } from '../lib/song'
 import { instrumentLabel, DEFAULT_CATALOG } from '../lib/catalog'
+import { syllables } from '../lib/lyrics'
 
 /** Mock-mode song generator: builds a six-track song with one region per track and section. Not musically clever, but consistent. */
 
@@ -10,15 +11,15 @@ export const rid = (n = 6) => Array.from({ length: n }, () => 'abcdefghjkmnpqrst
 
 const OPEN = [40, 45, 50, 55, 59, 64]
 export const MOCK_LYRICS: Record<string, string[]> = {
-  's-verse': ['海风吹过傍晚的岸', '灯一盏一盏亮起来'],
-  's-chorus': ['我把想家唱给海听', '它把回答还给风'],
-  's-outro': ['远方的灯亮了', '我也该回去了'],
+  's-verse': ['The sea wind blows across the shore', 'And one by one the lights come on'],
+  's-chorus': ['I sing my longing to the sea', 'The wind sings it back to me'],
+  's-outro': ['Far away the lamps light', 'And I walk home tonight'],
 }
-/** Same-length wordings for the mock's "换个说法" and rewrites; keyed by character count. */
+/** Same-length wordings for the mock's "other wordings" and rewrites; keyed by syllable count. */
 export const MOCK_POOL: Record<number, { text: string; note: string }[]> = {
-  8: [{ text: '晚风吹过海边的岸', note: '更顺口' }, { text: '潮水漫过傍晚的岸', note: '多些画面' }, { text: '我把乡愁说给海听', note: '更含蓄' }, { text: '我把晚风折成船寄', note: '换个画面' }],
-  7: [{ text: '灯一盏盏亮起来', note: '少一个字，正好' }, { text: '灯火慢慢亮起来', note: '更柔' }, { text: '海把回声还给风', note: '和上一句呼应' }, { text: '它把答案交给风', note: '更直白' }],
-  6: [{ text: '远方的灯亮起', note: '换个收尾' }, { text: '海上的灯亮了', note: '回到海' }, { text: '我该转身回家', note: '点题：家' }, { text: '风送我回家吧', note: '押 a 韵' }],
+  8: [{ text: 'The salty wind along the shore', note: 'smoother' }, { text: 'The tide comes in across the shore', note: 'more images' }, { text: 'I tell the sea I miss my home', note: 'more direct' }, { text: 'I fold the wind into a boat', note: 'a new image' }],
+  7: [{ text: 'And the lamps slowly come on', note: 'softer' }, { text: 'The sea sends it back to me', note: 'echoes the line before' }, { text: 'The wind keeps the answer now', note: 'more open' }, { text: 'It is the wind that answers', note: 'plainer' }],
+  6: [{ text: 'Far away a light glows', note: 'a new ending' }, { text: 'The sea lights are on now', note: 'back to the sea' }, { text: 'It is time to go home', note: 'lands on home' }, { text: 'The wind blows me back home', note: 'rhymes on -ome' }],
 }
 
 export function defaultRegion(track: TrackId, section: string, play: boolean): Region {
@@ -45,7 +46,7 @@ export function genNotes(song: Song, track: TrackId, sectionId: string, take = 0
   const degShift = [0, 2, -2, 4][take % 4]
   if (track === 'vocal' || track === 'melody') {
     const lyr = MOCK_LYRICS[sectionId]
-    const lines = lyr ? lyr.map((t) => [...t]) : [Array(8).fill('啦'), Array(7).fill('啦')]
+    const lines = lyr ? lyr.map((t) => syllables(t)) : [Array(8).fill('la'), Array(7).fill('la')]
     const existing = track === 'melody' ? null : song.tracks.vocal.notes.filter((n) => n.start >= from && n.start < to)
     lines.forEach((chars, li) => {
       const t0 = from + li * 2 * bt
@@ -124,38 +125,38 @@ interface Variant {
 const T = true, F = false
 export const VARIANT_SETS: Variant[][] = [
   [
-    { name: '黄昏民谣', tags: ['温暖', '慢一点', '人声在前'], why: '照片里的暖色，配上木吉他扫弦；副歌就是你哼的那句。', tempo: 1, lead: 'vocal',
+    { name: 'Dusk Folk', tags: ['warm', 'slower', 'vocal-led'], why: 'The warm colours of your photo with a strummed steel-string guitar; the chorus sings your hum.', tempo: 1, lead: 'vocal',
       inst: { vocal: 'synth-male', melody: 'harmonica', guitar: 'steel', bass: 'finger-bass', drums: 'jazz-kit', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'follow', guitar: 'strum', bass: 'sustain', drums: 'brush', ambience: 'recording' },
       play: { vocal: [F, T, T, T], melody: [T, T, T, T], guitar: [T, T, T, T], bass: [F, T, T, T], drums: [F, T, T, F], ambience: [T, T, T, T] },
-      level: { vocal: 0.9, melody: 0.4, guitar: 0.8, bass: 0.5, drums: 0.35, ambience: 0.3 }, amb: '海浪' },
-    { name: '海风轻快', tags: ['明亮', '中速', '吉他是主角'], why: '把“风很大”读成轻快：尼龙吉他分解和弦领奏，鼓点更密。', tempo: 1.12, lead: 'guitar',
+      level: { vocal: 0.9, melody: 0.4, guitar: 0.8, bass: 0.5, drums: 0.35, ambience: 0.3 }, amb: 'Waves' },
+    { name: 'Sea Breeze', tags: ['bright', 'medium', 'guitar-led'], why: 'Reads “very windy” as upbeat: picked nylon guitar leads, with busier drums.', tempo: 1.12, lead: 'guitar',
       inst: { vocal: 'synth-female', melody: 'flute', guitar: 'nylon', bass: 'finger-bass', drums: 'pop-kit', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'follow', guitar: 'arpeggio', bass: 'groove', drums: 'sticks', ambience: 'recording' },
       play: { vocal: [F, T, T, T], melody: [T, T, T, T], guitar: [T, T, T, T], bass: [T, T, T, T], drums: [F, T, T, T], ambience: [T, F, T, T] },
-      level: { vocal: 0.6, melody: 0.7, guitar: 0.9, bass: 0.6, drums: 0.7, ambience: 0.2 }, amb: '海浪' },
-    { name: '夜里想家', tags: ['安静', '慢', '钢琴'], why: '抓住“想家”：钢琴代替吉他，海浪声垫在底下。', tempo: 0.85, lead: 'melody',
+      level: { vocal: 0.6, melody: 0.7, guitar: 0.9, bass: 0.6, drums: 0.7, ambience: 0.2 }, amb: 'Waves' },
+    { name: 'Homesick Night', tags: ['quiet', 'slow', 'piano'], why: 'Holds on to “homesick”: piano instead of guitar, with the waves underneath.', tempo: 0.85, lead: 'melody',
       inst: { vocal: 'synth-soft', melody: 'piano', guitar: 'nylon', bass: 'upright-bass', drums: 'hand-drum', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'follow', guitar: 'sustain', bass: 'sustain', drums: 'hand', ambience: 'soft' },
       play: { vocal: [F, T, T, T], melody: [T, T, T, T], guitar: [F, F, F, T], bass: [F, F, T, T], drums: [F, F, F, F], ambience: [T, T, T, T] },
-      level: { vocal: 0.8, melody: 0.55, guitar: 0.2, bass: 0.35, drums: 0.1, ambience: 0.6 }, amb: '海浪' },
+      level: { vocal: 0.8, melody: 0.55, guitar: 0.2, bass: 0.35, drums: 0.1, ambience: 0.6 }, amb: 'Waves' },
   ],
   [
-    { name: '石板街小调', tags: ['怀旧', '中速', '电吉他'], why: '换一种走法：闷音扫弦打底，节奏更稳。', tempo: 1.05, lead: 'guitar',
+    { name: 'Cobbled Street', tags: ['nostalgic', 'medium', 'electric'], why: 'A different road: a muted strum underneath and a steadier beat.', tempo: 1.05, lead: 'guitar',
       inst: { vocal: 'synth-male', melody: 'whistle', guitar: 'electric-clean', bass: 'synth-bass', drums: 'pop-kit', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'answer', guitar: 'muted', bass: 'groove', drums: 'sticks', ambience: 'recording' },
       play: { vocal: [F, T, T, T], melody: [T, T, T, T], guitar: [T, T, T, T], bass: [T, T, T, T], drums: [F, T, T, T], ambience: [T, T, F, T] },
-      level: { vocal: 0.7, melody: 0.5, guitar: 0.85, bass: 0.65, drums: 0.6, ambience: 0.25 }, amb: '街道' },
-    { name: '午后散步', tags: ['轻松', '慢', '尤克里里'], why: '尤克里里扫弦，口哨接着人声，像边走边哼。', tempo: 0.95, lead: 'melody',
+      level: { vocal: 0.7, melody: 0.5, guitar: 0.85, bass: 0.65, drums: 0.6, ambience: 0.25 }, amb: 'Street' },
+    { name: 'Afternoon Stroll', tags: ['easy', 'slow', 'ukulele'], why: 'Strummed ukulele, with a whistle answering the voice, like humming on a walk.', tempo: 0.95, lead: 'melody',
       inst: { vocal: 'synth-female', melody: 'whistle', guitar: 'ukulele', bass: 'upright-bass', drums: 'hand-drum', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'answer', guitar: 'strum', bass: 'walking', drums: 'hand', ambience: 'soft' },
       play: { vocal: [F, T, T, T], melody: [T, T, T, T], guitar: [T, T, T, T], bass: [F, T, T, T], drums: [F, T, T, F], ambience: [T, T, T, T] },
-      level: { vocal: 0.6, melody: 0.65, guitar: 0.7, bass: 0.5, drums: 0.4, ambience: 0.4 }, amb: '街道' },
-    { name: '独自回家', tags: ['安静', '很慢', '只有一点点'], why: '只留下最少的乐器，让你哼的调子站在前面。', tempo: 0.8, lead: 'vocal',
+      level: { vocal: 0.6, melody: 0.65, guitar: 0.7, bass: 0.5, drums: 0.4, ambience: 0.4 }, amb: 'Street' },
+    { name: 'Walking Home Alone', tags: ['quiet', 'very slow', 'just a little'], why: 'Only the fewest instruments, so the tune you hummed stands in front.', tempo: 0.8, lead: 'vocal',
       inst: { vocal: 'synth-soft', melody: 'flute', guitar: 'steel', bass: 'finger-bass', drums: 'jazz-kit', ambience: 'recording' },
       style: { vocal: 'plain', melody: 'follow', guitar: 'arpeggio', bass: 'sustain', drums: 'brush', ambience: 'soft' },
       play: { vocal: [F, T, T, T], melody: [F, F, T, F], guitar: [T, T, T, T], bass: [F, F, T, T], drums: [F, F, F, F], ambience: [T, T, T, T] },
-      level: { vocal: 0.85, melody: 0.3, guitar: 0.6, bass: 0.3, drums: 0.05, ambience: 0.5 }, amb: '雨声' },
+      level: { vocal: 0.85, melody: 0.3, guitar: 0.6, bass: 0.3, drums: 0.05, ambience: 0.5 }, amb: 'Rain' },
   ],
 ]
 
@@ -164,8 +165,9 @@ const TOD_TEMPO: Record<TimeOfDay, number> = { day: 1.1, dusk: 1, night: 0.88 }
 
 function titleFrom(seed: SeedCard): string {
   const text = seed.inputs.find((i) => i.kind === 'text')?.text?.trim()
-  if (text) return [...text.split(/[，。,.！!？?\s]/)[0] || text].slice(0, 8).join('') + '的歌'
-  return `${seed.mood}的歌`.slice(0, 12)
+  const first = text?.split(/[，。,.！!？?;:\n]/).map((c) => c.trim()).find(Boolean)
+  if (first) return first.length <= 32 ? first : first.slice(0, 32).replace(/\s+\S*$/, '')
+  return seed.mood ? `A ${seed.mood} song` : 'New song'
 }
 
 /** A full draft song for the pick screen (or the demo song), built from the example song. */
@@ -179,15 +181,15 @@ export function buildMockSong(seed: SeedCard | null, variant: Variant, groupId: 
   if (seed) {
     song.seed = clone(seed); song.key = seed.key; song.meter = seed.meter ?? base.meter
     song.title = titleFrom(seed)
-  } else { song.title = '海边的傍晚' }
+  } else { song.title = 'Seaside at Dusk' }
   const baseTempo = seed?.tempo ?? base.tempo
   song.tempo = Math.round(clamp(baseTempo * variant.tempo * (tod ? TOD_TEMPO[tod] : 1), 40, 220))
   song.bars = 16
   song.sections = [
-    { id: 's-intro', label: '开头', startBar: 0, endBar: 4 },
-    { id: 's-verse', label: '主歌', startBar: 4, endBar: 8 },
-    { id: 's-chorus', label: '副歌', startBar: 8, endBar: 12, lead: variant.lead },
-    { id: 's-outro', label: '结尾', startBar: 12, endBar: 16 },
+    { id: 's-intro', label: 'Intro', startBar: 0, endBar: 4 },
+    { id: 's-verse', label: 'Verse', startBar: 4, endBar: 8 },
+    { id: 's-chorus', label: 'Chorus', startBar: 8, endBar: 12, lead: variant.lead },
+    { id: 's-outro', label: 'Outro', startBar: 12, endBar: 16 },
   ]
   song.locks = []
   song.controls = { brightness: tod === 'day' ? 0.75 : tod === 'night' ? 0.25 : 0.5, complexity: 0.5, density: 0.5 }
@@ -224,12 +226,12 @@ export function buildMockSong(seed: SeedCard | null, variant: Variant, groupId: 
   }
   const card = song.card
   if (photos.length) card.coverAssetId = photos[0]
-  if (!seed) { card.line = '海风把傍晚吹进歌里'; card.message = '在厦门给你写了首歌，回来唱给你听。'; card.city = '厦门' }
+  if (!seed) { card.line = 'The sea wind blows the evening into song'; card.message = 'I wrote you a song by the sea. I will sing it to you when I am back.'; card.city = 'Edinburgh' }
   const parts: Record<string, { level: number; sound: string }> = {}
   for (const t of TRACK_LIST) {
     const inst = instrumentLabel(DEFAULT_CATALOG, t, variant.inst[t])
-    const st = ({ strum: '扫弦', arpeggio: '分解', muted: '闷音', sustain: '长音', brush: '', sticks: '', hand: '' } as Record<string, string>)[t === 'guitar' || t === 'drums' ? variant.style[t] : ''] ?? ''
-    parts[t] = { level: variant.level[t], sound: t === 'ambience' ? variant.amb : `${inst}${st}`.slice(0, 16) }
+    const st = ({ strum: 'strum', arpeggio: 'picked', muted: 'muted', sustain: 'long notes', brush: 'brushes', sticks: 'sticks', hand: '' } as Record<string, string>)[t === 'guitar' || t === 'drums' ? variant.style[t] : ''] ?? ''
+    parts[t] = { level: variant.level[t], sound: t === 'ambience' ? variant.amb : (st ? `${inst}, ${st}` : inst).slice(0, 40) }
   }
   song.candidate = { groupId, index, name: variant.name, tags: variant.tags as never, why: variant.why, ...(tod ? { timeOfDay: tod } : {}), parts }
   delete song.provenance

@@ -42,7 +42,7 @@ export function ScanOverlay() {
           if (text) {
             const ours = await c.handleScan(text)
             if (ours) return
-            c.toast('这不是 FretCase 的卡片', 'info')
+            c.toast('This is not a FretCase card', 'info')
             await new Promise((r) => setTimeout(r, 1500))
           }
         } catch { /* a frame that cannot be read is skipped */ }
@@ -52,13 +52,13 @@ export function ScanOverlay() {
     }
 
     ;(async () => {
-      if (!navigator.mediaDevices?.getUserMedia) { setErr('这个浏览器不能使用相机（需要 HTTPS）'); return }
+      if (!navigator.mediaDevices?.getUserMedia) { setErr('This browser cannot use the camera (it needs HTTPS)'); return }
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
         if (stop) { stream.getTracks().forEach((t) => t.stop()); return }
         if (video.current) { video.current.srcObject = stream; await video.current.play() }
         loop()
-      } catch { setErr('不能使用前置相机，请检查权限，或在下面输入卡片网址') }
+      } catch { setErr('Cannot use the front camera. Check the permission, or type the card address below') }
     })()
 
     return () => { stop = true; clearTimeout(timer); stream?.getTracks().forEach((t) => t.stop()) }
@@ -67,18 +67,18 @@ export function ScanOverlay() {
   return (
     <div className="overlay">
       <div className="scan">
-        <h2>把卡片上的二维码对着屏幕上方的镜头</h2>
+        <h2>Hold the QR code on the card up to the camera above the screen</h2>
         <div className="viewfinder scanvf">
           <video ref={video} playsInline muted />
           {err && <div className="vf-empty">{err}</div>}
           <div className="reticle" />
         </div>
         <div className="hint" hidden={!engine}>{engine ? "" : ""}</div>
-        <form className="row" onSubmit={async (e) => { e.preventDefault(); if (!(await c.handleScan(manual))) c.toast('网址不对，应该像 https://…/s/xxxxxxxxxx', 'info') }}>
-          <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="或者输入卡片上的网址" />
-          <button className="btn small" disabled={!manual.trim()}>载入</button>
+        <form className="row" onSubmit={async (e) => { e.preventDefault(); if (!(await c.handleScan(manual))) c.toast('That address is wrong. It should look like https://…/s/xxxxxxxxxx', 'info') }}>
+          <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="Or type the address on the card" />
+          <button className="btn small" disabled={!manual.trim()}>Load</button>
         </form>
-        <button className="btn ghost" onClick={() => c.store.set({ scanning: false })}>关闭</button>
+        <button className="btn ghost" onClick={() => c.store.set({ scanning: false })}>Close</button>
       </div>
     </div>
   )

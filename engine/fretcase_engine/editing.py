@@ -12,9 +12,68 @@ from fretcase_engine.common import TRACKS, CannotApply, bar_ticks, is_locked, se
 
 Song = Dict[str, Any]
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{5,63}$")
-_CJK = re.compile(r"[㐀-䶿一-鿿豈-﫿]")
+_CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 _LINE_BREAKS = re.compile(r"[\n\r]+")
-_PUNCTUATION = re.compile(r"[\s,，。、；;:：!！?？\"“”‘’'（）()《》〈〉【】\[\]—…~～·\-]+")
+# Hyphens and apostrophes are not separators: a hyphen marks a syllable break, an apostrophe belongs to its word.
+_PUNCTUATION = re.compile(r"[\s,，。、；;:：!！?？\"“”‘（）()《》〈〉【】\[\]—…~～·]+")
+_VOWEL_RUN = re.compile(r"[aeiouy]+")
+_DIGRAPHS = {"ch", "sh", "th", "ph", "wh", "ck", "gh", "qu", "wr", "kn"}
+
+
+def word_syllables(word: str) -> List[str]:
+    """English syllables of one word, as sung one per note: every syllable but the last ends with "-", so
+    ``["walk-", "ing"]`` reads back as "walking". A word written with hyphens ("fi-re") is split exactly there; other
+    words are split by a spelling rule (vowel groups, a silent final e, consonants shared between syllables), which is
+    right for most everyday words and can always be overridden with a hyphen."""
+    if "-" in word:
+        parts = [p for p in word.split("-") if p]
+        return [p + "-" for p in parts[:-1]] + parts[-1:] if parts else []
+    low = word.lower()
+    runs = [(m.start(), m.end()) for m in _VOWEL_RUN.finditer(low)]
+    if runs and runs[0][0] == 0 and low[0] == "y" and runs[0][1] > 1:
+        runs[0] = (1, runs[0][1])  # a leading y is a consonant: "yellow"
+    elif runs and runs[0] == (0, 1) and low[0] == "y" and len(low) > 1:
+        runs = runs[1:]
+    if low.endswith("ing") and len(low) > 3 and low[-4] in "aeiouy" and runs and runs[-1][0] < len(low) - 3:
+        start, end = runs[-1]
+        runs[-1:] = [(start, len(low) - 3), (len(low) - 3, end)]  # "go-ing", "fly-ing"
+    if len(runs) > 1:
+        last = runs[-1]
+        tail = low[last[0]:]
+        before = low[last[0] - 1] if last[0] > 0 else ""
+        silent_e = tail == "e" and not (before == "l" and last[0] >= 2 and low[last[0] - 2] not in "aeiouy")
+        silent_ed = tail == "ed" and before not in "td"
+        silent_es = tail == "es" and before not in "sxzgc" and low[last[0] - 2:last[0]] not in ("ch", "sh")
+        if silent_e or silent_ed or silent_es:
+            runs = runs[:-1]
+    if len(runs) <= 1:
+        return [word]
+    cuts = []
+    for (_, end), (start, _) in zip(runs, runs[1:]):
+        cluster = low[end:start]
+        if len(cluster) <= 1 or cluster in _DIGRAPHS:
+            cuts.append(end)  # open syllable: "o-pen", "fa-ther"
+        elif cluster[-2:] in _DIGRAPHS:
+            cuts.append(start - 2)  # "kit-chen"
+        else:
+            cuts.append(end + 1)  # "win-dow", "lit-tle"
+    if low.endswith("ing") and len(low) > 4:
+        cuts[-1] = len(low) - 3  # "walk-ing", "blow-ing"
+    pieces = [word[a:b] for a, b in zip([0] + cuts, cuts + [len(word)])]
+    return [p + "-" for p in pieces[:-1]] + pieces[-1:]
+
+
+def join_syllables(syllables: Sequence[str]) -> str:
+    """Sung syllables back to text: "walk-" + "ing" -> "walking", words separated by spaces."""
+    out = ""
+    for i, syl in enumerate(syllables):
+        if not syl:
+            continue
+        if out and not out.endswith("-") and not _CJK.match(syl[0]) and not _CJK.match(out[-1]):
+            out += " "
+        out = out[:-1] if out.endswith("-") else out
+        out += syl
+    return out[:-1] if out.endswith("-") else out
 
 
 def add_lock(song: Song, track: str = None, section: str = None) -> None:
@@ -73,8 +132,8 @@ def replace_notes(song: Song, track: str, start: int, end: int, notes: Sequence[
 
 
 def split_syllables(text: str) -> List[List[str]]:
-    """Lines of syllables: one per Chinese character, one per word for other scripts. Only line breaks start a new
-    line; punctuation and spaces are ignored."""
+    """Lines of syllables, one sung per note: English words split into syllables (see ``word_syllables``), one per
+    character for Chinese. Only line breaks start a new line; punctuation and spaces are ignored."""
     lines = []
     for raw in _LINE_BREAKS.split(text):
         syllables: List[str] = []
@@ -83,13 +142,14 @@ def split_syllables(text: str) -> List[List[str]]:
             for ch in token:
                 if _CJK.match(ch):
                     if buf:
-                        syllables.append(buf)
+                        syllables.extend(word_syllables(buf))
                         buf = ""
                     syllables.append(ch)
                 else:
                     buf += ch
+            buf = buf.strip("'’")
             if buf:
-                syllables.append(buf)
+                syllables.extend(word_syllables(buf))
         if syllables:
             lines.append(syllables)
     return lines
@@ -246,7 +306,7 @@ def set_region(song: Song, track: str, section_id: str, play: Any = None, comple
 
 
 def copy_region(song: Song, track: str, section_id: str) -> Song:
-    """"每一段都这样": the region's complexity, intensity and style go to every section of the track."""
+    """"The same in every section": the region's complexity, intensity and style go to every section of the track."""
     if track not in TRACKS:
         raise CannotApply("Unknown track", {"track": track})
     s = copy.deepcopy(song)
@@ -294,7 +354,7 @@ def set_lead(song: Song, section_id: str, track: Any, state: Dict[str, Any]) -> 
 
 
 def shift_register(song: Song, track: str, section_id: str, direction: str) -> Song:
-    """"高一点 / 低一点". Vocal and melody move one scale step, guitar the next voicing up or down the neck, bass one octave."""
+    """"Higher / lower". Vocal and melody move one scale step, guitar the next voicing up or down the neck, bass one octave."""
     from fretcase_engine.arrangement_solver import voicing_candidates_for_symbol
     from fretcase_engine.harmonise import voicing_to_song
 
@@ -353,7 +413,7 @@ def shift_register(song: Song, track: str, section_id: str, direction: str) -> S
 
 
 def revert_melody(song: Song, section_id: str) -> Song:
-    """"用回我哼的": the section's sung line goes back to the seed motif (lyrics stay where the note count is unchanged)."""
+    """"Back to my hum": the section's sung line goes back to the seed motif (lyrics stay where the note count is unchanged)."""
     from fretcase_engine.generate import reharmonise_section
 
     if not (song.get("seed") or {}).get("motif"):

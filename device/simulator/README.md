@@ -20,7 +20,7 @@ python3 -m http.server 8080 --directory device/simulator
 # then open http://localhost:8080/
 ```
 
-With no server address the panel runs offline: every message it would send is built, numbered and shown in the log (marked with a dot) but not sent. Enter an address in the box and press 连接, or open the page with the address in the URL:
+With no server address the panel runs offline: every message it would send is built, numbered and shown in the log (marked with a dot) but not sent. Enter an address in the box and press Connect, or open the page with the address in the URL:
 
 ```
 http://localhost:8080/?ws=wss://<pi>:8443/ws/panel
@@ -30,16 +30,16 @@ A page served over https can only open `wss://` addresses (browsers block `ws://
 
 The last address used is remembered but not connected automatically; use `?ws=` for that.
 
-The 当前界面 menu (采集, 选一首, 打磨, 音轨, 歌词, 做卡) puts the screen name in front of every log line, to make it easy to follow which screen a test run was on. It is a local label only: the panel protocol is unchanged and nothing about the screen is sent.
+The Screen menu (Capture, Pick, Shape, Tracks, Lyrics, Card) puts the screen name in front of every log line, to make it easy to follow which screen a test run was on. It is a local label only: the panel protocol is unchanged and nothing about the screen is sent.
 
 ## Controls
 
 | Control | Input | Message |
 | --- | --- | --- |
 | Platter | Drag around the centre, or scroll the wheel over it (24 detents per turn; clockwise is positive) | `platter.turn` |
-| Knobs 明暗, 简繁, 疏密, 速度 | Drag up or down (up is clockwise), or scroll the wheel | `knob.turn` |
+| Knobs Bright, Complex, Density, Tempo | Drag up or down (up is clockwise), or scroll the wheel | `knob.turn` |
 | Faders | Drag the handle or click the slot | `fader.move` |
-| Round keys 采集, 播放, 撤销, 换一个 | Press and hold with the pointer; keys C, P, U, A | `key` down and up |
+| Round keys Capture, Play, Undo, Another | Press and hold with the pointer; keys C, P, U, A | `key` down and up |
 | Track keys | Press and hold; keys 1 to 6 | `key` down and up |
 
 Lights: `ring.set` colours the 16 lights around the platter (clockwise from the top, brightness applied); `key.light` sets off, on, blink or pulse on a key. As on the hardware, the capture key and the track keys keep their own colour and ignore the colour field. The capture key and track keys start lit, the others start dark.

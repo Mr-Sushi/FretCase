@@ -4,7 +4,7 @@ import { useApp, useSel } from '../app/context'
 import type { CardStyle } from '../types'
 import { CARD_STYLE_ORDER } from '../app/controller'
 
-const STYLE_NAME: Record<CardStyle, string> = { original: '原图', xieyi: '写意', comic: '漫画', ink: '水墨', text: '只有字' }
+const STYLE_NAME: Record<CardStyle, string> = { original: 'Original', xieyi: 'Painterly', comic: 'Comic', ink: 'Ink', text: 'Words only' }
 const STYLE_FILTER: Record<CardStyle, string> = {
   original: 'none', xieyi: 'saturate(1.2) contrast(0.9) sepia(0.25) blur(0.6px)', comic: 'saturate(1.8) contrast(1.5)', ink: 'grayscale(1) contrast(1.4)', text: 'none',
 }
@@ -27,7 +27,7 @@ export function CardView() {
   const [line, setLine] = useState('')
   const [msg, setMsg] = useState('')
   const [city, setCity] = useState('')
-  // The last photo cover, so switching back from 只有字 to a picture style keeps the user's choice.
+  // The last photo cover, so switching back from words-only to a picture style keeps the user's choice.
   const lastCover = useRef<string | undefined>(undefined)
   useEffect(() => { if (song) { setTitle(song.title); setLine(song.card?.line ?? ''); setMsg(song.card?.message ?? ''); setCity(song.card?.city ?? '') } }, [song?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!song?.card) return null
@@ -43,34 +43,34 @@ export function CardView() {
   const pageHref = shareId ? (c.api.mock ? `song.html?mock=1&share=${shareId}` : `/s/${shareId}`) : undefined
   const out = printer?.paper === 'out' || printer?.remaining === 0
   const offline = !!printer && !printer.connected
-  const chip = printer ? (out ? '相纸用完了' : printer.kind === 'dry_run' ? '试印模式，不出纸' : printer.remaining != null ? `相纸还剩 ${printer.remaining} 张` : printer.connected ? '打印机已连接' : '打印机没连上') : '正在看打印机'
+  const chip = printer ? (out ? 'Out of film' : printer.kind === 'dry_run' ? 'Test mode, no film used' : printer.remaining != null ? `${printer.remaining} sheets of film left` : printer.connected ? 'Printer connected' : 'Printer not connected') : 'Checking the printer'
   const styles = (hasPhotos ? CARD_STYLE_ORDER : (['text'] as CardStyle[]))
   return (
     <>
       <StepHeader right={<span className={`pill ${out ? 'bad' : ''}`}>{chip}</span>} />
       <main className="cardscreen">
-        <section aria-label="卡片预览" className="cardprev">
-          <div className="muted14">印出来就是这样（拍立得宽幅相纸，108 × 86 毫米）</div>
+        <section aria-label="Card preview" className="cardprev">
+          <div className="muted14">This is how it prints (Instax Wide film, 108 × 86 mm)</div>
           <div className="paper">
-            {front ? <img src={c.api.assetUrl(front)} alt="卡片预览：上面是风格化的照片，下面的留白里是歌名、一句话、城市和日期，右边是带音符的二维码" /> : <div className="drawing">{busy ? '正在画预览…' : '预览会在这里出现'}</div>}
-            {front && busy && <div className="refresh">更新中…</div>}
+            {front ? <img src={c.api.assetUrl(front)} alt="Card preview: a styled photo on top; below it the song title, a line, the city and the date, with a QR code made of notes on the right" /> : <div className="drawing">{busy ? 'Drawing the preview…' : 'The preview will appear here'}</div>}
+            {front && busy && <div className="refresh">Updating…</div>}
           </div>
           {pageHref && (
             <a href={pageHref} target="_blank" rel="noreferrer" className="pagelink">
-              {cover ? <img src={c.api.assetUrl(cover)} alt="" /> : <span className="pl-ph">字</span>}
-              <span className="grow"><b>扫码打开的歌曲页</b><span className="muted13">这首歌、真实照片、城市和你的留言</span></span>
-              <span className="gold14">看看</span>
+              {cover ? <img src={c.api.assetUrl(cover)} alt="" /> : <span className="pl-ph">Aa</span>}
+              <span className="grow"><b>The song page the QR code opens</b><span className="muted13">The song, the real photos, the city and your message</span></span>
+              <span className="gold14">Look</span>
             </a>
           )}
         </section>
 
-        <aside aria-label="卡片内容" className="cardside">
+        <aside aria-label="Card content" className="cardside">
           {hasPhotos && (
             <div>
-              <div className="b15">封面<span className="muted13 f400">（{photos.length} 张照片里选一张印在卡上，其余在歌曲页）</span></div>
-              <div role="radiogroup" aria-label="封面照片" className="covers">
+              <div className="b15">Cover<span className="muted13 f400"> (one of {photos.length} photos goes on the card; the rest are on the song page)</span></div>
+              <div role="radiogroup" aria-label="Cover photo" className="covers">
                 {photos.map((id, i) => (
-                  <button key={id} type="button" role="radio" aria-checked={cover === id} aria-label={`第 ${i + 1} 张`} className={cover === id ? 'on' : ''} disabled={card.style === 'text'} onClick={() => void c.setCard({ coverAssetId: id })}>
+                  <button key={id} type="button" role="radio" aria-checked={cover === id} aria-label={`Photo ${i + 1}`} className={cover === id ? 'on' : ''} disabled={card.style === 'text'} onClick={() => void c.setCard({ coverAssetId: id })}>
                     <img src={c.api.assetUrl(id)} alt="" />
                   </button>
                 ))}
@@ -78,35 +78,35 @@ export function CardView() {
             </div>
           )}
           <div>
-            <div className="b15">画风</div>
-            <div role="radiogroup" aria-label="画风" className="styles5">
+            <div className="b15">Style</div>
+            <div role="radiogroup" aria-label="Style" className="styles5">
               {styles.map((st) => (
                 <button key={st} type="button" role="radio" aria-checked={card.style === st} className={card.style === st ? 'on' : ''} onClick={() => void c.setCard(st !== 'text' && !cover && lastCover.current ? { style: st, coverAssetId: lastCover.current } : { style: st })}>
-                  {st === 'text' || !thumb ? <span className="sty-ph">字</span> : <img src={c.api.assetUrl(thumb)} alt="" style={{ filter: STYLE_FILTER[st] }} />}
+                  {st === 'text' || !thumb ? <span className="sty-ph">Aa</span> : <img src={c.api.assetUrl(thumb)} alt="" style={{ filter: STYLE_FILTER[st] }} />}
                   <span>{STYLE_NAME[st]}</span>
                 </button>
               ))}
             </div>
           </div>
-          <label className="field"><span className="b15">歌名</span>
+          <label className="field"><span className="b15">Title</span>
             <input value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} onBlur={() => { if (title.trim() && title !== song.title) { void c.setTitle(title.trim()).then(() => c.schedulePreview()) } }} />
           </label>
-          <label className="field"><span className="b15">卡片上的一句</span>
+          <label className="field"><span className="b15">Line on the card</span>
             <input value={line} maxLength={60} onChange={(e) => setLine(e.target.value)} onBlur={() => { if (line !== (card.line ?? '')) void c.setCard({ line }) }} />
           </label>
-          <label className="field"><span className="b15">想对听的人说<span className="muted13 f400">（只在歌曲页显示）</span></span>
+          <label className="field"><span className="b15">A message for the listener<span className="muted13 f400"> (only on the song page)</span></span>
             <textarea value={msg} maxLength={500} onChange={(e) => setMsg(e.target.value)} onBlur={() => { if (msg !== (card.message ?? '')) void c.setCard({ message: msg }) }} />
           </label>
           <div className="toggles">
             <div className="cityrow">
-              <Toggle label={`显示城市和日期（${date}）`} on={!!card.city && card.showCity} disabled={!card.city} onFlip={() => void c.setCard({ showCity: !card.showCity })} />
-              <input aria-label="城市" placeholder="写城市" value={city} maxLength={60} onChange={(e) => setCity(e.target.value)} onBlur={() => { const v = city.trim(); if (v !== (card.city ?? '')) void c.setCard(v ? { city: v, showCity: true } : { showCity: false }) }} />
+              <Toggle label={`Show the city and date (${date})`} on={!!card.city && card.showCity} disabled={!card.city} onFlip={() => void c.setCard({ showCity: !card.showCity })} />
+              <input aria-label="City" placeholder="City" value={city} maxLength={60} onChange={(e) => setCity(e.target.value)} onBlur={() => { const v = city.trim(); if (v !== (card.city ?? '')) void c.setCard(v ? { city: v, showCity: true } : { showCity: false }) }} />
             </div>
-            <Toggle label="歌曲页显示真实照片" on={hasPhotos && card.showPhoto} disabled={!hasPhotos} onFlip={() => void c.setCard({ showPhoto: !card.showPhoto })} />
+            <Toggle label="Show the real photos on the song page" on={hasPhotos && card.showPhoto} disabled={!hasPhotos} onFlip={() => void c.setCard({ showPhoto: !card.showPhoto })} />
           </div>
           <div className="printbox">
-            <button type="button" className="gobtn" disabled={busy || out || offline} onClick={() => void c.printCard()}>印出来</button>
-            <div className="muted13 center">{out ? '相纸用完了，换一盒再印' : offline ? '打印机没连上：打开打印机，靠近箱子' : '约 15 秒，从箱子侧面的出卡口出来；也可以按住箱子上的红键约 1 秒'}</div>
+            <button type="button" className="gobtn" disabled={busy || out || offline} onClick={() => void c.printCard()}>Print</button>
+            <div className="muted13 center">{out ? 'Out of film. Load a new pack to print' : offline ? 'Printer not connected: turn it on and bring it near the case' : 'About 15 s, out of the side slot. Or hold the red key for a second'}</div>
           </div>
         </aside>
       </main>

@@ -53,16 +53,24 @@ def _variant(seed: Dict[str, Any]) -> int:
     return int(hashlib.sha256(_seed_text(seed).encode("utf-8")).hexdigest()[:4], 16) % 3
 
 
+def _clip_words(text: str, limit: int) -> str:
+    """At most ``limit`` characters, cut at a word boundary."""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0]
+    return cut or text[:limit]
+
+
 def song_title(seed: Dict[str, Any]) -> str:
     for item in seed.get("inputs", []):
         if item.get("kind") == "text" and str(item.get("text", "")).strip():
-            # The first clause, without punctuation: "海边的傍晚，风很大" -> "海边的傍晚".
-            first = re.split(r"[，。！？；、,.!?;:：\s]+", str(item["text"]).strip())
-            first = next((c for c in first if c), "")
+            # The first clause, without punctuation: "Seaside at dusk, very windy" -> "Seaside at dusk".
+            first = re.split(r"[，。！？；、,.!?;:：\n]+", str(item["text"]).strip())
+            first = next((c.strip() for c in first if c.strip()), "")
             if first:
-                return first[:12]
+                return _clip_words(first, 32)
     mood = str(seed.get("mood") or "").strip()
-    return (mood + "的歌")[:80] if mood else "新歌"
+    return f"A {mood} song"[:80] if mood else "New song"
 
 
 def _capo_dict(song: Song) -> Optional[Dict[str, Any]]:
