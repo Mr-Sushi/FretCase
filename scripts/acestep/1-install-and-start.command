@@ -32,11 +32,33 @@ echo
 echo "Setting up the Python environment (a few minutes the first time)..."
 uv sync
 
+# The models: fetched here, in the open, so a failed download shows its reason (the server's own
+# on-demand download fails quietly and then reports "checkpoint not found").
+has_weights() { [ -n "$(find "checkpoints/$1" -type f \( -name '*.safetensors' -o -name '*.bin' -o -name '*.pt' -o -name '*.pth' -o -name '*.ckpt' \) -size +1M 2>/dev/null | head -1)" ]; }
+if ! has_weights acestep-v15-turbo || ! has_weights vae || ! has_weights Qwen3-Embedding-0.6B; then
+  echo
+  echo "Downloading the ACE-Step models into $DIR/checkpoints (about 10 GB, shown with progress)..."
+  if ! uv run acestep-download; then
+    echo
+    echo "The model download did not finish. Copy everything in this window and send it to Claude."
+    read -rp "Press Enter to close. " _
+    exit 1
+  fi
+fi
+if ! has_weights acestep-v15-turbo; then
+  echo
+  echo "The download ended but $DIR/checkpoints/acestep-v15-turbo has no model files."
+  echo "Copy everything in this window and send it to Claude."
+  ls -la checkpoints 2>/dev/null
+  read -rp "Press Enter to close. " _
+  exit 1
+fi
+
 export ACESTEP_LM_BACKEND=mlx       # Apple Silicon backend for the language model
 export TOKENIZERS_PARALLELISM=false
 echo
 echo "Starting the ACE-Step API server on http://127.0.0.1:8001"
-echo "The first start downloads the models; wait for the line that says the server is running,"
-echo "then double-click 2-try-cover.command."
+echo "Wait for the line \"Uvicorn running on http://127.0.0.1:8001\", then double-click 2-try-cover.command."
+echo "(The first song takes longer: the models are loaded into memory then.)"
 echo
 exec uv run acestep-api --host 127.0.0.1 --port 8001
