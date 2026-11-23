@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StepHeader } from '../App'
 import { useApp, useSel } from '../app/context'
 import { describeSection } from '../lib/describe'
 import { instrumentLabel } from '../lib/catalog'
 import { sectionLines } from '../lib/lyrics'
-import { formatLong, isLocked, songSeconds, TRACKS } from '../lib/song'
+import { formatLong, isLocked, songSeconds, studioState, TRACKS } from '../lib/song'
 import type { LeadTrack } from '../api'
 import type { TrackId } from '../types'
 import { BarSlider, KnobDial, PauseIcon, PlayIcon } from './ui'
@@ -60,6 +60,7 @@ export function ShapeView() {
             <div className="tiny2">{song.candidate?.name ? `${song.candidate.name} · ` : ''}{formatLong(songSeconds(song))} · {looping ? <button type="button" className="linkbtn inline" onClick={() => c.listenAll()}>Playing one section; tap here for the whole song</button> : 'Tap a section to hear only that section'}</div>
           </div>
           <div className="grow" />
+          <StudioButton />
           <button type="button" className="outline" onClick={() => void c.undo()}>Undo</button>
           <button type="button" className="outline" onClick={() => c.setView('detail')}>Tracks and lyrics</button>
           <button type="button" className="gobtn small" onClick={() => c.setView('card')}>Make card</button>
@@ -128,5 +129,33 @@ export function ShapeView() {
         </div>
       </main>
     </>
+  )
+}
+
+/** The studio version: make it (a music model sings the whole song), wait for it, then play it. */
+function StudioButton() {
+  const { c } = useApp()
+  const song = useSel((s) => s.song)
+  const studio = useSel((s) => s.studio)
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    if (!studio.working) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [studio.working])
+  if (!song) return null
+  const state = studioState(song)
+  if (studio.working) {
+    const secs = Math.max(0, Math.round((now - (studio.startedAt ?? now)) / 1000))
+    return <button type="button" className="studiobtn working" disabled aria-live="polite">Singing… {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</button>
+  }
+  if (state === 'none') return <button type="button" className="studiobtn" title="A music model sings and plays the whole song (needs the internet)" onClick={() => void c.makeStudioVersion()}>✦ Studio version</button>
+  return (
+    <span className="studiogroup">
+      <button type="button" className={`studiobtn ${studio.playing ? 'on' : ''}`} aria-pressed={studio.playing} title={state === 'older' ? 'Made before your last changes' : 'The whole song, sung'} onClick={() => c.toggleStudio()}>
+        {studio.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />} Studio{state === 'older' ? ' (older)' : ''}
+      </button>
+      <button type="button" className="studiobtn again" aria-label="Make the studio version again" title="Make it again from the song as it is now" onClick={() => void c.makeStudioVersion()}>↻</button>
+    </span>
   )
 }

@@ -274,7 +274,7 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .lyr-line input { flex: 1; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); font-size: 18px; padding: 0 12px; }
 .lyr-line input[aria-invalid] { border-color: var(--warn); }
 .lcount { width: 108px; font-size: 12px; line-height: 1.4; white-space: pre-line; flex: none; }
-.lrhyme { width: 64px; font-size: 12px; color: var(--muted); flex: none; }
+.lrhyme { width: 76px; white-space: nowrap; font-size: 12px; color: var(--muted); flex: none; }
 .keepbtn { width: 64px; height: 44px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; color: var(--muted); font-size: 13px; flex: none; }
 .keepbtn.on { background: var(--brass); color: var(--bg); border-color: var(--brass); }
 .empty-note { padding: 40px; text-align: center; color: var(--muted); font-size: 17px; }
@@ -335,3 +335,19 @@ h1, h2 { margin: 0; font-family: var(--serif); }
 .cityrow { display: flex; align-items: center; gap: 8px; }
 .cityrow .switch { flex: 1; min-width: 0; }
 .cityrow input { width: 116px; height: 40px; box-sizing: border-box; border-radius: 10px; border: 1px solid #4A3A2D; background: #241A14; color: #F3E9DA; font: inherit; font-size: 15px; padding: 0 10px; }
+
+/* the studio version button on the shape screen */
+.studiogroup { display: inline-flex; gap: 4px; }
+.studiobtn { display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--brass); background: transparent; color: var(--brass); font: 600 15px/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.studiobtn.on { background: var(--brass); color: var(--bg); }
+.studiobtn.again { padding: 0 12px; font-size: 18px; }
+.studiobtn.working { opacity: .9; cursor: progress; animation: studio-pulse 1.4s ease-in-out infinite; }
+@keyframes studio-pulse { 50% { background: rgba(212, 174, 106, .16); } }
+
+/* singing one's own vocal, on the lyrics page */
+.panel.take { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.take-text { flex: 1; min-width: 0; }
+.take-text h2 { font-size: 17px; margin-bottom: 2px; }
+.takebtn { flex: none; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--red); background: transparent; color: #F08A7C; font: 600 14px/1 var(--sans); cursor: pointer; }
+.takebtn.rec { background: var(--red); color: #fff; animation: studio-pulse 1.4s ease-in-out infinite; }
+.takebtn:disabled { opacity: .5; cursor: default; }

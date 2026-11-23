@@ -26,7 +26,8 @@ from fretcase_engine.generate import CannotApply
 from fretcase_engine.rhythm import load_presets
 from fretcase_engine.song_model import Note, Song as SongModel, VocalNote
 from fretcase_server import cards, hum, lyrics, seed_analysis
-from fretcase_server.adapters import Adapters, Offline, call_with_timeout, make_text_model
+from fretcase_server.adapters import Adapters, LyriaRenderer, ModelError, Offline, call_with_timeout, make_text_model
+from fretcase_server import render as studio
 from fretcase_server.config import VERSION, Settings
 from fretcase_server.errors import ApiError, cannot_apply, invalid_request, not_found, not_implemented, offline_unavailable
 from fretcase_server.panel import PanelHub
@@ -82,8 +83,10 @@ def create_app(
     settings = settings or Settings()
     adapters = adapters or Adapters(
         text_model=make_text_model(settings.text_model_api, settings.text_model_url, settings.text_model_key, settings.text_model_name),
+        renderer=LyriaRenderer(settings.music_model_url, settings.music_model_key, settings.music_model_name),
         timeout_s=settings.http_timeout_s,
     )
+    jobs = studio.Jobs()
     store = Store(settings.data_dir, drafts_ttl_hours=settings.drafts_ttl_hours, **({"clock": clock} if clock else {}))
     hub = PanelHub()
     load_cards = card_module_loader or cards.load_card_module
@@ -131,7 +134,8 @@ def create_app(
     @app.get("/health")
     def health() -> Dict[str, Any]:
         lyrics_on = bool(getattr(adapters.text_model, "configured", False))
-        return {"ok": True, "online": adapters.online(), "version": VERSION, "panel": hub.panel_connected, "lyrics": lyrics_on}
+        render_on = bool(getattr(adapters.renderer, "configured", False))
+        return {"ok": True, "online": adapters.online(), "version": VERSION, "panel": hub.panel_connected, "lyrics": lyrics_on, "render": render_on}
 
     @app.get("/api/catalog")
     def catalog() -> Dict[str, Any]:
@@ -388,7 +392,18 @@ def create_app(
         if name == "setMaster":
             return editing.set_master(song, op.volume, op.space)
         if name == "setVocalTake":
-            raise not_implemented("Using your own vocal recording")
+            vocal = song["tracks"]["vocal"]
+            old = vocal.get("renderAssetId") if vocal.get("source") == "recording" else None
+            if op.assetId is None:
+                vocal["source"] = "none"
+                vocal.pop("renderAssetId", None)
+            else:
+                asset_in_song(song, op.assetId, {"vocal_take"})
+                vocal["source"] = "recording"
+                vocal["renderAssetId"] = op.assetId
+            if old and old != op.assetId:  # the take it replaces leaves the song
+                song["assets"] = [a for a in song["assets"] if a["id"] != old]
+            return song
         raise invalid_request(f"Unknown op {name}")
 
     @app.post("/api/songs/{song_id}/another")
@@ -458,6 +473,61 @@ def create_app(
     @app.get("/api/songs/{song_id}/lyrics/themes")
     def get_lyrics_themes(song_id: str) -> Dict[str, Any]:
         return {"themes": lyrics.themes(store.load_song(song_id))}
+
+    # ------------------------------------------------------------------ the studio version
+    def render_unavailable(reason: str) -> ApiError:
+        err = offline_unavailable("Making the studio version")
+        err.detail = {"reason": reason}
+        return err
+
+    def render_error(exc: BaseException) -> Dict[str, Any]:
+        if isinstance(exc, ApiError):
+            return exc.body()["error"]
+        if isinstance(exc, Offline):
+            return render_unavailable("not_configured").body()["error"]
+        if isinstance(exc, ModelError):
+            return render_unavailable(exc.reason).body()["error"]
+        if isinstance(exc, TimeoutError):
+            return render_unavailable("timeout").body()["error"]
+        return render_unavailable("unreachable").body()["error"]
+
+    @app.post("/api/songs/{song_id}/render", status_code=202)
+    def post_render(song_id: str, body: RevisionRequest) -> Dict[str, Any]:
+        song = store.load_song(song_id)
+        if song["revision"] != body.baseRevision:
+            raise ApiError(409, "revision_conflict", f"Song is at revision {song['revision']}", song=song)
+        if not getattr(adapters.renderer, "configured", False):
+            raise render_unavailable("not_configured")
+        busy = jobs.running("render", song_id)
+        if busy:
+            return {"job": busy}
+        prompt = studio.build_prompt(song)
+        words = studio.lyrics_snapshot(song)
+        images = studio.cover_image(song, lambda a: (store.asset_path(a).read_bytes(), store.asset_info(a)["mime"]))
+        base = song["revision"]
+
+        def work() -> Dict[str, Any]:
+            result = adapters.renderer.render(prompt, images, timeout=settings.render_timeout_s)
+            info: Dict[str, Any] = {"role": "song_render", "mime": result.mime}
+            duration = audio_duration(result.audio, result.mime)
+            if duration:
+                info["durationSec"] = duration
+            asset = store.save_asset(result.audio, info)
+
+            def apply(current: Dict[str, Any], meta: Dict[str, Any]) -> Dict[str, Any]:
+                current["assets"] = [a for a in current["assets"] if a.get("role") != "song_render"]
+                current["assets"].append(store.public_asset(asset))
+                current["render"] = {
+                    "assetId": asset["id"], "model": str(getattr(adapters.renderer, "name", "") or "music model")[:80],
+                    "basedOnRevision": base, "revision": current["revision"] + 1, "createdAt": store.clock(), "lyrics": words,
+                    **({"durationSec": round(duration, 2)} if duration else {}),
+                }
+                return current
+
+            latest = store.load_song(song_id)
+            return changed(song_id, latest["revision"], "render", apply, undoable=False, reset_takes=False)
+
+        return {"job": jobs.start("render", song_id, work, render_error)}
 
     @app.post("/api/songs/{song_id}/vocal")
     def post_vocal(song_id: str) -> Any:
@@ -580,6 +650,9 @@ def create_app(
         allowed.update(c["assetId"] for c in song["tracks"]["ambience"]["clips"])
         if song["tracks"]["vocal"].get("renderAssetId"):
             allowed.add(song["tracks"]["vocal"]["renderAssetId"])
+        if song.get("render"):
+            allowed.add(song["render"]["assetId"])
+            page["render"] = {"audio": base + song["render"]["assetId"], "lyrics": song["render"]["lyrics"]}
         if card.get("frontAssetId"):
             allowed.add(card["frontAssetId"])
         public = {k: v for k, v in song.items() if k not in ("seed", "provenance")}
@@ -624,10 +697,13 @@ def create_app(
         store.save_location({"city": body.city.strip(), "source": "manual"})
         return get_location()
 
-    # ------------------------------------------------------------------ jobs (nothing runs as a job in this release)
+    # ------------------------------------------------------------------ jobs
     @app.get("/api/jobs/{job_id}")
-    def get_job(job_id: str) -> Any:
-        raise not_found("job")
+    def get_job(job_id: str) -> Dict[str, Any]:
+        job = jobs.get(job_id)
+        if job is None:
+            raise not_found("job")
+        return {"job": {k: v for k, v in job.items() if k != "key"}}
 
     # ------------------------------------------------------------------ system
     @app.post("/api/system/shutdown", status_code=202)

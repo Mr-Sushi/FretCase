@@ -3,6 +3,7 @@ import type { Song, SpaceId, TrackId } from '../types'
 import { TRACK_IDS } from '../lib/song'
 import { buildSchedule, diffForPlayback, faderGain, type NoteEvent } from './schedule'
 import { makeVoice, type Voice } from './voices'
+import { ensureSamples } from './samples'
 import { MasterBus } from './master'
 import { renderSong } from './offline'
 import { JogModel, spinUp } from './jog'
@@ -54,6 +55,11 @@ export class PlaybackEngine {
   }
 
   get playing() { return Tone.getTransport().state === 'started' }
+
+  latency(): number {
+    const ctx = Tone.getContext().rawContext as AudioContext & { outputLatency?: number }
+    return (ctx.baseLatency || 0) + (ctx.outputLatency || 0) + Tone.getContext().lookAhead + 0.03
+  }
   get tick() { return Tone.getTransport().ticks }
 
   async load(song: Song) {
@@ -63,7 +69,14 @@ export class PlaybackEngine {
     if (d.tempo || d.rebuild) tr.bpm.value = song.tempo
     this.master.set(song.master.volume, song.master.space)
     if (d.gains || d.rebuild) this.applyGains()
-    if (d.rebuild) this.rebuild()
+    if (d.rebuild) {
+      // Wait a little for the recorded samples; if they come later, build the voices again then.
+      const instruments = TRACK_IDS.filter((t) => t !== 'ambience').map((t) => song.tracks[t].instrument)
+      const ready = await ensureSamples(instruments, 4000)
+      if (this.song !== song) return // a newer song arrived while waiting
+      this.rebuild()
+      if (!ready) void ensureSamples(instruments, 60000).then((ok) => { if (ok && this.song === song) this.rebuild() })
+    }
   }
 
   private applyGains() {

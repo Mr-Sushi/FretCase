@@ -553,3 +553,77 @@ describe('first lyrics after choosing', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 })
+
+describe('the studio version', () => {
+  it('starts a render job, waits for it and takes the song it returns', async () => {
+    const { c, store, api } = ctx
+    await c.openSong(DEMO)
+    const song = store.state.song!
+    const done = { ...song, revision: song.revision + 1, render: { assetId: 'a-render-1', model: 'lyria-3.5', basedOnRevision: song.revision, revision: song.revision + 1, createdAt: song.updatedAt, lyrics: [] } }
+    vi.spyOn(api, 'render').mockResolvedValue({ id: 'job-1', state: 'running' })
+    const job = vi.spyOn(api, 'job').mockResolvedValueOnce({ id: 'job-1', state: 'running' }).mockResolvedValueOnce({ id: 'job-1', state: 'done', result: { song: done } })
+    c.studioPollMs = 1
+    const run = c.makeStudioVersion()
+    expect(store.state.studio.working).toBe(true)
+    await run
+    expect(job).toHaveBeenCalledTimes(2)
+    expect(store.state.song?.render?.assetId).toBe('a-render-1')
+    expect(store.state.studio.working).toBe(false)
+    expect(store.state.toast?.text).toContain('ready')
+    const { studioState } = await import('../lib/song')
+    expect(studioState(store.state.song!)).toBe('current')
+  })
+
+  it('explains a missing music model in plain words', async () => {
+    const { c, store } = ctx
+    await c.openSong(DEMO)
+    await c.makeStudioVersion()
+    expect(store.state.toast?.text).toContain('Gemini API key')
+    expect(store.state.studio.working).toBe(false)
+  })
+
+  it('reports a failed job with its reason', async () => {
+    const { c, store, api } = ctx
+    await c.openSong(DEMO)
+    vi.spyOn(api, 'render').mockResolvedValue({ id: 'job-2', state: 'running' })
+    vi.spyOn(api, 'job').mockResolvedValue({ id: 'job-2', state: 'failed', error: { code: 'offline_unavailable', message: 'x', detail: { reason: 'blocked' } } })
+    c.studioPollMs = 1
+    await c.makeStudioVersion()
+    expect(store.state.toast?.text).toContain('would not make this song')
+  })
+
+  it('calls a render older when the song was edited after it', async () => {
+    const { studioState } = await import('../lib/song')
+    const { store, c } = ctx
+    await c.openSong(DEMO)
+    const s = store.state.song!
+    expect(studioState(s)).toBe('none')
+    const r = { assetId: 'a', model: 'm', basedOnRevision: 3, revision: 4, createdAt: s.updatedAt, lyrics: [] }
+    expect(studioState({ ...s, revision: 4, render: r })).toBe('current')
+    expect(studioState({ ...s, revision: 5, render: r })).toBe('older')
+    expect(studioState({ ...s, revision: 4, render: { ...r, basedOnRevision: 2 } })).toBe('older') // edited while it was being made
+  })
+})
+
+describe('singing one\'s own vocal', () => {
+  it('puts a take on the vocal track and goes back to the guide voice', async () => {
+    const { c, store, api } = ctx
+    await c.openSong(DEMO)
+    const asset = await api.uploadAsset(new Blob(['x'], { type: 'audio/wav' }), 'vocal_take')
+    const cur = store.state.song!
+    c.setSong(await api.edit(cur.id, cur.revision, [{ op: 'setVocalTake', assetId: asset.id }]))
+    expect(store.state.song!.tracks.vocal.source).toBe('recording')
+    expect(store.state.song!.tracks.vocal.renderAssetId).toBe(asset.id)
+    await c.removeVocalTake()
+    expect(store.state.song!.tracks.vocal.source).toBe('none')
+    expect(store.state.song!.assets.some((a) => a.id === asset.id)).toBe(false)
+  })
+
+  it('says so when the browser cannot record', async () => {
+    const { c, store } = ctx
+    await c.openSong(DEMO)
+    await c.recordVocalTake()
+    expect(store.state.toast?.text).toContain('cannot record')
+    expect(store.state.vocalTake).toBeNull()
+  })
+})

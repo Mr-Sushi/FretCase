@@ -35,33 +35,59 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState('')
   const engine = useRef<PlaybackEngine | null>(null)
+  // The studio version (sung by a music model) is what the listener hears first when the song has one.
+  const render = page.render
+  const [mode, setMode] = useState<'studio' | 'arrangement'>(render ? 'studio' : 'arrangement')
+  const studio = useRef<HTMLAudioElement | null>(null)
+  const [studioSecs, setStudioSecs] = useState(0)
+  const [studioTotal, setStudioTotal] = useState(song.render?.durationSec ?? 0)
   useEffect(() => {
     const e = new PlaybackEngine(assetUrl, { onPosition: setTick, onEnd: () => setPlaying(false) })
     engine.current = e
     void e.load(song)
     return () => e.dispose()
   }, [song, assetUrl])
+  useEffect(() => {
+    if (!render) return
+    const a = new Audio(render.audio)
+    a.preload = 'metadata'
+    a.ontimeupdate = () => setStudioSecs(a.currentTime)
+    a.onloadedmetadata = () => { if (Number.isFinite(a.duration)) setStudioTotal(a.duration) }
+    a.onended = () => setPlaying(false)
+    studio.current = a
+    return () => { a.pause(); studio.current = null }
+  }, [render])
 
-  const total = songSeconds(song)
-  const secs = ticksToSeconds(tick, song.tempo)
+  const isStudio = mode === 'studio' && !!render
+  const total = isStudio ? studioTotal || 1 : songSeconds(song)
+  const secs = isStudio ? studioSecs : ticksToSeconds(tick, song.tempo)
+  const stopAll = () => { engine.current?.stop(); studio.current?.pause(); setPlaying(false) }
   const toggle = async () => {
+    if (playing) { stopAll(); return }
+    if (isStudio) { try { await studio.current?.play(); setPlaying(true) } catch { flash('This phone would not play the song. Tap play again') } return }
     const e = engine.current
     if (!e) return
-    if (playing) { e.stop(); setPlaying(false) } else { await e.play(); setPlaying(true) }
+    await e.play(); setPlaying(true)
   }
-  const seek = (frac: number) => { engine.current?.seek(Math.round(frac * (total / 60) * song.tempo * 480)) }
-  const curLine = currentLineIndex(model, tick)
-  const curSection = currentSectionIndex(model, tick)
+  const seek = (frac: number) => {
+    if (isStudio) { if (studio.current && studioTotal) studio.current.currentTime = frac * studioTotal; return }
+    engine.current?.seek(Math.round(frac * (total / 60) * song.tempo * 480))
+  }
+  const switchMode = (m: 'studio' | 'arrangement') => { if (m !== mode) { stopAll(); setMode(m) } }
+  const curLine = isStudio ? -1 : currentLineIndex(model, tick)
+  const curSection = isStudio ? -1 : currentSectionIndex(model, tick)
+  const shownLyrics = isStudio && render ? render.lyrics.map((g) => ({ section: g.section, lines: g.lines.map((text) => ({ text })) })) : model.lyrics
   const flash = (t: string) => { setNote(t); setTimeout(() => setNote(''), 3000) }
 
   const save = async () => {
     if (saving) return
     setSaving(true)
     try {
-      const wav = encodeWav(await renderSong(song, assetUrl))
+      const file = isStudio && render ? await (await fetch(render.audio)).blob() : encodeWav(await renderSong(song, assetUrl))
+      const ext = file.type.includes('wav') ? 'wav' : file.type.includes('mpeg') || file.type.includes('mp3') ? 'mp3' : 'wav'
       const a = document.createElement('a')
-      a.href = URL.createObjectURL(wav)
-      a.download = `${model.title || 'FretCase'}.wav`
+      a.href = URL.createObjectURL(file)
+      a.download = `${model.title || 'FretCase'}.${ext}`
       document.body.appendChild(a); a.click(); a.remove()
       setTimeout(() => URL.revokeObjectURL(a.href), 10000)
       flash('Saved. You will find it in Downloads')
@@ -97,6 +123,12 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
         </div>
 
         <section aria-label="Player" className="sp-player">
+          {render && (
+            <div role="group" aria-label="Which version" className="sp-modes">
+              <button type="button" aria-pressed={isStudio} className={isStudio ? 'on' : ''} onClick={() => switchMode('studio')}>Sung</button>
+              <button type="button" aria-pressed={!isStudio} className={!isStudio ? 'on' : ''} onClick={() => switchMode('arrangement')}>Arrangement</button>
+            </div>
+          )}
           <div className="sp-row">
             <button type="button" className="sp-play" aria-label={playing ? 'Pause' : 'Play'} onClick={() => void toggle()}>
               {playing ? <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><rect x="3" y="2" width="4" height="14" fill="#1C1410" /><rect x="11" y="2" width="4" height="14" fill="#1C1410" /></svg>
@@ -107,14 +139,14 @@ function Ready({ page, song, assetUrl }: { page: SharePage; song: Song; assetUrl
               <div className="sp-times"><span>{formatClock(secs)}</span><span>{formatClock(total)}</span></div>
             </div>
           </div>
-          <div className="sp-secs" style={{ gridTemplateColumns: model.sections.map((s) => `${s.endTick - s.startTick}fr`).join(' ') }}>
+          {!isStudio && <div className="sp-secs" style={{ gridTemplateColumns: model.sections.map((s) => `${s.endTick - s.startTick}fr`).join(' ') }}>
             {model.sections.map((s, i) => <span key={s.id} className={i === curSection ? 'on' : ''}>{s.label}</span>)}
-          </div>
+          </div>}
         </section>
 
-        {model.lyrics.length > 0 && (
+        {shownLyrics.length > 0 && (
           <section aria-label="Lyrics" className="sp-lyrics">
-            {model.lyrics.flatMap((g) => g.lines).map((l, i) => <p key={i} className={i === curLine ? 'now' : i < curLine ? 'past' : ''}>{l.text}</p>)}
+            {shownLyrics.flatMap((g) => g.lines).map((l, i) => <p key={i} className={i === curLine ? 'now' : i < curLine ? 'past' : ''}>{l.text}</p>)}
           </section>
         )}
 

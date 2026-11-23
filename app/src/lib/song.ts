@@ -109,3 +109,13 @@ export function previewStartTick(song: Song): number {
   if (lead) return lead.startBar * bt
   return Math.floor(song.bars / 2) * bt
 }
+
+/**
+ * The studio version against the song: none yet, current (nothing changed since it was made), or older (the song
+ * was edited after it, so it no longer matches).
+ */
+export function studioState(song: Song): 'none' | 'current' | 'older' {
+  const r = song.render
+  if (!r) return 'none'
+  return song.revision === r.revision && r.basedOnRevision === r.revision - 1 ? 'current' : 'older'
+}

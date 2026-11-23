@@ -28,11 +28,14 @@ export type EditOp =
   | { op: 'shiftRegister'; track: TrackId; section: string; direction: 'up' | 'down' }
   | { op: 'revertMelody'; section: string }
   | { op: 'setMaster'; volume?: number; space?: SpaceId }
+  | { op: 'setVocalTake'; assetId?: string | null }
 
 export type AssetRole = 'hum' | 'ambience' | 'photo' | 'vocal_take'
 
-/** `lyrics`: whether the server has a text model configured for writing lyrics. */
-export interface Health { ok: boolean; online: boolean; version: string; panel: boolean; lyrics?: boolean }
+/** `lyrics`: whether the server has a text model configured for writing lyrics; `render`: a music model for the studio version. */
+export interface Health { ok: boolean; online: boolean; version: string; panel: boolean; lyrics?: boolean; render?: boolean }
+/** A background job (GET /api/jobs/{id}); a render's result is `{ song }`. */
+export interface Job { id: string; kind?: string; state: 'running' | 'done' | 'failed'; result?: { song?: Song }; error?: { code: string; message: string; detail?: Record<string, unknown> } }
 export interface SongListItem { id: string; title: string; updatedAt: string; card?: unknown }
 export interface PrinterStatus { kind: 'instax' | 'thermal' | 'dry_run'; connected: boolean; paper: 'ok' | 'out' | 'unknown'; remaining: number | null }
 export interface LyricsRequest { themes?: string[]; tone?: 'plain' | 'subtle' | 'playful'; rhyme?: boolean }
@@ -73,6 +76,9 @@ export interface Api {
   lyricsAlternatives(id: string, req: LyricsRequest & { section: string; line: number }): Promise<LyricsAlternative[]>
   lyricsThemes(id: string): Promise<LyricsTheme[]>
   cardPreview(id: string, baseRevision: number): Promise<Song>
+  /** Starts the studio version (202 with a job). */
+  render(id: string, baseRevision: number): Promise<Job>
+  job(id: string): Promise<Job>
   cardPrint(id: string, baseRevision: number): Promise<Song>
   printer(): Promise<PrinterStatus>
   resolveShare(shareId: string): Promise<string>

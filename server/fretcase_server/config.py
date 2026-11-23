@@ -50,4 +50,9 @@ class Settings:
     text_model_name: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_NAME"))
     # "anthropic" | "openai"; None picks by the key (sk-ant-... is Anthropic)
     text_model_api: Optional[str] = field(default_factory=lambda: _env("FRETCASE_TEXT_MODEL_API"))
+    # music model for the studio version (Google Lyria via the Gemini API); GEMINI_API_KEY works too
+    music_model_key: Optional[str] = field(default_factory=lambda: _env("FRETCASE_MUSIC_MODEL_KEY") or _env("GEMINI_API_KEY"))
+    music_model_name: Optional[str] = field(default_factory=lambda: _env("FRETCASE_MUSIC_MODEL_NAME"))
+    music_model_url: Optional[str] = field(default_factory=lambda: _env("FRETCASE_MUSIC_MODEL_URL"))
+    render_timeout_s: float = field(default_factory=lambda: float(os.environ.get("FRETCASE_RENDER_TIMEOUT", "240")))
     drafts_ttl_hours: float = 24.0

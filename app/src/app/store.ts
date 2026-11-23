@@ -74,6 +74,12 @@ export interface AppState {
   netOnline: boolean
   /** The server has a text model for lyrics (GET /health `lyrics`). */
   lyricsAvailable: boolean
+  /** The server has a music model for the studio version (GET /health `render`). */
+  renderAvailable: boolean
+  /** The studio version: being made (since `startedAt`), or playing. */
+  studio: { working: boolean; startedAt: number | null; playing: boolean }
+  /** Singing one's own vocal over the song: recording it, then saving it. */
+  vocalTake: null | 'recording' | 'saving'
   panelConnected: boolean
   panelAttached: boolean
   catalog: Catalog
@@ -91,7 +97,7 @@ export const initialState = (mock: boolean): AppState => ({
   view: 'capture', song: null, seed: null, inputs: [], captureMode: 'photo', photoSel: null, recentSongs: [],
   candidates: null, timeOfDay: 'dusk', focus: 0, preview: null,
   selectedTrack: null, editSection: null, looping: false, solo: null, takes: {}, lyrics: initialLyrics(), printer: null, cardBusy: false,
-  positionTick: 0, playing: false, recording: null, busy: null, toast: null, serverOnline: null, netOnline: false, lyricsAvailable: false,
+  positionTick: 0, playing: false, recording: null, busy: null, toast: null, serverOnline: null, netOnline: false, lyricsAvailable: false, renderAvailable: false, studio: { working: false, startedAt: null, playing: false }, vocalTake: null,
   panelConnected: false, panelAttached: false, catalog: DEFAULT_CATALOG, city: '', previewSig: null, scanning: false, showSongs: false, mock,
 })
 

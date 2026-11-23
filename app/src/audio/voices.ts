@@ -2,6 +2,7 @@ import * as Tone from 'tone'
 import type { TrackId } from '../types'
 import { midiToHz } from '../lib/song'
 import type { NoteEvent } from './schedule'
+import { samplesFor } from './samples'
 
 export interface Voice { trigger(n: NoteEvent, time: number, durSec: number): void; dispose(): void }
 
@@ -15,12 +16,36 @@ function monoClock(): (time: number) => number {
   return (time) => { const t = Math.max(time, last + 0.001); last = t; return t }
 }
 
+/** How each sampled instrument is played: envelope and level (the files are loudness-normalised). */
+const SAMPLED: Record<string, { attack?: number; release: number; gain: number; maxSec?: number }> = {
+  'synth-male': { attack: 0.06, release: 0.35, gain: 1 },
+  'synth-female': { attack: 0.05, release: 0.35, gain: 1 },
+  'synth-soft': { attack: 0.15, release: 0.5, gain: -3 },
+  piano: { release: 1.0, gain: 0 },
+  harmonica: { attack: 0.02, release: 0.25, gain: -3 },
+  whistle: { attack: 0.03, release: 0.25, gain: -5 },
+  flute: { attack: 0.03, release: 0.3, gain: -3 },
+  steel: { release: 0.7, gain: -11 },
+  nylon: { release: 0.7, gain: -10 },
+  'electric-clean': { release: 0.6, gain: -12 },
+  ukulele: { release: 0.25, gain: -10, maxSec: 0.6 },
+  'finger-bass': { release: 0.2, gain: -1 },
+  'upright-bass': { release: 0.25, gain: 0 },
+  'synth-bass': { release: 0.15, gain: -5 },
+}
+/** Drum hits: a General MIDI key that has no file of its own plays the nearest kind, at its own level. */
+const DRUM_KEY: Record<number, number> = { 35: 36, 37: 38, 39: 38, 40: 38, 41: 36, 43: 36, 44: 42, 45: 38, 47: 38, 48: 38, 49: 51, 50: 38, 52: 51, 53: 51, 55: 51, 57: 51, 59: 51 }
+const DRUM_LEVEL: Record<number, number> = { 36: 1, 38: 0.8, 42: 0.32, 46: 0.38, 51: 0.32 }
+
 /**
- * Voices for the catalogue's instrument ids. No sample files are bundled yet, so every id maps to a synth patch;
- * an unknown id gets the track's default patch. Works in a live or an offline Tone context.
+ * Voices for the catalogue's instrument ids. An instrument whose samples are loaded (samples.ts) plays them;
+ * otherwise, and for an unknown id, it falls back to a synth patch. Works in a live or an offline Tone context.
  */
 export function makeVoice(track: TrackId, instrument: string, out: Tone.ToneAudioNode): Voice {
   const connect = <T extends Tone.ToneAudioNode>(n: T): T => { n.connect(out); return n }
+  const set = samplesFor(instrument)
+  if (set?.kind === 'drums' && track === 'drums') return sampledDrums(set.buffers, connect)
+  if (set?.kind === 'pitched' && track !== 'drums' && track !== 'ambience') return sampledVoice(instrument, set.buffers, connect)
   if (track === 'drums') return drumVoice(instrument, connect)
   let synth: Tone.PolySynth | Tone.MonoSynth
   let gain = 0
@@ -77,5 +102,34 @@ function drumVoice(instrument: string, connect: <T extends Tone.ToneAudioNode>(n
       else hat.triggerAttackRelease(0.05, hatAt(time), v)
     },
     dispose() { kick.dispose(); snare.dispose(); hat.dispose() },
+  }
+}
+
+function sampledVoice(instrument: string, buffers: Map<string, AudioBuffer>, connect: <T extends Tone.ToneAudioNode>(n: T) => T): Voice {
+  const cfg = SAMPLED[instrument] ?? { release: 0.4, gain: -9 }
+  const sampler = connect(new Tone.Sampler({ urls: Object.fromEntries(buffers) as never, attack: cfg.attack ?? 0, release: cfg.release }))
+  sampler.volume.value = cfg.gain
+  return {
+    trigger(n, time, durSec) {
+      const d = Math.max(0.05, cfg.maxSec ? Math.min(durSec, cfg.maxSec) : durSec)
+      sampler.triggerAttackRelease(midiToHz(n.pitch), d, time, n.velocity / 127)
+    },
+    dispose() { sampler.dispose() },
+  }
+}
+
+function sampledDrums(buffers: Map<string, AudioBuffer>, connect: <T extends Tone.ToneAudioNode>(n: T) => T): Voice {
+  const urls: Record<string, AudioBuffer> = {}
+  for (const [key, buf] of buffers) urls[Tone.Frequency(+key, 'midi').toNote()] = buf
+  const sampler = connect(new Tone.Sampler({ urls: urls as never, release: 0.4 }))
+  sampler.volume.value = 6
+  return {
+    trigger(n, time) {
+      const key = buffers.has(String(n.pitch)) ? n.pitch : (DRUM_KEY[n.pitch] ?? 42)
+      if (!buffers.has(String(key))) return
+      const v = Math.min(1, (n.velocity / 127) * (DRUM_LEVEL[key] ?? 0.5))
+      sampler.triggerAttackRelease(Tone.Frequency(key, 'midi').toNote(), 1.5, time, v)
+    },
+    dispose() { sampler.dispose() },
   }
 }

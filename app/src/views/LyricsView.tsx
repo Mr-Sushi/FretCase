@@ -92,6 +92,7 @@ export function LyricsView() {
             {ui.offline && <div className="offnote" role="status">{lyricsFailureText(ui.offlineReason) ?? 'Other wordings need the internet, and there is no connection now'}. You can still edit the words on the left.</div>}
           </section>
 
+          <TakePanel />
           <section aria-label="Rewrite direction" className="panel dir">
             <h2>What this song is about</h2>
             <div className="chips">
@@ -111,5 +112,27 @@ export function LyricsView() {
         </aside>
       </main>
     </>
+  )
+}
+
+/** Singing one's own vocal over the song: it then plays instead of the guide voice. */
+function TakePanel() {
+  const { c } = useApp()
+  const take = useSel((s) => s.vocalTake)
+  const hasTake = useSel((s) => s.song?.tracks.vocal.source === 'recording')
+  const tick = useSel((s) => s.positionTick)
+  const song = useSel((s) => s.song)
+  const secs = song && take === 'recording' ? Math.round((tick / 480) * (60 / song.tempo)) : 0
+  return (
+    <section aria-label="Sing it yourself" className="panel take">
+      <div className="take-text">
+        <h2>Sing it yourself</h2>
+        <div className="muted13">{take === 'recording' ? `Recording… ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} · sing along with the guide voice` : take === 'saving' ? 'Saving your vocal…' : hasTake ? 'Your own vocal plays instead of the guide voice' : 'Record your voice over the whole song; the guide voice plays so you can follow'}</div>
+      </div>
+      {take === 'recording'
+        ? <button type="button" className="takebtn rec" onClick={() => void c.finishVocalTake()}>■ Stop</button>
+        : <button type="button" className="takebtn" disabled={take === 'saving'} onClick={() => void c.recordVocalTake()}>● {hasTake ? 'Again' : 'Record'}</button>}
+      {hasTake && !take && <button type="button" className="linkbtn" onClick={() => void c.removeVocalTake()}>Guide voice</button>}
+    </section>
   )
 }

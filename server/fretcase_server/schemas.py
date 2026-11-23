@@ -156,7 +156,7 @@ class SetMaster(_Op):
 
 class SetVocalTake(_Op):
     op: Literal["setVocalTake"]
-    assetId: str
+    assetId: Optional[str] = None  # None goes back to the guide voice
 
 
 Op = Annotated[

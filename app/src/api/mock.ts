@@ -2,7 +2,7 @@ import type { Catalog, Note, SeedCard, SeedInput, SharePage, Song, TrackId } fro
 import { DEFAULT_CATALOG } from '../lib/catalog'
 import { clamp, hasExactLock, isLocked, sectionRange, snapToKey } from '../lib/song'
 import { sectionLines, syllables } from '../lib/lyrics'
-import { ApiError, type Api, type AssetRole, type CandidateRequest, type EditOp, type Health, type LyricsAlternative, type LyricsRequest, type LyricsRewriteRequest, type LyricsTheme, type PrinterStatus, type SongListItem } from './types'
+import { ApiError, type Api, type AssetRole, type CandidateRequest, type EditOp, type Health, type Job, type LyricsAlternative, type LyricsRequest, type LyricsRewriteRequest, type LyricsTheme, type PrinterStatus, type SongListItem } from './types'
 import { MOCK_POOL, VARIANT_SETS, buildMockSong, clone, regenerateUnlocked, replaceTrackSection, rid } from './mockSong'
 
 export const MOCK_CATALOG: Catalog = clone(DEFAULT_CATALOG)
@@ -231,6 +231,15 @@ export class MockApi implements Api {
     return out
   }
 
+  /** The demo has no music model, so the studio version is unavailable here, as on a server without a key. */
+  async render(id: string, baseRevision: number): Promise<Job> {
+    await this.tick()
+    const st = this.get(id)
+    this.checkRev(st, baseRevision)
+    throw new ApiError('offline_unavailable', 'Making the studio version needs a music model', 503, undefined, { reason: 'not_configured' })
+  }
+  async job(_id: string): Promise<Job> { throw new ApiError('not_found', 'No such job', 404) }
+
   async cardPreview(id: string, baseRevision: number): Promise<Song> {
     await this.tick()
     const st = this.get(id)
@@ -432,6 +441,16 @@ export class MockApi implements Api {
       case 'setMaster': {
         if (op.volume !== undefined) s.master.volume = clamp(op.volume, 0, 1)
         if (op.space) s.master.space = op.space
+        return
+      }
+      case 'setVocalTake': {
+        const v = s.tracks.vocal
+        const old = v.source === 'recording' ? v.renderAssetId : undefined
+        if (op.assetId) {
+          v.source = 'recording'; v.renderAssetId = op.assetId
+          if (!s.assets.some((a) => a.id === op.assetId)) s.assets.push({ id: op.assetId, role: 'vocal_take', mime: 'audio/wav' })
+        } else { v.source = 'none'; delete v.renderAssetId }
+        if (old && old !== op.assetId) s.assets = s.assets.filter((a) => a.id !== old)
         return
       }
     }

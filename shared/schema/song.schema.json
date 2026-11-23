@@ -64,6 +64,7 @@
       "description": "Recordings and images this song refers to. Files are served at /api/assets/{id}."
     },
     "card": { "$ref": "#/$defs/card" },
+    "render": { "$ref": "#/$defs/render" },
     "provenance": { "$ref": "#/$defs/provenance" }
   },
   "$defs": {
@@ -327,7 +328,7 @@
         "id": { "$ref": "#/$defs/id" },
         "role": {
           "type": "string",
-          "enum": ["hum", "ambience", "photo", "vocal_take", "vocal_render", "card_print"]
+          "enum": ["hum", "ambience", "photo", "vocal_take", "vocal_render", "song_render", "card_print"]
         },
         "mime": { "type": "string" },
         "durationSec": { "type": "number", "minimum": 0 },
@@ -400,6 +401,33 @@
           "type": "string",
           "enum": ["model", "offline"],
           "description": "Whether a model or the offline rules produced this card."
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A finished, sung recording of the whole song made by a music model (the studio version). It is audio only: editing the song does not change it, so the app compares revisions and offers to make it again.",
+      "required": ["assetId", "model", "basedOnRevision", "revision", "createdAt", "lyrics"],
+      "properties": {
+        "assetId": { "$ref": "#/$defs/id", "description": "The audio (role song_render)." },
+        "model": { "type": "string", "maxLength": 80, "description": "The model that made it, e.g. lyria-3.5." },
+        "basedOnRevision": { "type": "integer", "minimum": 0, "description": "The song revision it was made from." },
+        "revision": { "type": "integer", "minimum": 0, "description": "The revision that stored it. The render is current while the song is still at this revision and basedOnRevision is the one before it." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "durationSec": { "type": "number", "minimum": 0 },
+        "lyrics": {
+          "type": "array",
+          "description": "The lyrics it was asked to sing, by section, as they were when it was made.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["section", "lines"],
+            "properties": {
+              "section": { "type": "string", "maxLength": 40 },
+              "lines": { "type": "array", "items": { "type": "string", "maxLength": 200 } }
+            }
+          }
         }
       }
     },

@@ -3,7 +3,8 @@ export class MicRecorder {
   private rec: MediaRecorder | null = null
   private stream: MediaStream | null = null
   private chunks: Blob[] = []
-  private startedAt = 0
+  /** performance.now() when the recording started. */
+  startedAt = 0
 
   static supported() { return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined' }
 

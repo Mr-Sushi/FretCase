@@ -9,7 +9,7 @@ from fretcase_engine.common import bar_ticks, is_locked
 
 def test_health_and_catalog(client):
     health = client.get("/health").json()
-    assert health == {"ok": True, "online": False, "version": "0.1.0", "panel": False, "lyrics": False}
+    assert health == {"ok": True, "online": False, "version": "0.1.0", "panel": False, "lyrics": False, "render": False}
     catalog = client.get("/api/catalog").json()
     assert set(catalog["instruments"]) == {"vocal", "melody", "guitar", "bass", "drums", "ambience"}
     assert len(catalog["rhythmPresets"]["presets"]) == 30
@@ -253,7 +253,7 @@ def test_v2_endpoints_answer_501_and_jobs_are_unknown(api):
     for path in ("vocal", "share"):
         r = api.c.post(f"/api/songs/{song['id']}/{path}", json={"baseRevision": 0})
         assert r.status_code == 501 and r.json()["error"]["code"] == "not_implemented", path
-    assert api.edit(song, {"op": "setVocalTake", "assetId": "a-whatever-1"}, expect=501)["code"] == "not_implemented"
+    assert api.edit(song, {"op": "setVocalTake", "assetId": "a-whatever-1"}, expect=404)["code"] == "not_found"  # takes work now; an unknown asset does not
     assert api.c.get("/api/jobs/job-nothing").status_code == 404
 
 

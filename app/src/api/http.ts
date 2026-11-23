@@ -1,5 +1,5 @@
 import type { Catalog, SeedCard, SeedInput, SharePage, Song, TrackId } from '../types'
-import { ApiError, type Api, type AssetRole, type CandidateRequest, type EditOp, type Health, type LyricsAlternative, type LyricsRequest, type LyricsRewriteRequest, type LyricsTheme, type PrinterStatus, type SongListItem } from './types'
+import { ApiError, type Api, type AssetRole, type CandidateRequest, type EditOp, type Health, type Job, type LyricsAlternative, type LyricsRequest, type LyricsRewriteRequest, type LyricsTheme, type PrinterStatus, type SongListItem } from './types'
 
 const TIMEOUT_MS = 8000
 
@@ -64,6 +64,8 @@ export class HttpApi implements Api {
     return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/rehum`, { baseRevision, section, assetId }, undefined, 60000)).song
   }
   async undo(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/undo`, { baseRevision })).song }
+  async render(id: string, baseRevision: number) { return (await this.request<{ job: Job }>('POST', `/api/songs/${id}/render`, { baseRevision }, undefined, 30000)).job }
+  async job(id: string) { return (await this.request<{ job: Job }>('GET', `/api/jobs/${id}`)).job }
   async cardPreview(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/preview`, { baseRevision }, undefined, 30000)).song }
   async cardPrint(id: string, baseRevision: number) { return (await this.request<{ song: Song }>('POST', `/api/songs/${id}/card/print`, { baseRevision }, undefined, 90000)).song }
   async lyricsRewrite(id: string, baseRevision: number, req: LyricsRewriteRequest) {

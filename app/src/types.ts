@@ -43,4 +43,6 @@ export interface SharePage {
   photos: string[]
   card?: string
   lyrics: { section: string; lines: string[] }[]
+  /** The studio version, when the song has one: its audio and the lyrics it sang. */
+  render?: { audio: string; lyrics: { section: string; lines: string[] }[] }
 }

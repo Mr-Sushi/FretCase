@@ -254,6 +254,7 @@ class Role(StrEnum):
     photo = "photo"
     vocal_take = "vocal_take"
     vocal_render = "vocal_render"
+    song_render = "song_render"
     card_print = "card_print"
 
 
@@ -350,6 +351,52 @@ class SeedCard(BaseModel):
         Source1 | None,
         Field(description="Whether a model or the offline rules produced this card."),
     ] = None
+
+
+class Line(RootModel[str]):
+    root: Annotated[str, Field(max_length=200)]
+
+
+class Lyric(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    section: Annotated[str, Field(max_length=40)]
+    lines: list[Line]
+
+
+class Render(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    assetId: Annotated[
+        str,
+        Field(
+            description="The audio (role song_render).",
+            pattern="^[a-z0-9][a-z0-9-]{5,63}$",
+        ),
+    ]
+    model: Annotated[
+        str, Field(description="The model that made it, e.g. lyria-3.5.", max_length=80)
+    ]
+    basedOnRevision: Annotated[
+        int, Field(description="The song revision it was made from.", ge=0)
+    ]
+    revision: Annotated[
+        int,
+        Field(
+            description="The revision that stored it. The render is current while the song is still at this revision and basedOnRevision is the one before it.",
+            ge=0,
+        ),
+    ]
+    createdAt: AwareDatetime
+    durationSec: Annotated[float | None, Field(ge=0.0)] = None
+    lyrics: Annotated[
+        list[Lyric],
+        Field(
+            description="The lyrics it was asked to sing, by section, as they were when it was made."
+        ),
+    ]
 
 
 class Style(StrEnum):
@@ -704,4 +751,5 @@ class Song(BaseModel):
         ),
     ]
     card: Card | None = None
+    render: Render | None = None
     provenance: Provenance | None = None

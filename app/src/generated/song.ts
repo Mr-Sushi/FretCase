@@ -166,6 +166,7 @@ export interface Song {
    */
   assets: Asset[];
   card?: Card;
+  render?: Render;
   provenance?: Provenance;
 }
 /**
@@ -565,7 +566,7 @@ export interface Lock {
  */
 export interface Asset {
   id: Id;
-  role: "hum" | "ambience" | "photo" | "vocal_take" | "vocal_render" | "card_print";
+  role: "hum" | "ambience" | "photo" | "vocal_take" | "vocal_render" | "song_render" | "card_print";
   mime: string;
   durationSec?: number;
   width?: number;
@@ -631,6 +632,39 @@ export interface Card {
     state: "reserved" | "queued" | "uploaded" | "failed";
   };
   printedAt?: string;
+}
+/**
+ * A finished, sung recording of the whole song made by a music model (the studio version). It is audio only: editing the song does not change it, so the app compares revisions and offers to make it again.
+ *
+ * This interface was referenced by `Song`'s JSON-Schema
+ * via the `definition` "render".
+ */
+export interface Render {
+  /**
+   * The audio (role song_render).
+   */
+  assetId: string;
+  /**
+   * The model that made it, e.g. lyria-3.5.
+   */
+  model: string;
+  /**
+   * The song revision it was made from.
+   */
+  basedOnRevision: number;
+  /**
+   * The revision that stored it. The render is current while the song is still at this revision and basedOnRevision is the one before it.
+   */
+  revision: number;
+  createdAt: string;
+  durationSec?: number;
+  /**
+   * The lyrics it was asked to sing, by section, as they were when it was made.
+   */
+  lyrics: {
+    section: string;
+    lines: string[];
+  }[];
 }
 /**
  * Versions that produced this revision, for the study log. Free-form beyond the listed keys.

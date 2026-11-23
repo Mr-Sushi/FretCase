@@ -39,7 +39,7 @@ Every call to an outside service has a timeout (default 8 s) and falls back to t
 
 ### Long operations
 
-Operations that may take longer than about 2 s (vocal synthesis, whole-song rendering, upload) return `202` with a job. Everything else answers synchronously.
+Operations that may take longer than about 2 s (vocal synthesis, whole-song rendering, upload) return `202` with a job. Jobs are kept in memory, so a server restart forgets running ones. Everything else answers synchronously.
 
 ```json
 { "job": { "id": "job-7f3a2c", "state": "running" } }
@@ -52,10 +52,10 @@ Operations that may take longer than about 2 s (vocal synthesis, whole-song rend
 ### `GET /health`
 
 ```json
-{ "ok": true, "online": true, "version": "0.1.0", "panel": true, "lyrics": true }
+{ "ok": true, "online": true, "version": "0.1.0", "panel": true, "lyrics": true, "render": true }
 ```
 
-`online`: whether the server reached the internet in the last 30 s (a model call worked, or a quick connection to the model host did; checked at most every 30 s). `panel`: whether a panel is connected to `/ws/panel`. `lyrics`: whether a text model is configured for writing lyrics (`FRETCASE_TEXT_MODEL_KEY` is set); it says nothing about whether the network is up.
+`online`: whether the server reached the internet in the last 30 s (a model call worked, or a quick connection to the model host did; checked at most every 30 s). `panel`: whether a panel is connected to `/ws/panel`. `lyrics`: whether a text model is configured for writing lyrics (`FRETCASE_TEXT_MODEL_KEY` is set); it says nothing about whether the network is up. `render`: whether a music model is configured for the studio version (`FRETCASE_MUSIC_MODEL_KEY` or `GEMINI_API_KEY` is set).
 
 ### `GET /api/catalog`
 
@@ -178,7 +178,7 @@ Response: `{ "song": Song }`.
 | `shiftRegister` (M2) | `track`, `section`, `direction`: `up` \| `down` | "Higher / Lower". Vocal and melody: every note in the section moves one scale step in the song's key. Guitar: the next voicing up or down the neck. Bass: one octave, within E1–G3; notes that would leave that range stay where they are. Not allowed on drums and ambience (`422`); `422` too when nothing can move without leaving the instrument's range |
 | `revertMelody` (M2) | `section` | "Back to my hum": restores the melody and vocal pitches of that section from the seed motif, keeping lyrics where the note count is unchanged. `422` when the song has no motif |
 | `setMaster` (M2) | any of `volume` 0–1, `space`: `dry` \| `room` \| `hall` | Whole-song volume and reverb |
-| `setVocalTake` (v2) | `assetId` | Uses the user's own recording as the vocal track: `source = "recording"`, `renderAssetId = assetId` |
+| `setVocalTake` | `assetId` (or null) | Uses the user's own recording (an asset with role `vocal_take`) as the vocal track: `source = "recording"`, `renderAssetId = assetId`; the app then plays it from tick 0 instead of the guide voice. Without `assetId` the track goes back to the guide voice (`source = "none"`). A replaced take leaves `assets`. The app records the take while the song plays from the start and cuts the lead-in and the audio latency off before uploading it, so it lines up at tick 0; changing the tempo afterwards does not stretch it |
 
 Mapping of the feel knobs. The app sends absolute values; the panel's encoder deltas are turned into values by the app (one detent = 0.02).
 
@@ -247,6 +247,17 @@ Suggested themes for the lyrics page, with where each came from: `{ "themes": [ 
 
 While `tracks.vocal.source` is `none`, the app plays the vocal notes as a plain guide tone, so the line can be heard and edited. When `renderAssetId` is set, the app plays that audio instead of the notes.
 
+### `POST /api/songs/{id}/render`
+
+The studio version: a music model sings and plays the whole song, and the recording is stored with it. The editable song stays the source of truth; a render is audio made from one revision. Request: `{ "baseRevision" }`. Response: `202 { "job": Job }`; poll `GET /api/jobs/{id}`. A second request while one is running for the same song returns the running job. The job's `result` is `{ "song": Song }` with:
+
+- `render`: `{ "assetId", "model", "basedOnRevision", "revision", "createdAt", "durationSec"?, "lyrics": [ { "section", "lines" } ] }`. `basedOnRevision` is the revision it was made from; `revision` is the one that stored it. The render is current while the song is still at `revision` and `basedOnRevision` is `revision - 1`; after any edit (or when an edit happened while it was being made) the app calls it older and offers to make it again. `lyrics` are the words it was asked to sing, kept with it.
+- one asset with role `song_render` (an earlier render's asset is replaced). Storing the render is not undoable and does not reset takes.
+
+The model gets a prompt built from the song (`server/fretcase_server/render.py`): title, tempo, meter, key, mood, the voice, every section with its timestamps and who plays in it, and the lyrics by section (unwritten "la" lines are left out, and sections without lyrics are marked instrumental), plus the card's cover photo scaled to 1024 px. The adapter is Google Lyria through the Gemini API (`FRETCASE_MUSIC_MODEL_KEY` or `GEMINI_API_KEY`; `FRETCASE_MUSIC_MODEL_NAME`, default `lyria-3.5`; `lyria-3-clip-preview` makes a cheaper 30-second clip; `FRETCASE_RENDER_TIMEOUT`, default 240 s). The model follows the lyrics and the structure, but not the exact melody or arrangement, and its output varies between calls.
+
+Without a music model the request answers `503 offline_unavailable` at once with `detail.reason: not_configured`. A failed job has `error` with the same shape and `detail.reason`: `auth`, `rate_limited`, `blocked` (the model refused the prompt), `timeout`, `unreachable` or `bad_answer` (no audio in the answer).
+
 ### `POST /api/songs/{id}/vocal` (v2)
 
 Synthesise the vocal track from notes and lyrics. Request: `{ "baseRevision" }`. Response: `202` job; its result is `{ "song": Song }` with `tracks.vocal.source = "synth"` and `renderAssetId` set. Offline: `503`. A user's own take is uploaded as an asset with role `vocal_take` and attached with the `setVocalTake` edit.
@@ -300,13 +311,14 @@ What the song page shows, with nothing private:
     "message": "I wrote you a song by the sea. I will sing it to you when I am back.",
     "photos": ["/api/share/k3Hq9xV2mPzT/assets/a-photo-01"],
     "card": "/api/share/k3Hq9xV2mPzT/assets/a-card-print-01",
-    "lyrics": [ { "section": "Verse", "lines": ["The sea wind blows across the shore", "And one by one the lights come on"] } ]
+    "lyrics": [ { "section": "Verse", "lines": ["The sea wind blows across the shore", "And one by one the lights come on"] } ],
+    "render": { "audio": "/api/share/k3Hq9xV2mPzT/assets/a-render-01", "lyrics": [ { "section": "Verse", "lines": ["…"] } ] }
   },
   "song": Song
 }
 ```
 
-`city` only when `showCity`; `photos` only when `showPhoto` (in `photoAssetIds` order, else an empty list). New songs start with `showCity` and `showPhoto` true (the city level is the agreed default); the user can turn either off on the card screen; `card` only after a print or preview. `song` is the full song for playback with `seed` and `provenance` removed and `assets` limited to those the page uses (photos, ambience clips, vocal render). `GET /api/share/{shareId}/assets/{assetId}` serves only those assets. `404` for an unknown share.
+`render` only when the song has a studio version; the page plays it first, with the lyrics it sang, and can switch to the arrangement. `city` only when `showCity`; `photos` only when `showPhoto` (in `photoAssetIds` order, else an empty list). New songs start with `showCity` and `showPhoto` true (the city level is the agreed default); the user can turn either off on the card screen; `card` only after a print or preview. `song` is the full song for playback with `seed` and `provenance` removed and `assets` limited to those the page uses (photos, ambience clips, vocal render). `GET /api/share/{shareId}/assets/{assetId}` serves only those assets. `404` for an unknown share.
 
 ## Location
 

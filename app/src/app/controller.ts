@@ -1,12 +1,13 @@
 import { ApiError, type Api, type CardPatch, type EditOp, type KnobControl, type LeadTrack, type NoteInput } from '../api'
 import { loopRangeFor } from '../audio/schedule'
 import { MicRecorder } from '../lib/recorder'
+import { trimStart } from '../audio/wav'
 import { barTicks, hasExactLock, isLocked, previewStartTick, regionOf, sectionAtBar, secondsToTicks, trackName } from '../lib/song'
 import { sectionLines, syllables } from '../lib/lyrics'
 import { PanelInterpreter, type Intent } from '../panel/interpreter'
 import { computeKeyLights, computeRing, type KeyLightMsg } from '../panel/lights'
 import type { CardStyle, SeedCard, SeedInput, Song, SpaceId, TimeOfDay, TrackId } from '../types'
-import { initialLyrics, MAX_PHOTOS, Store, type CapturedInput, type LyricsUi, type View } from './store'
+import { initialLyrics, MAX_PHOTOS, Store, type AppState, type CapturedInput, type LyricsUi, type View } from './store'
 
 /** What the controller needs from the playback engine (the Tone.js engine, or a fake in tests). */
 export interface AudioLike {
@@ -22,6 +23,8 @@ export interface AudioLike {
   jog?(delta: number): boolean
   /** Prepares what jog needs (a rendered copy of the song) in the background. */
   prepareJog?(): void
+  /** Seconds between scheduling a sound and the user hearing it, plus the microphone's delay (for lining up a take). */
+  latency?(): number
 }
 
 /** What the controller needs from the panel socket. */
@@ -100,7 +103,7 @@ export class Controller {
   async refreshHealth() {
     try {
       const h = await this.api.health()
-      this.store.set({ serverOnline: true, netOnline: h.online, lyricsAvailable: !!h.lyrics })
+      this.store.set({ serverOnline: true, netOnline: h.online, lyricsAvailable: !!h.lyrics, renderAvailable: !!h.render })
     } catch {
       this.store.set({ serverOnline: false })
     }
@@ -225,7 +228,7 @@ export class Controller {
     const sameSong = prev?.id === song.id
     this.store.set({ song })
     void this.audio?.load(song)
-    if (!sameSong) { this.audio?.seek(0); this.store.set({ solo: null, takes: {}, previewSig: null, lyrics: initialLyrics(), selectedTrack: null }); this.audio?.setSolo?.(null) }
+    if (!sameSong) { this.stopStudio(); this.audio?.seek(0); this.store.set({ solo: null, takes: {}, previewSig: null, lyrics: initialLyrics(), selectedTrack: null }); this.audio?.setSolo?.(null) }
     this.applyLoop()
   }
 
@@ -643,6 +646,115 @@ export class Controller {
     this.store.set({ playing: true })
   }
 
+  // ---- the studio version ---------------------------------------------------------------------
+
+  private studioAudio: HTMLAudioElement | null = null
+  private studioAudioId: string | null = null
+  /** How often a running render is asked about, and for how long. */
+  studioPollMs = 1500
+  studioTimeoutMs = 6 * 60 * 1000
+
+  private setStudio(patch: Partial<AppState['studio']>) { this.store.set({ studio: { ...this.store.state.studio, ...patch } }) }
+
+  /** Asks the server's music model to sing and play the whole song, and waits for the job. */
+  async makeStudioVersion() {
+    const song = this.store.state.song
+    if (!song || this.store.state.studio.working) return
+    this.stopStudio()
+    this.setStudio({ working: true, startedAt: Date.now() })
+    this.log('studio.start', { revision: song.revision })
+    try {
+      let job = await this.api.render(song.id, song.revision)
+      const deadline = Date.now() + this.studioTimeoutMs
+      while (job.state === 'running') {
+        if (Date.now() > deadline) throw new ApiError('timeout', 'The studio version took too long', 0)
+        await new Promise((r) => setTimeout(r, this.studioPollMs))
+        job = await this.api.job(job.id)
+      }
+      if (job.state === 'failed') throw new ApiError(job.error?.code ?? 'http_error', job.error?.message ?? 'The render failed', 503, undefined, job.error?.detail)
+      const done = job.result?.song
+      if (done && this.store.state.song?.id === done.id) this.setSong(done)
+      this.toast('The studio version is ready: press its play button to hear it sung')
+      this.log('studio.done')
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'revision_conflict' && e.song) { this.setSong(e.song); this.toast('The song had just changed; it is up to date now, so please try again', 'error') }
+      else this.toast(studioFailureText(e), 'error')
+      this.log('studio.failed', { code: e instanceof ApiError ? e.code : 'error', reason: e instanceof ApiError ? e.detail?.reason : undefined })
+    } finally {
+      this.setStudio({ working: false, startedAt: null })
+    }
+  }
+
+  /** Plays or stops the studio version (the arrangement stops while it plays). */
+  toggleStudio() { if (this.store.state.studio.playing) this.stopStudio(); else this.playStudio() }
+
+  playStudio() {
+    const render = this.store.state.song?.render
+    if (!render || typeof Audio === 'undefined') return
+    if (this.store.state.playing) this.pause()
+    if (!this.studioAudio || this.studioAudioId !== render.assetId) {
+      this.studioAudio?.pause()
+      this.studioAudio = new Audio(this.api.assetUrl(render.assetId))
+      this.studioAudioId = render.assetId
+      this.studioAudio.onended = () => this.setStudio({ playing: false })
+      this.studioAudio.onerror = () => { this.setStudio({ playing: false }); this.toast('The studio version could not be played', 'error') }
+    }
+    this.studioAudio.currentTime = 0
+    void this.studioAudio.play().catch(() => this.setStudio({ playing: false }))
+    this.setStudio({ playing: true })
+    this.log('studio.play')
+  }
+
+  stopStudio() {
+    if (!this.store.state.studio.playing && !this.studioAudio) return
+    this.studioAudio?.pause()
+    if (this.store.state.studio.playing) this.setStudio({ playing: false })
+  }
+
+  // ---- singing one's own vocal ---------------------------------------------------------------------
+
+  private takePlayStart = 0
+
+  /** Records the user singing over the whole song (the guide voice plays so they can follow it). */
+  async recordVocalTake() {
+    const s = this.store.state
+    if (!s.song || !this.audio || s.vocalTake || s.recording) return
+    if (!MicRecorder.supported()) { this.toast('This browser cannot record (it needs HTTPS)', 'error'); return }
+    this.stopStudio()
+    this.pause()
+    try { await this.recorder.start() } catch { this.toast('Cannot use the microphone. Please check the permission', 'error'); return }
+    this.store.set({ vocalTake: 'recording' })
+    this.audio.setLoop(null)
+    this.audio.seek(0)
+    await this.audio.play()
+    this.takePlayStart = performance.now()
+    this.store.set({ playing: true })
+    this.log('take.start')
+  }
+
+  /** Stops recording, lines the take up with the song and puts it on the vocal track. */
+  async finishVocalTake() {
+    if (this.store.state.vocalTake !== 'recording') return
+    this.store.set({ vocalTake: 'saving' })
+    const recStart = this.recorder.startedAt
+    const blob = await this.recorder.stop(1000)
+    this.pause()
+    try {
+      if (!blob) { this.toast('That was too short to keep', 'info'); return }
+      const lead = Math.max(0, (this.takePlayStart - recStart) / 1000) + (this.audio?.latency?.() ?? 0.06)
+      const wav = await trimStart(blob, lead)
+      const asset = await this.api.uploadAsset(wav ?? blob, 'vocal_take')
+      await this.mutate('take.save', (song) => this.api.edit(song.id, song.revision, [{ op: 'setVocalTake', assetId: asset.id }]), true)
+      this.toast('Your vocal is on the song now')
+      this.log('take.saved')
+    } catch (e) { this.fail(e) } finally { this.store.set({ vocalTake: null }) }
+  }
+
+  /** Back to the guide voice playing the vocal notes. */
+  async removeVocalTake() {
+    await this.mutate('take.remove', (song) => this.api.edit(song.id, song.revision, [{ op: 'setVocalTake', assetId: null }]), true)
+  }
+
   /** Characters typed for a line, for counting: the app never changes the song itself. */
   static countChars(text: string) { return syllables(text).length }
 
@@ -650,6 +762,7 @@ export class Controller {
 
   async play() {
     if (!this.audio || !this.store.state.song) return
+    this.stopStudio()
     this.snippetEnd = null
     this.applyLoop()
     await this.audio.play()
@@ -668,7 +781,10 @@ export class Controller {
     if (s.preview && tick >= s.preview.toTick) this.stopPreview()
     if (this.snippetEnd !== null && tick >= this.snippetEnd) { this.snippetEnd = null; this.pause() }
   }
-  onPlaybackEnd() { this.store.set({ playing: false, preview: null }) }
+  onPlaybackEnd() {
+    this.store.set({ playing: false, preview: null })
+    if (this.store.state.vocalTake === 'recording') void this.finishVocalTake()
+  }
 
   seekToBar(bar: number) {
     const song = this.store.state.song
@@ -849,6 +965,21 @@ export function lyricsFailure(e: unknown): string {
 }
 
 /** Plain words for each reason; null when the generic network text fits. */
+/** A plain sentence for a studio version that could not be made. */
+export function studioFailureText(e: unknown): string {
+  const reason = e instanceof ApiError ? (e.detail?.reason as string | undefined) ?? (e.code === 'timeout' || e.code === 'network' ? 'network' : undefined) : undefined
+  switch (reason) {
+    case 'not_configured': return 'The studio version needs a music model on the server (a Gemini API key for Lyria)'
+    case 'auth': return 'The music model key is wrong. Please check the settings'
+    case 'rate_limited': return 'The music model is busy. Try again in a while'
+    case 'blocked': return 'The music model would not make this song. Try changing the lyrics or the title'
+    case 'timeout': return 'The music model took too long. Try again'
+    case 'bad_answer': return 'The music model sent no audio this time. Try again'
+    case 'unreachable': case 'network': return 'Making the studio version needs the internet, which is not available now'
+    default: return 'The studio version could not be made'
+  }
+}
+
 export function lyricsFailureText(reason: string | null): string | null {
   switch (reason) {
     case 'not_configured': return 'No lyrics model is connected yet'

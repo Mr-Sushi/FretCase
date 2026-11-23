@@ -57,8 +57,20 @@ class Stylizer(Protocol):
     def stylize(self, photo: bytes, style: str) -> Optional[bytes]: ...
 
 
+@dataclass
+class RenderResult:
+    """A finished recording from a music model: the audio bytes, their MIME type and any text the model sent with it."""
+
+    audio: bytes
+    mime: str
+    text: str = ""
+
+
 class SongRenderer(Protocol):
-    def render(self, song: Dict[str, Any]) -> bytes: ...
+    """Whole-song rendering by a music model (the studio version). ``render`` raises ``Offline`` when no model is
+    configured and ``ModelError`` when the call fails."""
+
+    def render(self, prompt: str, images: Sequence[tuple] = (), timeout: float = 240.0) -> RenderResult: ...
 
 
 class Uploader(Protocol):
@@ -264,3 +276,73 @@ def make_text_model(api: Optional[str], url: Optional[str], key: Optional[str], 
     if kind not in ("anthropic", "openai"):
         raise ValueError(f"FRETCASE_TEXT_MODEL_API must be anthropic or openai, not {api!r}")
     return (OpenAITextModel if kind == "openai" else AnthropicTextModel)(url, key, name)
+
+
+DEFAULT_MUSIC_MODEL_URL = "https://generativelanguage.googleapis.com/v1beta"
+DEFAULT_MUSIC_MODEL_NAME = "lyria-3.5"
+
+
+class LyriaRenderer:
+    """Google Lyria through the Gemini API ``generateContent`` method: a text prompt (lyrics, structure, instruments)
+    and up to 10 images in, a sung MP3 out.
+
+    Configured by ``FRETCASE_MUSIC_MODEL_KEY`` (or ``GEMINI_API_KEY``), ``FRETCASE_MUSIC_MODEL_NAME`` (default lyria-3.5;
+    lyria-3-clip-preview makes a cheaper 30-second clip) and ``FRETCASE_MUSIC_MODEL_URL``. Without a key nothing is
+    configured and no connection is ever opened.
+    """
+
+    ONLINE_TTL_S = 30.0
+
+    def __init__(self, url: Optional[str], key: Optional[str], name: Optional[str]):
+        self.key = key
+        self.url = url or (DEFAULT_MUSIC_MODEL_URL if key else None)
+        self.name = name or (DEFAULT_MUSIC_MODEL_NAME if key else None)
+        self._online_at = -1e9
+        self._probe: Optional[tuple[float, bool]] = None
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.url and self.key and self.name)
+
+    def endpoint(self) -> str:
+        return f"{(self.url or '').rstrip('/')}/models/{self.name}:generateContent"
+
+    def render(self, prompt: str, images: Sequence[tuple] = (), timeout: float = 240.0) -> RenderResult:
+        import base64
+
+        if not self.configured:
+            raise Offline("music model")
+        parts: List[Dict[str, Any]] = [{"text": prompt}]
+        for mime, data in list(images)[:10]:
+            parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(data).decode("ascii")}})
+        payload = {"contents": [{"parts": parts}], "generationConfig": {"responseModalities": ["AUDIO", "TEXT"]}}
+        data = _post_json(self, self.endpoint(), {"x-goog-api-key": self.key or ""}, payload, timeout)  # type: ignore[arg-type]
+        return parse_lyria_answer(data)
+
+    is_online = AnthropicTextModel.is_online
+
+
+def parse_lyria_answer(data: Dict[str, Any]) -> RenderResult:
+    """The audio and text parts of a generateContent answer, in whichever order and key spelling they come."""
+    import base64
+
+    feedback = data.get("promptFeedback") or {}
+    if feedback.get("blockReason"):
+        raise ModelError("blocked", f"the music model would not make this song ({feedback['blockReason']})")
+    try:
+        parts = data["candidates"][0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError) as exc:
+        reason = ((data.get("candidates") or [{}])[0] or {}).get("finishReason") if isinstance(data.get("candidates"), list) else None
+        raise ModelError("blocked" if reason in ("SAFETY", "RECITATION", "PROHIBITED_CONTENT", "BLOCKLIST") else "bad_answer", "the music model answered without audio") from exc
+    audio, mime, text = b"", "audio/mpeg", []
+    for part in parts:
+        inline = part.get("inlineData") or part.get("inline_data")
+        if inline and inline.get("data"):
+            kind = inline.get("mimeType") or inline.get("mime_type") or "audio/mpeg"
+            if kind.startswith("audio/") or not audio:
+                audio, mime = base64.b64decode(inline["data"]), kind
+        elif part.get("text"):
+            text.append(part["text"])
+    if not audio:
+        raise ModelError("bad_answer", "the music model answered without audio")
+    return RenderResult(audio=audio, mime=mime, text="\n".join(text))
